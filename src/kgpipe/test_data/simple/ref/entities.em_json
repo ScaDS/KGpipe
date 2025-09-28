@@ -1,0 +1,24 @@
+{
+    "blocks" : [],
+   "clusters" : [],
+   "matches" : [
+      {
+         "id_1" : "http://kg.org/seed/award-",
+         "id_2" : "http://kg.org/rdf/award-",
+         "id_type" : "relation",
+         "score" : 0.421052631578947
+      },
+      {
+         "id_1" : "http://kg.org/seed/nationality",
+         "id_2" : "http://kg.org/rdf/nationality",
+         "id_type" : "relation",
+         "score" : 0.674999999999183
+      },
+      {
+         "id_1" : "http://kg.org/seed/nationality-",
+         "id_2" : "http://kg.org/rdf/nationality-",
+         "id_type" : "relation",
+         "score" : 0.774999999999183
+      }
+   ]
+}

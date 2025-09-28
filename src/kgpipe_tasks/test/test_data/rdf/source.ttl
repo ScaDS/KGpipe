@@ -1,0 +1,48 @@
+@prefix src: <http://example.org/bookstore/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+src:itemA rdf:type src:Book ;
+    rdfs:label "itemA" ;
+    src:bookTitle "The Hobbit, or There and Back Again" ;
+    src:bookAuthor src:authorTolkien ;
+    src:isbn13 "9780261102217" .
+
+src:itemB rdf:type src:Book ;
+    rdfs:label "itemB" ;
+    src:bookTitle "Pride & Prejudice" ;
+    src:bookAuthor src:authorAusten ;
+    src:isbn13 "9780199535569" .
+
+src:itemC rdf:type src:Book ;
+    rdfs:label "itemC" ;
+    src:bookTitle "1984" ;
+    src:bookAuthor src:authorOrwell ;
+    src:isbn13 "9780452284234" .
+
+src:itemD rdf:type src:Book ;
+    rdfs:label "itemD" ;
+    src:bookTitle "To Kill a Mockingbird" ;
+    src:bookAuthor src:authorLee ;
+    src:isbn13 "9780061120084" .
+
+src:authorTolkien rdf:type src:Author ;
+    rdfs:label "J. R. R. Tolkien" ;
+    src:birthDate "1892-01-03"^^xsd:date ;
+    src:birthPlace "Bloemfontein, Orange Free State" .
+
+src:authorAusten rdf:type src:Author ;
+    rdfs:label "Jane Austen" ;
+    src:birthDate "1775-12-16"^^xsd:date ;
+    src:birthPlace "Steventon, Hampshire, England" .
+
+src:authorOrwell rdf:type src:Author ;
+    rdfs:label "George Orwell" ;
+    src:birthDate "1903-06-25"^^xsd:date ;
+    src:birthPlace "Motihari, Bengal Presidency, British India" .
+
+src:authorLee rdf:type src:Author ;
+    rdfs:label "Harper Lee" ;
+    src:birthDate "1926-04-28"^^xsd:date ;
+    src:birthPlace "Monroeville, Alabama, USA" .

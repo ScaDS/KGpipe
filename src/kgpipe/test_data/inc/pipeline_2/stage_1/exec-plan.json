@@ -1,0 +1,73 @@
+{
+    "steps": [
+    {
+        "task": "paris_entity_matching",
+        "input": [
+            {
+                "path": "../sources/1_source.rdf/data.nt",
+                "format": "nt"
+            },
+            {
+                "path": "/home/marvin/project/data/films_1k/sources/seed.nt",
+                "format": "nt"
+            }
+        ],
+        "output": [
+            {
+                "path": "/home/marvin/project/data/films_1k/results/rdf_a/tmp/paris_entity_matching_0.paris_csv",
+                "format": "paris.csv"
+            }
+        ]
+    },
+    {
+        "task": "paris_csv_to_matching_format",
+        "input": [
+            {
+                "path": "/home/marvin/project/data/films_1k/results/rdf_a/tmp/paris_entity_matching_0.paris_csv",
+                "format": "paris.csv"
+            }
+        ],
+        "output": [
+            {
+                "path": "tmp/some.ie_json",
+                "format": "te.json"
+            }
+        ]
+    },
+    {
+        "task": "union_matched",
+        "input": [
+            {
+                "path": "/home/marvin/project/data/films_1k/sources/source.nt",
+                "format": "nt"
+            },
+            {
+                "path": "/home/marvin/project/data/films_1k/sources/seed.nt",
+                "format": "nt"
+            },
+            {
+                "path": "/home/marvin/project/data/films_1k/results/rdf_a/tmp/paris_csv_to_matching_format_0.em_json",
+                "format": "er.json"
+            }
+        ],
+        "output": [
+            {
+                "path": "/home/marvin/project/data/films_1k/results/rdf_a/result.nt",
+                "format": "nt"
+            }
+        ]
+    }
+    ],
+    "seed": {
+        "path": "/home/marvin/project/data/films_1k/sources/seed.nt",
+        "format": "nt"
+    },
+    "source": {
+        "path": "../sources/1_source.rdf/data.nt",
+        "format": "nt"
+    },
+    "result": {
+        "path": "/home/marvin/project/data/films_1k/results/rdf_a/result.nt",
+        "format": "nt"
+    }
+}

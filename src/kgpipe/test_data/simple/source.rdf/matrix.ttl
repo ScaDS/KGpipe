@@ -1,0 +1,97 @@
+@prefix ns1: <http://kg.org/rdf/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+ns1:58b4456d6ff046f1482938342bb28391 ns1:1900a4439ff01ce692413bcc8606c840 ns1:fe9fc7cba74b973eb685343b95dd2aa4 ;
+    ns1:3aa0db20d155331e067131aa709eb3ae ns1:1791ff8a8f29172fc5dbe97418e9a3e0 ;
+    ns1:496264d0b73eb675cf643ef48a57c132 ns1:2d8ff25b2de3589b0719730f42f096bb ;
+    ns1:4f75ce12336ab89a4edebd807cd62265 "The Matrix"@en ;
+    ns1:705dd76875688552c4b99b53b3c69509 ns1:fe9fc7cba74b973eb685343b95dd2aa4 ;
+    ns1:81ea818a0cbebe2aa48651ae7b1c5440 "6.3E7"^^<http://dbpedia.org/datatype/usDollar> ;
+    ns1:8ee9cec54d071c19907c50a37579a1a8 8.16e+03 ;
+    ns1:a1674e15a73c5b4f58fc9915077717e7 ns1:e0da030ee06d7f7d48f8b4face5a36f4 ;
+    ns1:aaf0ba9dd9d83c24d672471d651ad302 ns1:beee9461a3dc0771c946f0514e761021,
+        ns1:eefeca926d0b84eb7d4375aa10e66d16,
+        ns1:fb25f82c58f6f3caf23dcdfdd426cdbe ;
+    ns1:c724e53251b0b1508bf84e8cd0bc91c4 ns1:031a8a80c7c5f51769282133ad34a0ca ;
+    ns1:c74e2b735dd8dc85ad0ee3510c33925f ns1:41d93198fab7c9527cfd87448cd25f42 ;
+    ns1:ce2de04c7ef3ff4b40e4287da8d40477 ns1:33f6fff4babd0b696bee8e3786efb92f,
+        ns1:63cf4e5d95c8537a430cac18593532fd,
+        ns1:8a2a6176302f7ba9bd44b43629eb9cab,
+        ns1:b3408acde4d9ba8793dc43bdbbf520c9,
+        ns1:bdd3f67f238a0df87deae2b74f87ead0 .
+
+ns1:031a8a80c7c5f51769282133ad34a0ca ns1:4f75ce12336ab89a4edebd807cd62265 "Joel Silver"@en ;
+    ns1:893797ba8898177df5b817ba86554a38 "Joel Silver"@en ;
+    ns1:c212d09402af52a91979f9e91b5287af "1952-07-14"^^xsd:date ;
+    ns1:c74e2b735dd8dc85ad0ee3510c33925f ns1:b69c4d90f0dc6a7ebff84f638c5dfe34 ;
+    ns1:ffb1c40b39a7add5dc34e07ad5e55ff6 ns1:95be2d51fb922ab5062c2c24d27d7d03 .
+
+ns1:1791ff8a8f29172fc5dbe97418e9a3e0 ns1:4f75ce12336ab89a4edebd807cd62265 "Don Davis (composer)"@en ;
+    ns1:893797ba8898177df5b817ba86554a38 "Don Davis"@en ;
+    ns1:c212d09402af52a91979f9e91b5287af "1957-02-04"^^xsd:date ;
+    ns1:c74e2b735dd8dc85ad0ee3510c33925f ns1:b69c4d90f0dc6a7ebff84f638c5dfe34 .
+
+ns1:2d8ff25b2de3589b0719730f42f096bb ns1:4f75ce12336ab89a4edebd807cd62265 "Bill Pope"@en ;
+    ns1:893797ba8898177df5b817ba86554a38 "Bill Pope"@en ;
+    ns1:c212d09402af52a91979f9e91b5287af "1952-06-19"^^xsd:date ;
+    ns1:c74e2b735dd8dc85ad0ee3510c33925f ns1:b69c4d90f0dc6a7ebff84f638c5dfe34 .
+
+ns1:33f6fff4babd0b696bee8e3786efb92f ns1:4f75ce12336ab89a4edebd807cd62265 "Keanu Reeves"@en ;
+    ns1:893797ba8898177df5b817ba86554a38 "Keanu Reeves"@en ;
+    ns1:c212d09402af52a91979f9e91b5287af "1964-09-02"^^xsd:date ;
+    ns1:c74e2b735dd8dc85ad0ee3510c33925f ns1:b69c4d90f0dc6a7ebff84f638c5dfe34 .
+
+ns1:63cf4e5d95c8537a430cac18593532fd ns1:4f75ce12336ab89a4edebd807cd62265 "Hugo Weaving"@en ;
+    ns1:7f5afc76624a7d6e59dbbd45892923b1 ns1:e577a69177d585ea869996a0272c4de7 ;
+    ns1:893797ba8898177df5b817ba86554a38 "Hugo Weaving"@en ;
+    ns1:c212d09402af52a91979f9e91b5287af "1960-04-04"^^xsd:date ;
+    ns1:c74e2b735dd8dc85ad0ee3510c33925f ns1:b69c4d90f0dc6a7ebff84f638c5dfe34 .
+
+ns1:8a2a6176302f7ba9bd44b43629eb9cab ns1:4f75ce12336ab89a4edebd807cd62265 "Joe Pantoliano"@en ;
+    ns1:c212d09402af52a91979f9e91b5287af "1951-09-12"^^xsd:date ;
+    ns1:c74e2b735dd8dc85ad0ee3510c33925f ns1:b69c4d90f0dc6a7ebff84f638c5dfe34 .
+
+ns1:95be2d51fb922ab5062c2c24d27d7d03 ns1:4f75ce12336ab89a4edebd807cd62265 "Film producer"@en .
+
+ns1:b3408acde4d9ba8793dc43bdbbf520c9 ns1:4f75ce12336ab89a4edebd807cd62265 "Laurence Fishburne"@en ;
+    ns1:893797ba8898177df5b817ba86554a38 "Laurence Fishburne"@en ;
+    ns1:c212d09402af52a91979f9e91b5287af "1961-07-30"^^xsd:date ;
+    ns1:c74e2b735dd8dc85ad0ee3510c33925f ns1:b69c4d90f0dc6a7ebff84f638c5dfe34 ;
+    ns1:e638d195dac58fadb5b057bc2df0774c ns1:dfcd2d3e2efd9732a2de7a7cdb43728d .
+
+ns1:bdd3f67f238a0df87deae2b74f87ead0 ns1:4f75ce12336ab89a4edebd807cd62265 "Carrie-Anne Moss"@en ;
+    ns1:c212d09402af52a91979f9e91b5287af "1967-08-21"^^xsd:date ;
+    ns1:c74e2b735dd8dc85ad0ee3510c33925f ns1:b69c4d90f0dc6a7ebff84f638c5dfe34 .
+
+ns1:beee9461a3dc0771c946f0514e761021 ns1:4f75ce12336ab89a4edebd807cd62265 "Silver Pictures"@en ;
+    ns1:893797ba8898177df5b817ba86554a38 "Silver Pictures"@en ;
+    ns1:c74e2b735dd8dc85ad0ee3510c33925f ns1:13c5d2c147718594d5291c5378b10792 ;
+    ns1:dc3051b1058d7105d2aa9c9b5cab12b7 "1980-06-24"^^xsd:date .
+
+ns1:dfcd2d3e2efd9732a2de7a7cdb43728d ns1:4f75ce12336ab89a4edebd807cd62265 "Gina Torres"@en ;
+    ns1:893797ba8898177df5b817ba86554a38 "Gina Torres"@en ;
+    ns1:c212d09402af52a91979f9e91b5287af "1969-04-25"^^xsd:date ;
+    ns1:c74e2b735dd8dc85ad0ee3510c33925f ns1:b69c4d90f0dc6a7ebff84f638c5dfe34 .
+
+ns1:e0da030ee06d7f7d48f8b4face5a36f4 ns1:4f75ce12336ab89a4edebd807cd62265 "Roadshow Entertainment"@en ;
+    ns1:893797ba8898177df5b817ba86554a38 "Roadshow Entertainment"@en ;
+    ns1:c74e2b735dd8dc85ad0ee3510c33925f ns1:13c5d2c147718594d5291c5378b10792 ;
+    ns1:dc3051b1058d7105d2aa9c9b5cab12b7 "1982-04-16"^^xsd:date .
+
+ns1:e577a69177d585ea869996a0272c4de7 ns1:4f75ce12336ab89a4edebd807cd62265 "Harry Greenwood (actor)"@en ;
+    ns1:893797ba8898177df5b817ba86554a38 "Harry Greenwood"@en ;
+    ns1:c74e2b735dd8dc85ad0ee3510c33925f ns1:b69c4d90f0dc6a7ebff84f638c5dfe34 .
+
+ns1:eefeca926d0b84eb7d4375aa10e66d16 ns1:4f75ce12336ab89a4edebd807cd62265 "Warner Bros. Pictures"@en ;
+    ns1:893797ba8898177df5b817ba86554a38 "Warner Bros. Pictures"@en ;
+    ns1:c74e2b735dd8dc85ad0ee3510c33925f ns1:13c5d2c147718594d5291c5378b10792 ;
+    ns1:dc3051b1058d7105d2aa9c9b5cab12b7 "1923-04-04"^^xsd:date .
+
+ns1:fb25f82c58f6f3caf23dcdfdd426cdbe ns1:4f75ce12336ab89a4edebd807cd62265 "Village Roadshow Pictures"@en ;
+    ns1:893797ba8898177df5b817ba86554a38 "Village Roadshow Pictures"@en ;
+    ns1:c74e2b735dd8dc85ad0ee3510c33925f ns1:13c5d2c147718594d5291c5378b10792 .
+
+ns1:fe9fc7cba74b973eb685343b95dd2aa4 ns1:4f75ce12336ab89a4edebd807cd62265 "The Wachowskis"@en ;
+    ns1:893797ba8898177df5b817ba86554a38 "The Wachowskis"@en ;
+    ns1:c212d09402af52a91979f9e91b5287af "1965-06-21"^^xsd:date ;
+    ns1:c74e2b735dd8dc85ad0ee3510c33925f ns1:b69c4d90f0dc6a7ebff84f638c5dfe34 .

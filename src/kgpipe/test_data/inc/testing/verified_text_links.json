@@ -1,0 +1,12 @@
+{
+    "doc_id_1": [
+        "entity_id_1",
+        "entity_id_2",
+        "entity_id_3"
+    ],
+    "doc_id_2": [
+        "entity_id_4",
+        "entity_id_5",
+        "entity_id_6"
+    ]
+}

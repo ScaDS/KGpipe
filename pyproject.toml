@@ -1,0 +1,80 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "KGpipe"
+version = "0.6.0"
+description = "Knowledge Graph pipeline evaluation Framework"
+authors = [
+    {name = "KGpipe", email = "hofer@informatik.uni-leipzig.de"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "docker>=7.0.0", # docker-sdk-for-python
+    "PyYAML>=6.0",
+    "click>=8.0",
+    "pandas>=1.5.0",
+    "rich>=13.0.0",
+    "pydantic>=2.0.0",
+    "rdflib>=6.0.0",
+    "matplotlib>=3.5.0",
+    "networkx>=2.8.0",
+    "transformers>=4.50.0",
+    "sentence_transformers>=4.1.0",
+    "pulp>=3.3.0",
+    "pytest>=8.4.2",
+    "dotenv>=0.9.9",
+    "seaborn>=0.13.2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-mock", "pytest-cov", "ruff", "black"]
+#extras = ["kgbench_extras"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["kgbench*", "kgbench_extras*", "kgbench_llmtasks*"]
+
+[tool.setuptools.package-dir]
+"" = "src" 
+
+[tool.setuptools.package-data]
+kgbench = ["*.yaml", "*.yml"]
+
+[project.scripts]
+kgpipe = "kgpipe.cli.main:cli"
+
+[tool.coverage.run]
+source = ["src/kgbench"]
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/venv/*",
+    "*/env/*",
+    "*/.venv/*",
+    "*/.env/*",
+    "setup.py",
+    "conftest.py"
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@\\(abc\\.\\)\\?abstractmethod",
+    "pass",
+    "raise ImportError"
+]
+
+[tool.coverage.html]
+directory = "htmlcov"

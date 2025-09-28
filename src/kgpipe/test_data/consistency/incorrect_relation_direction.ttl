@@ -1,0 +1,12 @@
+@prefix ex: <http://example.org#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+
+ex:hasChild a rdf:Property ;
+    rdfs:domain ex:Parent ;
+    rdfs:range ex:Child .
+
+ex:Johnny a ex:Child .
+ex:Mary a ex:Parent .
+
+ex:Johnny ex:hasChild ex:Mary .  # ❌ Wrong direction: should be Parent → hasChild → Child

@@ -1,0 +1,23 @@
+{
+    "runtime": "3480.0",
+    "producer": "Oliver Drake",
+    "starring": [
+        "Zon Murray",
+        "Iris Lancaster",
+        "Jimmy Wakely",
+        "Jack Baxley",
+        "Lee \"Lasses\" White",
+        "Jean Carlin"
+    ],
+    "name": [
+        "Song of the Sierras"
+    ],
+    "film_title": "Song of the Sierras",
+    "director": {
+        "name": "Oliver Drake",
+        "birth_date": "1980-01-01",
+        "death_date": "2020-01-01"
+    },
+    "music": "Frank Sanucci",
+    "distributor": "Monogram Pictures"
+}

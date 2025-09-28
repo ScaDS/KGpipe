@@ -1,0 +1,15 @@
+@prefix ex: <http://kg.org/0/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ex:Person a owl:Class .
+xsd:integer a owl:Class .
+
+ex:age a owl:DatatypeProperty ;
+    rdfs:domain ex:Person ;
+    rdfs:range xsd:integer .
+
+ex:John a ex:Person ;
+    ex:age "25"^^xsd:string .  # ❌ Not a valid integer literal
