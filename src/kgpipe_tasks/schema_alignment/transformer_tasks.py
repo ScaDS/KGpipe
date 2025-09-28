@@ -4,7 +4,7 @@ from sentence_transformers import SentenceTransformer, util
 from rdflib import Graph, OWL, RDFS, RDF
 from typing import Dict, List
 from kgpipe.common.models import KgTask, Data, DataFormat
-from kgpipe_tasks.exchange.text_extraction import TE_Document, TE_Pair
+from kgpipe_tasks.transform_interop.exchange.text_extraction import TE_Document, TE_Pair
 # from kgflex.resources.mainspec import *
 # from kgflex.framework.kgflex import *
 # import json

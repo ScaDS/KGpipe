@@ -27,7 +27,8 @@ from kgpipe_tasks.text_processing import (
 )
 from kgpipe_tasks.transform_interop import (
     aggregate2_te_json,
-    aggregate3_te_json
+    aggregate3_te_json,
+    transform2_rdf_to_csv_v2
 )
 
 __all__ = [
@@ -47,5 +48,8 @@ __all__ = [
     "aggregate_2matches",
     "union_matched_rdf",
     "union_matched_rdf_combined",
-    "reduce_to_best_match_per_entity"
+    "reduce_to_best_match_per_entity",
+    "valentine_csv_matching_v2",
+    "valentine_csv_matching"
+    "transform2_rdf_to_csv_v2"
 ]

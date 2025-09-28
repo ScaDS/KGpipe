@@ -276,21 +276,9 @@ def select_first_value(inputs: Dict[str, Data], outputs: Dict[str, Data]):
         # Only work with properties that are in our ontology (after canonicalization)
         if not isinstance(p_can, URIRef) or str(p_can) not in allowed_predicates:
             continue
-
-        if is_fusable(p_can):
-            # Add exactly one value if none exists yet
-            if not any(seed_graph.objects(s_can, p_can)):
-                seed_graph.add((s_can, p_can, o_can))
-                # keep subjects set fresh for subsequent matches
-                if isinstance(s_can, URIRef):
-                    current_subjects.add(str(s_can))
-        else:
-            # Non-fusable: copy if not already present (avoid dupes)
-            if (s_can, p_can, o_can) not in seed_graph:
-                seed_graph.add((s_can, p_can, o_can))
-                if isinstance(s_can, URIRef):
-                    current_subjects.add(str(s_can))
         
+        if p_can == RDF.type and not str(o_can).startswith(TARGET_ONTOLOGY_NAMESPACE):
+            continue
 
         if is_fusable(p_can):
             # Add exactly one value if none exists yet
@@ -392,6 +380,9 @@ def fusion_first_value(inputs: Dict[str, Data], outputs: Dict[str, Data]):
         # Only work with properties that are in our ontology (after canonicalization)
         if not isinstance(p_can, URIRef) or str(p_can) not in allowed_predicates:
             logger.debug(f"Skipping {s}, {p}, {o} because it is not in the allowed predicates")
+            continue
+
+        if p_can == RDF.type and not str(o_can).startswith(TARGET_ONTOLOGY_NAMESPACE):
             continue
 
         if is_fusable(p_can):
