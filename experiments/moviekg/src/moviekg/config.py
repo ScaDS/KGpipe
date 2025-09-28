@@ -44,6 +44,7 @@ OUTPUT_ROOT = Path(OUTPUT_DIR) / DATASET_SELECT
 pipeline_types = {
     "rdf_a": "rdf",
     "rdf_b": "rdf",
+    "rdf_b2": "rdf",
     "text_a": "text",
     "text_b": "text",
     "json_a": "json",

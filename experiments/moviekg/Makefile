@@ -93,6 +93,14 @@ eval-rdf-b:
 	pytest -s -v src/geneval/evaluation/test_inc_ssp_evaluation.py -k rdf_b
 
 
+test-rdf-b2:
+# sudo rm -rf out/rdf_b;
+	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k rdf_b2
+
+eval-rdf-b2:
+	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k rdf_b2
+
+
 test-rdf-c:
 # sudo rm -rf out/rdf_b;
 	pytest -s -v src/geneval/pipelines/test_inc_ssp.py -k rdf_llm

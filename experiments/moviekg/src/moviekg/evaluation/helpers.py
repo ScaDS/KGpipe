@@ -109,12 +109,14 @@ def get_reference_config(stage: StageOut, is_ssp: bool) -> ReferenceConfig:
     ENTITY_MATCH_THRESHOLD_MAP = {
         "rdf_a": 0.5,
         "rdf_b": 0.5,
+        "rdf_b2": 0.5,
         "rdf_c": 0.5,
     }
 
     RELATION_MATCH_THRESHOLD_MAP = {
         "rdf_a": 0.5,
         "rdf_b": 0.1,
+        "rdf_b2": 0.1,
         "rdf_c": 0.5,
     }
 
@@ -172,13 +174,13 @@ def evaluate_stage(stage: StageOut, is_ssp: bool) -> List[MetricResult]:
     ref_eval = reference.ReferenceEvaluator()
     sem_eval = semantic.SemanticEvaluator()
 
-    # stats_aspect_result = stat_eval.evaluate(result_kg)
-    # ref_aspect_result = ref_eval.evaluate(result_kg, config=get_reference_config(stage, is_ssp))
+    stats_aspect_result = stat_eval.evaluate(result_kg)
+    ref_aspect_result = ref_eval.evaluate(result_kg, config=get_reference_config(stage, is_ssp))
     sem_aspect_result = sem_eval.evaluate(result_kg)
     
     metrics = []
-    # metrics = stats_aspect_result.metrics + ref_aspect_result.metrics + sem_aspect_result.metrics
-    metrics = sem_aspect_result.metrics
+    metrics = stats_aspect_result.metrics + ref_aspect_result.metrics + sem_aspect_result.metrics
+    # metrics = sem_aspect_result.metrics
     metrics.append(add_duration_metrics(stage))
     # metrics = ref_aspect_result.metrics
 

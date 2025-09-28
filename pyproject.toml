@@ -27,6 +27,8 @@ dependencies = [
     "pytest>=8.4.2",
     "dotenv>=0.9.9",
     "seaborn>=0.13.2",
+    "tiktoken>=0.11.0",
+    "jsonpath-ng>=1.7.0",
 ]
 
 [project.optional-dependencies]
