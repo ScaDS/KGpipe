@@ -259,6 +259,47 @@ class SourceEntityCoverageMetricSoft(Metric):
             aspect=self.aspect
         )
 
+@Registry.metric()
+class SourceEntityPrecisionMetric(Metric):
+    def __init__(self):
+        super().__init__(
+            name="SourceEntityPrecisionMetric",
+            description="Evaluates the precision of the source entities in the KG, applying soft matching",
+            aspect=EvaluationAspect.REFERENCE
+        )
+
+    # Match and map test KG entities to reference KG first
+    # Then, evaluate the overlap between test and reference entities
+
+    def compute(self, kg: KG, config: ReferenceConfig, **kwargs) -> MetricResult:
+
+        from kgpipe.evaluation.aspects.func.integration_eval import evaluate_source_entity_coverage_fuzzy
+
+        # meta = config.source_meta
+        # if meta is None or meta.entities is None:
+        #     raise ValueError("SourceMeta is not set")
+        verified_source_entities_path = config.VERIFIED_SOURCE_ENTITIES
+        if verified_source_entities_path is None:
+            raise ValueError("VERIFIED_SOURCE_ENTITIES is not set")
+        
+        result = evaluate_source_entity_coverage_fuzzy(kg, verified_source_entities_path)
+
+        # print("value", result.overlapping_entities_count / result.expected_entities_count)
+        # print("normalized_score", result.overlapping_entities_count / result.expected_entities_count)
+        # print("details", result.__dict__)
+
+        score = result.overlapping_entities_count / result.expected_entities_count
+        if score > 1.0:
+            score = 1.0
+
+        return MetricResult(
+            name=self.name,
+            value=score,
+            normalized_score=score,
+            details=result.__dict__,
+            aspect=self.aspect
+        )
+
 # =============================================================================
 # Reference KG Alignment
 # =============================================================================
@@ -430,6 +471,7 @@ class ReferenceEvaluator(AspectEvaluator):
             TE_ExpectedRelationLinkMetric(),
             SourceEntityCoverageMetric(),
             SourceEntityCoverageMetricSoft(),
+            SourceEntityPrecisionMetric(),
             ReferenceTripleAlignmentMetric(),
             ReferenceTripleAlignmentMetricSoftE(),
             ReferenceTripleAlignmentMetricSoftEV(),

@@ -88,6 +88,7 @@ METRIC_NAME_MAP = {
     # Source metrics
     "SourceEntityCoverageMetric": "VSEC",
     "SourceEntityCoverageMetricSoft": "VSEC-Soft",
+    "REI_precision": "REI-Precision",
 
 }
 
@@ -216,6 +217,44 @@ SEM_METRIC_SHORT_NAMES = {
 }
 
 SEM_METRIC_LONG_NAMES = {v: k for k, v in SEM_METRIC_SHORT_NAMES.items()}
+
+def add_REI_precision(metric_df):
+    # REI_fscore = 2 * (precision * recall) / (precision + recall)
+    source_entity_coverage_metric_soft = metric_df[metric_df["metric"] == "SourceEntityCoverageMetricSoft"]
+
+    additional_rows = []
+    for index, row in source_entity_coverage_metric_soft.iterrows():
+        details = json.loads(row["details"])
+        #"{""expected_entities_count"": 2758, ""found_entities_count"": 3099, ""overlapping_entities_count"": 53}"
+        
+        expected_entities_count = details["expected_entities_count"]
+        #found_entities_count = details["found_entities_count"]
+        overlapping_entities_count = details["overlapping_entities_count"]
+
+        tp = overlapping_entities_count if overlapping_entities_count <= expected_entities_count else expected_entities_count
+        fp = overlapping_entities_count - tp if overlapping_entities_count > tp else 0
+        precision = tp / (tp + fp)
+
+        additional_rows.append(
+            {"pipeline": row["pipeline"], 
+            "stage": row["stage"], 
+            "metric": "REI_precision", 
+            "aspect": "reference", 
+            "normalized": precision,
+            "value": precision,
+            "details": row["details"]})
+
+    additional_df = pd.DataFrame(additional_rows)
+    return pd.concat([metric_df, additional_df])
+
+    # precision = source_entity_coverage_metric_soft["normalized"]
+    # recall = source_entity_coverage_metric["normalized"]
+    # REI_fscore = 2 * (precision * recall) / (precision + recall)
+    # metric_df["REI_fscore"] = REI_fscore
+    # return metric_df
+
+    # metric_df["REI_fscore"] = 2 * (metric_df["precision"] * metric_df["recall"]) / (metric_df["precision"] + metric_df["recall"])
+    # return metric_df
 
 def test_tab_ssp_semantic_eval():
     metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
@@ -502,6 +541,7 @@ METRIC_NAME_INDEX_PRETTY = [
     # Source metrics
     ("SourceEntityCoverageMetric", "Source Entity Recall"),
     ("SourceEntityCoverageMetricSoft", "Source Entity Recall (~ID)"),
+    ("REI_precision", "Source Entity Precision (~ID)"),
     # Reference metrics
     ("ReferenceTripleAlignmentMetric", "Reference Alignment (f1)"),
     ("ReferenceTripleAlignmentMetricSoftE", "Reference Alignment (~ID) (f1)"),
@@ -570,6 +610,8 @@ def get_semantic_df(df):
 def get_reference_df(df):
     # only pipeline, stage, metric, normalized
     df = df[df["aspect"] == "reference"]
+    df = add_REI_precision(df)
+
     df = df[["pipeline", "stage", "metric", "normalized"]]
 
     metrics = [
@@ -579,6 +621,7 @@ def get_reference_df(df):
         # "ReferenceClassCoverageMetric",
         "SourceEntityCoverageMetric",
         "SourceEntityCoverageMetricSoft",
+        "REI_precision",
         "TE_ExpectedEntityLinkMetric",
         "TE_ExpectedRelationLinkMetric",
         "ER_EntityMatchMetric",

@@ -107,10 +107,10 @@ test-rdf-c:
 
 test-rdf-llm-schema-align:
 # sudo rm -rf out/rdf_llm_schema_align;
-	pytest -v src/moviekg/pipelines/test_inc_ssp.py -k rdf_llm_schema_align
+	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k rdf_llm_schema_align
 
 eval-rdf-llm-schema-align:
-    pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k rdf_llm_schema_align
+	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k rdf_llm_schema_align
 
 test-rdf-llm-full-integration:
 # sudo rm -rf out/rdf_llm_full_integration;
@@ -126,14 +126,14 @@ test-json-a:
 	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k json_a
 
 eval-json-a:
-	micromamba run -n $(EVN_NAME) pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k json_a
+	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k json_a
 
 test-json-b:
 # sudo rm -rf out/json_b;
 	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k json_b	
 
 eval-json-b:
-	micromamba run -n $(EVN_NAME) pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k json_b
+	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k json_b
 
 test-json-b2:
 # sudo rm -rf out/json_b;

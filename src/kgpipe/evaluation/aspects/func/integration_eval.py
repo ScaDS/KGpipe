@@ -28,6 +28,8 @@ class EntityCoverageResult:
     expected_entities_count: int
     found_entities_count: int
     overlapping_entities_count: int
+    possible_duplicates_count: int = 0
+    overlapping_entities_strict_count: int = 0
 
 @dataclass
 class TripleAlignmentResult:
@@ -173,6 +175,72 @@ def evaluate_source_entity_coverage_fuzzy(kg: KG, entity_dict_path: Path) -> Ent
         overlapping_entities_count=len(overlapping_entities)
     )
 
+
+def evaluate_source_entity_precision_fuzzy(kg: KG, entity_dict_path: Path) -> EntityCoverageResult:
+    """
+    checks expected & integrated source entity overlap using label embeddings
+    """
+    model = get_model()
+    entity_dict = load_entity_dict(entity_dict_path)
+    entity_labels = list(set([entity_dict[uri].entity_label for uri in entity_dict if entity_dict[uri].entity_label is not None]))
+    entity_labels_embeddings = model.encode(entity_labels, convert_to_numpy=True, show_progress_bar=False)
+
+    found_labels = []
+    overlapping_entities = set()
+    overlapping_entities_strict = set()
+
+    graph = kg.get_graph()
+    for s, p, label in graph.triples((None, RDFS.label, None)):
+        found_labels.append(str(label))
+
+    found_labels_embeddings = model.encode(found_labels, convert_to_numpy=True, show_progress_bar=False)
+
+    # matches = np.dot(found_labels_embeddings, entity_labels_embeddings.T)
+    # matches = [any(score >= SOFT_THRESHOLD for score in match) for match in matches]
+
+    # duplicates = 0
+    # already_matched_references = set()
+
+    # for idx, is_match in enumerate(matches):
+    #     if is_match:
+    #         overlapping_entities.add(found_labeles[idx])
+
+    sims = np.dot(found_labels_embeddings, entity_labels_embeddings.T)  # [n_found, n_ref]
+
+    duplicates = 0
+    already_matched_references = set()  # stores reference *labels* that have been claimed
+
+    for i in range(sims.shape[0]):
+        # All references above threshold for this found label
+        above = np.where(sims[i] >= SOFT_THRESHOLD)[0]
+        if above.size == 0:
+            continue  # no match for this found label
+
+        # Choose the best reference among those above threshold
+        best_j = above[np.argmax(sims[i, above])]
+        ref_label = entity_labels[best_j]
+
+        if ref_label in already_matched_references:
+            # This found label maps to a reference already claimed → count as duplicate
+            duplicates += 1
+        else:
+            # First claim of this reference → count as a unique overlap
+            already_matched_references.add(ref_label)
+            overlapping_entities_strict.add(found_labels[i])
+        overlapping_entities.add(found_labels[i])
+
+
+    if DEBUG:
+        missing_entities = set(entity_labels) - overlapping_entities
+        print(f"Missing entities: {missing_entities}")
+
+    return EntityCoverageResult(
+        expected_entities_count=len(entity_dict),
+        found_entities_count=len(found_labels),
+        overlapping_entities_count=len(overlapping_entities),
+        possible_duplicates_count=duplicates,
+        overlapping_entities_strict_count=len(overlapping_entities_strict)
+    )
 
 def evaluate_source_entity_coverage_with_paris(kg: KG, entity_dict_path: Path) -> float:
     return 0.0

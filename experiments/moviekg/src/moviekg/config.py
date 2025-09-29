@@ -73,7 +73,7 @@ llm_pipeline_types = {
 ssp = {
     "rdf": "rdf_a",
     "json": "json_b",
-    "text": "text_a"
+    "text": "text_b"
 }
 
 
