@@ -1,0 +1,48 @@
+@prefix : <http://example.org/library/> .
+@prefix ont: <http://example.org/ontology/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+:book1 a ont:Book ;
+    rdfs:label "book1" ;
+    ont:title "The Hobbit" ;
+    ont:author :authorTolkien ;
+    ont:isbn "978-0-261-10221-7" .
+
+:book2 a ont:Book ;
+    rdfs:label "book2" ;
+    ont:title "Pride and Prejudice" ;
+    ont:author :authorAusten ;
+    ont:isbn "978-0-19-953556-9" .
+
+:book3 a ont:Book ;
+    rdfs:label "book3" ;
+    ont:title "Nineteen Eighty-Four" ;
+    ont:author :authorOrwell ;
+    ont:isbn "978-0-452-28423-4" .
+
+:book4 a ont:Book ;
+    rdfs:label "book4" ;
+    ont:title "The Catcher in the Rye" ;
+    ont:author :authorSalinger ;
+    ont:isbn "978-0-316-76948-0" .
+
+:authorTolkien a ont:Author ;
+    rdfs:label "J.R.R. Tolkien" ;
+    ont:birthDate "1892-01-03"^^xsd:date ;
+    ont:birthPlace "Bloemfontein, Orange Free State" .
+
+:authorAusten a ont:Author ;
+    rdfs:label "Jane Austen" ;
+    ont:birthDate "1775-12-16"^^xsd:date ;
+    ont:birthPlace "Steventon, Hampshire, England" .
+
+:authorOrwell a ont:Author ;
+    rdfs:label "George Orwell" ;
+    ont:birthDate "1903-06-25"^^xsd:date ;
+    ont:birthPlace "Motihari, Bengal Presidency, British India" .
+
+:authorSalinger a ont:Author ;
+    rdfs:label "J.D. Salinger" ;
+    ont:birthDate "1919-01-01"^^xsd:date ;
+    ont:birthPlace "New York City, New York, USA" .

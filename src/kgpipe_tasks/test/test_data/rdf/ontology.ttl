@@ -1,0 +1,41 @@
+@prefix : <http://example.org/ontology/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+:Book a rdfs:Class ;
+    rdfs:label "Book"@en ;
+    rdfs:comment "A written or printed work consisting of pages bound together."@en .
+
+:Author a rdfs:Class ;
+    rdfs:label "Author"@en ;
+    rdfs:comment "A person who writes books or other literary works."@en .
+
+:author a owl:ObjectProperty ;
+    rdfs:domain :Book ;
+    rdfs:range :Author ;
+    rdfs:label "author"@en ;
+    rdfs:comment "The creator or writer of the book."@en .
+
+:title a owl:DatatypeProperty ;
+    rdfs:domain :Book ;
+    rdfs:range xsd:string ;
+    rdfs:label "title"@en .
+
+:isbn a owl:DatatypeProperty ;
+    rdfs:domain :Book ;
+    rdfs:range xsd:string ;
+    rdfs:label "ISBN"@en .
+
+:birthDate a owl:DatatypeProperty ;
+    rdfs:domain :Author ;
+    rdfs:range xsd:date ;
+    rdfs:label "birth date"@en ;
+    rdfs:comment "The date of birth of the author."@en .
+
+:birthPlace a owl:DatatypeProperty ;
+    rdfs:domain :Author ;
+    rdfs:range xsd:string ;
+    rdfs:label "birth place"@en ;
+    rdfs:comment "The birthplace of the author."@en .

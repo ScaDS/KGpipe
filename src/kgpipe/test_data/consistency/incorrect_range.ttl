@@ -1,0 +1,20 @@
+@prefix ex: <http://example.org#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ex:Manager a owl:Class .
+ex:Employee a owl:Class .
+ex:Invoice a owl:Class .
+
+ex:hasManager a owl:ObjectProperty ;
+    rdfs:domain ex:Employee ;
+    rdfs:range ex:Manager .
+
+ex:Alice a ex:Manager .
+ex:Bob a ex:Employee .
+ex:Invoice123 a ex:Invoice .
+
+ex:Bob ex:hasManager ex:Invoice123 .  # ❌ Invoice123 is not a Manager
+ex:Alice ex:hasManager ex:Alice .

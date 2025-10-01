@@ -1,0 +1,10 @@
+# MCP Configuration for Codex
+# This file configures the MCP server for use with Codex (MCP client)
+
+[mcp_servers.kgbench-mcp-server]
+command = "python"
+args = ["/home/marvin/project/code/kgflex/src/kgbench/mcp_server.py"]
+env = { "PYTHONPATH" = "/home/marvin/micromamba/envs/geneval/bin/python" }
+cwd = "/home/marvin/project/code/kgflex/src/kgbench"
+timeout = 30
+logLevel = "info"

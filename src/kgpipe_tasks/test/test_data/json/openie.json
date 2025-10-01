@@ -1,0 +1,3131 @@
+{
+  "docId": "The_Hobbit.txt",
+  "sentences": [
+    {
+      "index": 0,
+      "basicDependencies": [
+        {
+          "dep": "ROOT",
+          "governor": 0,
+          "governorGloss": "ROOT",
+          "dependent": 6,
+          "dependentGloss": "novel"
+        },
+        {
+          "dep": "det",
+          "governor": 2,
+          "governorGloss": "Hobbit",
+          "dependent": 1,
+          "dependentGloss": "The"
+        },
+        {
+          "dep": "nsubj",
+          "governor": 6,
+          "governorGloss": "novel",
+          "dependent": 2,
+          "dependentGloss": "Hobbit"
+        },
+        {
+          "dep": "cop",
+          "governor": 6,
+          "governorGloss": "novel",
+          "dependent": 3,
+          "dependentGloss": "is"
+        },
+        {
+          "dep": "det",
+          "governor": 6,
+          "governorGloss": "novel",
+          "dependent": 4,
+          "dependentGloss": "a"
+        },
+        {
+          "dep": "compound",
+          "governor": 6,
+          "governorGloss": "novel",
+          "dependent": 5,
+          "dependentGloss": "fantasy"
+        },
+        {
+          "dep": "case",
+          "governor": 9,
+          "governorGloss": "Tolkien",
+          "dependent": 7,
+          "dependentGloss": "by"
+        },
+        {
+          "dep": "compound",
+          "governor": 9,
+          "governorGloss": "Tolkien",
+          "dependent": 8,
+          "dependentGloss": "J.R.R."
+        },
+        {
+          "dep": "nmod",
+          "governor": 6,
+          "governorGloss": "novel",
+          "dependent": 9,
+          "dependentGloss": "Tolkien"
+        },
+        {
+          "dep": "punct",
+          "governor": 9,
+          "governorGloss": "Tolkien",
+          "dependent": 10,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "advmod",
+          "governor": 12,
+          "governorGloss": "published",
+          "dependent": 11,
+          "dependentGloss": "first"
+        },
+        {
+          "dep": "acl",
+          "governor": 9,
+          "governorGloss": "Tolkien",
+          "dependent": 12,
+          "dependentGloss": "published"
+        },
+        {
+          "dep": "case",
+          "governor": 14,
+          "governorGloss": "1937",
+          "dependent": 13,
+          "dependentGloss": "in"
+        },
+        {
+          "dep": "obl",
+          "governor": 12,
+          "governorGloss": "published",
+          "dependent": 14,
+          "dependentGloss": "1937"
+        },
+        {
+          "dep": "punct",
+          "governor": 6,
+          "governorGloss": "novel",
+          "dependent": 15,
+          "dependentGloss": "."
+        }
+      ],
+      "enhancedDependencies": [
+        {
+          "dep": "ROOT",
+          "governor": 0,
+          "governorGloss": "ROOT",
+          "dependent": 6,
+          "dependentGloss": "novel"
+        },
+        {
+          "dep": "det",
+          "governor": 2,
+          "governorGloss": "Hobbit",
+          "dependent": 1,
+          "dependentGloss": "The"
+        },
+        {
+          "dep": "nsubj",
+          "governor": 6,
+          "governorGloss": "novel",
+          "dependent": 2,
+          "dependentGloss": "Hobbit"
+        },
+        {
+          "dep": "cop",
+          "governor": 6,
+          "governorGloss": "novel",
+          "dependent": 3,
+          "dependentGloss": "is"
+        },
+        {
+          "dep": "det",
+          "governor": 6,
+          "governorGloss": "novel",
+          "dependent": 4,
+          "dependentGloss": "a"
+        },
+        {
+          "dep": "compound",
+          "governor": 6,
+          "governorGloss": "novel",
+          "dependent": 5,
+          "dependentGloss": "fantasy"
+        },
+        {
+          "dep": "case",
+          "governor": 9,
+          "governorGloss": "Tolkien",
+          "dependent": 7,
+          "dependentGloss": "by"
+        },
+        {
+          "dep": "compound",
+          "governor": 9,
+          "governorGloss": "Tolkien",
+          "dependent": 8,
+          "dependentGloss": "J.R.R."
+        },
+        {
+          "dep": "nmod:by",
+          "governor": 6,
+          "governorGloss": "novel",
+          "dependent": 9,
+          "dependentGloss": "Tolkien"
+        },
+        {
+          "dep": "punct",
+          "governor": 9,
+          "governorGloss": "Tolkien",
+          "dependent": 10,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "advmod",
+          "governor": 12,
+          "governorGloss": "published",
+          "dependent": 11,
+          "dependentGloss": "first"
+        },
+        {
+          "dep": "acl",
+          "governor": 9,
+          "governorGloss": "Tolkien",
+          "dependent": 12,
+          "dependentGloss": "published"
+        },
+        {
+          "dep": "case",
+          "governor": 14,
+          "governorGloss": "1937",
+          "dependent": 13,
+          "dependentGloss": "in"
+        },
+        {
+          "dep": "obl:in",
+          "governor": 12,
+          "governorGloss": "published",
+          "dependent": 14,
+          "dependentGloss": "1937"
+        },
+        {
+          "dep": "punct",
+          "governor": 6,
+          "governorGloss": "novel",
+          "dependent": 15,
+          "dependentGloss": "."
+        }
+      ],
+      "enhancedPlusPlusDependencies": [
+        {
+          "dep": "ROOT",
+          "governor": 0,
+          "governorGloss": "ROOT",
+          "dependent": 6,
+          "dependentGloss": "novel"
+        },
+        {
+          "dep": "det",
+          "governor": 2,
+          "governorGloss": "Hobbit",
+          "dependent": 1,
+          "dependentGloss": "The"
+        },
+        {
+          "dep": "nsubj",
+          "governor": 6,
+          "governorGloss": "novel",
+          "dependent": 2,
+          "dependentGloss": "Hobbit"
+        },
+        {
+          "dep": "cop",
+          "governor": 6,
+          "governorGloss": "novel",
+          "dependent": 3,
+          "dependentGloss": "is"
+        },
+        {
+          "dep": "det",
+          "governor": 6,
+          "governorGloss": "novel",
+          "dependent": 4,
+          "dependentGloss": "a"
+        },
+        {
+          "dep": "compound",
+          "governor": 6,
+          "governorGloss": "novel",
+          "dependent": 5,
+          "dependentGloss": "fantasy"
+        },
+        {
+          "dep": "case",
+          "governor": 9,
+          "governorGloss": "Tolkien",
+          "dependent": 7,
+          "dependentGloss": "by"
+        },
+        {
+          "dep": "compound",
+          "governor": 9,
+          "governorGloss": "Tolkien",
+          "dependent": 8,
+          "dependentGloss": "J.R.R."
+        },
+        {
+          "dep": "nmod:by",
+          "governor": 6,
+          "governorGloss": "novel",
+          "dependent": 9,
+          "dependentGloss": "Tolkien"
+        },
+        {
+          "dep": "punct",
+          "governor": 9,
+          "governorGloss": "Tolkien",
+          "dependent": 10,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "advmod",
+          "governor": 12,
+          "governorGloss": "published",
+          "dependent": 11,
+          "dependentGloss": "first"
+        },
+        {
+          "dep": "acl",
+          "governor": 9,
+          "governorGloss": "Tolkien",
+          "dependent": 12,
+          "dependentGloss": "published"
+        },
+        {
+          "dep": "case",
+          "governor": 14,
+          "governorGloss": "1937",
+          "dependent": 13,
+          "dependentGloss": "in"
+        },
+        {
+          "dep": "obl:in",
+          "governor": 12,
+          "governorGloss": "published",
+          "dependent": 14,
+          "dependentGloss": "1937"
+        },
+        {
+          "dep": "punct",
+          "governor": 6,
+          "governorGloss": "novel",
+          "dependent": 15,
+          "dependentGloss": "."
+        }
+      ],
+      "openie": [
+        {
+          "subject": "Hobbit",
+          "subjectSpan": [1, 2],
+          "relation": "is",
+          "relationSpan": [2, 3],
+          "object": "fantasy novel by J.R.R. Tolkien first published",
+          "objectSpan": [4, 12]
+        },
+        {
+          "subject": "Hobbit",
+          "subjectSpan": [1, 2],
+          "relation": "is",
+          "relationSpan": [2, 3],
+          "object": "fantasy novel by J.R.R. Tolkien published",
+          "objectSpan": [4, 12]
+        },
+        {
+          "subject": "Hobbit",
+          "subjectSpan": [1, 2],
+          "relation": "is",
+          "relationSpan": [2, 3],
+          "object": "fantasy novel by J.R.R. Tolkien first published in 1937",
+          "objectSpan": [4, 14]
+        },
+        {
+          "subject": "Hobbit",
+          "subjectSpan": [1, 2],
+          "relation": "is",
+          "relationSpan": [2, 3],
+          "object": "fantasy novel by J.R.R. Tolkien published in 1937",
+          "objectSpan": [4, 14]
+        },
+        {
+          "subject": "Hobbit",
+          "subjectSpan": [1, 2],
+          "relation": "is",
+          "relationSpan": [2, 3],
+          "object": "fantasy novel",
+          "objectSpan": [4, 6]
+        },
+        {
+          "subject": "Hobbit",
+          "subjectSpan": [1, 2],
+          "relation": "is",
+          "relationSpan": [2, 3],
+          "object": "fantasy novel by J.R.R. Tolkien",
+          "objectSpan": [4, 9]
+        }
+      ],
+      "entitymentions": [
+        {
+          "docTokenBegin": 7,
+          "docTokenEnd": 9,
+          "tokenBegin": 7,
+          "tokenEnd": 9,
+          "text": "J.R.R. Tolkien",
+          "characterOffsetBegin": 33,
+          "characterOffsetEnd": 47,
+          "ner": "ORGANIZATION",
+          "nerConfidences": {
+            "ORGANIZATION": 0.5282608757731
+          }
+        },
+        {
+          "docTokenBegin": 10,
+          "docTokenEnd": 11,
+          "tokenBegin": 10,
+          "tokenEnd": 11,
+          "text": "first",
+          "characterOffsetBegin": 49,
+          "characterOffsetEnd": 54,
+          "ner": "ORDINAL",
+          "normalizedNER": "1.0",
+          "nerConfidences": {
+            "ORDINAL": -1
+          }
+        },
+        {
+          "docTokenBegin": 13,
+          "docTokenEnd": 14,
+          "tokenBegin": 13,
+          "tokenEnd": 14,
+          "text": "1937",
+          "characterOffsetBegin": 68,
+          "characterOffsetEnd": 72,
+          "ner": "DATE",
+          "normalizedNER": "1937",
+          "nerConfidences": {
+            "DATE": 0.99861729179505
+          },
+          "timex": {
+            "tid": "t1",
+            "type": "DATE",
+            "value": "1937"
+          }
+        }
+      ],
+      "tokens": [
+        {
+          "index": 1,
+          "word": "The",
+          "originalText": "The",
+          "lemma": "the",
+          "characterOffsetBegin": 0,
+          "characterOffsetEnd": 3,
+          "pos": "DT",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": "",
+          "after": " "
+        },
+        {
+          "index": 2,
+          "word": "Hobbit",
+          "originalText": "Hobbit",
+          "lemma": "Hobbit",
+          "characterOffsetBegin": 4,
+          "characterOffsetEnd": 10,
+          "pos": "NNP",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 3,
+          "word": "is",
+          "originalText": "is",
+          "lemma": "be",
+          "characterOffsetBegin": 11,
+          "characterOffsetEnd": 13,
+          "pos": "VBZ",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 4,
+          "word": "a",
+          "originalText": "a",
+          "lemma": "a",
+          "characterOffsetBegin": 14,
+          "characterOffsetEnd": 15,
+          "pos": "DT",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 5,
+          "word": "fantasy",
+          "originalText": "fantasy",
+          "lemma": "fantasy",
+          "characterOffsetBegin": 16,
+          "characterOffsetEnd": 23,
+          "pos": "NN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 6,
+          "word": "novel",
+          "originalText": "novel",
+          "lemma": "novel",
+          "characterOffsetBegin": 24,
+          "characterOffsetEnd": 29,
+          "pos": "NN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 7,
+          "word": "by",
+          "originalText": "by",
+          "lemma": "by",
+          "characterOffsetBegin": 30,
+          "characterOffsetEnd": 32,
+          "pos": "IN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 8,
+          "word": "J.R.R.",
+          "originalText": "J.R.R.",
+          "lemma": "J.R.R.",
+          "characterOffsetBegin": 33,
+          "characterOffsetEnd": 39,
+          "pos": "NNP",
+          "ner": "ORGANIZATION",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 9,
+          "word": "Tolkien",
+          "originalText": "Tolkien",
+          "lemma": "Tolkien",
+          "characterOffsetBegin": 40,
+          "characterOffsetEnd": 47,
+          "pos": "NNP",
+          "ner": "ORGANIZATION",
+          "speaker": "PER0",
+          "before": " ",
+          "after": ""
+        },
+        {
+          "index": 10,
+          "word": ",",
+          "originalText": ",",
+          "lemma": ",",
+          "characterOffsetBegin": 47,
+          "characterOffsetEnd": 48,
+          "pos": ",",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": "",
+          "after": " "
+        },
+        {
+          "index": 11,
+          "word": "first",
+          "originalText": "first",
+          "lemma": "first",
+          "characterOffsetBegin": 49,
+          "characterOffsetEnd": 54,
+          "pos": "RB",
+          "ner": "ORDINAL",
+          "normalizedNER": "1.0",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 12,
+          "word": "published",
+          "originalText": "published",
+          "lemma": "publish",
+          "characterOffsetBegin": 55,
+          "characterOffsetEnd": 64,
+          "pos": "VBN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 13,
+          "word": "in",
+          "originalText": "in",
+          "lemma": "in",
+          "characterOffsetBegin": 65,
+          "characterOffsetEnd": 67,
+          "pos": "IN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 14,
+          "word": "1937",
+          "originalText": "1937",
+          "lemma": "1937",
+          "characterOffsetBegin": 68,
+          "characterOffsetEnd": 72,
+          "pos": "CD",
+          "ner": "DATE",
+          "normalizedNER": "1937",
+          "speaker": "PER0",
+          "before": " ",
+          "after": "",
+          "timex": {
+            "tid": "t1",
+            "type": "DATE",
+            "value": "1937"
+          }
+        },
+        {
+          "index": 15,
+          "word": ".",
+          "originalText": ".",
+          "lemma": ".",
+          "characterOffsetBegin": 72,
+          "characterOffsetEnd": 73,
+          "pos": ".",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": "",
+          "after": "\n"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "basicDependencies": [
+        {
+          "dep": "ROOT",
+          "governor": 0,
+          "governorGloss": "ROOT",
+          "dependent": 2,
+          "dependentGloss": "follows"
+        },
+        {
+          "dep": "nsubj",
+          "governor": 2,
+          "governorGloss": "follows",
+          "dependent": 1,
+          "dependentGloss": "It"
+        },
+        {
+          "dep": "det",
+          "governor": 4,
+          "governorGloss": "journey",
+          "dependent": 3,
+          "dependentGloss": "the"
+        },
+        {
+          "dep": "obj",
+          "governor": 2,
+          "governorGloss": "follows",
+          "dependent": 4,
+          "dependentGloss": "journey"
+        },
+        {
+          "dep": "case",
+          "governor": 7,
+          "governorGloss": "Baggins",
+          "dependent": 5,
+          "dependentGloss": "of"
+        },
+        {
+          "dep": "compound",
+          "governor": 7,
+          "governorGloss": "Baggins",
+          "dependent": 6,
+          "dependentGloss": "Bilbo"
+        },
+        {
+          "dep": "nmod",
+          "governor": 4,
+          "governorGloss": "journey",
+          "dependent": 7,
+          "dependentGloss": "Baggins"
+        },
+        {
+          "dep": "punct",
+          "governor": 7,
+          "governorGloss": "Baggins",
+          "dependent": 8,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "det",
+          "governor": 11,
+          "governorGloss": "hobbit",
+          "dependent": 9,
+          "dependentGloss": "a"
+        },
+        {
+          "dep": "amod",
+          "governor": 11,
+          "governorGloss": "hobbit",
+          "dependent": 10,
+          "dependentGloss": "reluctant"
+        },
+        {
+          "dep": "appos",
+          "governor": 7,
+          "governorGloss": "Baggins",
+          "dependent": 11,
+          "dependentGloss": "hobbit"
+        },
+        {
+          "dep": "nsubj:pass",
+          "governor": 14,
+          "governorGloss": "swept",
+          "dependent": 12,
+          "dependentGloss": "who"
+        },
+        {
+          "dep": "aux:pass",
+          "governor": 14,
+          "governorGloss": "swept",
+          "dependent": 13,
+          "dependentGloss": "is"
+        },
+        {
+          "dep": "acl:relcl",
+          "governor": 11,
+          "governorGloss": "hobbit",
+          "dependent": 14,
+          "dependentGloss": "swept"
+        },
+        {
+          "dep": "case",
+          "governor": 17,
+          "governorGloss": "adventure",
+          "dependent": 15,
+          "dependentGloss": "into"
+        },
+        {
+          "dep": "det",
+          "governor": 17,
+          "governorGloss": "adventure",
+          "dependent": 16,
+          "dependentGloss": "an"
+        },
+        {
+          "dep": "obl",
+          "governor": 14,
+          "governorGloss": "swept",
+          "dependent": 17,
+          "dependentGloss": "adventure"
+        },
+        {
+          "dep": "case",
+          "governor": 20,
+          "governorGloss": "group",
+          "dependent": 18,
+          "dependentGloss": "with"
+        },
+        {
+          "dep": "det",
+          "governor": 20,
+          "governorGloss": "group",
+          "dependent": 19,
+          "dependentGloss": "a"
+        },
+        {
+          "dep": "nmod",
+          "governor": 17,
+          "governorGloss": "adventure",
+          "dependent": 20,
+          "dependentGloss": "group"
+        },
+        {
+          "dep": "case",
+          "governor": 22,
+          "governorGloss": "dwarves",
+          "dependent": 21,
+          "dependentGloss": "of"
+        },
+        {
+          "dep": "nmod",
+          "governor": 20,
+          "governorGloss": "group",
+          "dependent": 22,
+          "dependentGloss": "dwarves"
+        },
+        {
+          "dep": "cc",
+          "governor": 26,
+          "governorGloss": "Gandalf",
+          "dependent": 23,
+          "dependentGloss": "and"
+        },
+        {
+          "dep": "det",
+          "governor": 26,
+          "governorGloss": "Gandalf",
+          "dependent": 24,
+          "dependentGloss": "the"
+        },
+        {
+          "dep": "compound",
+          "governor": 26,
+          "governorGloss": "Gandalf",
+          "dependent": 25,
+          "dependentGloss": "wizard"
+        },
+        {
+          "dep": "conj",
+          "governor": 20,
+          "governorGloss": "group",
+          "dependent": 26,
+          "dependentGloss": "Gandalf"
+        },
+        {
+          "dep": "mark",
+          "governor": 28,
+          "governorGloss": "reclaim",
+          "dependent": 27,
+          "dependentGloss": "to"
+        },
+        {
+          "dep": "acl",
+          "governor": 26,
+          "governorGloss": "Gandalf",
+          "dependent": 28,
+          "dependentGloss": "reclaim"
+        },
+        {
+          "dep": "nsubj",
+          "governor": 30,
+          "governorGloss": "guarded",
+          "dependent": 29,
+          "dependentGloss": "treasure"
+        },
+        {
+          "dep": "dep",
+          "governor": 28,
+          "governorGloss": "reclaim",
+          "dependent": 30,
+          "dependentGloss": "guarded"
+        },
+        {
+          "dep": "case",
+          "governor": 34,
+          "governorGloss": "Smaug",
+          "dependent": 31,
+          "dependentGloss": "by"
+        },
+        {
+          "dep": "det",
+          "governor": 34,
+          "governorGloss": "Smaug",
+          "dependent": 32,
+          "dependentGloss": "the"
+        },
+        {
+          "dep": "compound",
+          "governor": 34,
+          "governorGloss": "Smaug",
+          "dependent": 33,
+          "dependentGloss": "dragon"
+        },
+        {
+          "dep": "obl",
+          "governor": 30,
+          "governorGloss": "guarded",
+          "dependent": 34,
+          "dependentGloss": "Smaug"
+        },
+        {
+          "dep": "punct",
+          "governor": 2,
+          "governorGloss": "follows",
+          "dependent": 35,
+          "dependentGloss": "."
+        }
+      ],
+      "enhancedDependencies": [
+        {
+          "dep": "ROOT",
+          "governor": 0,
+          "governorGloss": "ROOT",
+          "dependent": 2,
+          "dependentGloss": "follows"
+        },
+        {
+          "dep": "nsubj",
+          "governor": 2,
+          "governorGloss": "follows",
+          "dependent": 1,
+          "dependentGloss": "It"
+        },
+        {
+          "dep": "det",
+          "governor": 4,
+          "governorGloss": "journey",
+          "dependent": 3,
+          "dependentGloss": "the"
+        },
+        {
+          "dep": "obj",
+          "governor": 2,
+          "governorGloss": "follows",
+          "dependent": 4,
+          "dependentGloss": "journey"
+        },
+        {
+          "dep": "case",
+          "governor": 7,
+          "governorGloss": "Baggins",
+          "dependent": 5,
+          "dependentGloss": "of"
+        },
+        {
+          "dep": "compound",
+          "governor": 7,
+          "governorGloss": "Baggins",
+          "dependent": 6,
+          "dependentGloss": "Bilbo"
+        },
+        {
+          "dep": "nmod:of",
+          "governor": 4,
+          "governorGloss": "journey",
+          "dependent": 7,
+          "dependentGloss": "Baggins"
+        },
+        {
+          "dep": "punct",
+          "governor": 7,
+          "governorGloss": "Baggins",
+          "dependent": 8,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "det",
+          "governor": 11,
+          "governorGloss": "hobbit",
+          "dependent": 9,
+          "dependentGloss": "a"
+        },
+        {
+          "dep": "amod",
+          "governor": 11,
+          "governorGloss": "hobbit",
+          "dependent": 10,
+          "dependentGloss": "reluctant"
+        },
+        {
+          "dep": "appos",
+          "governor": 7,
+          "governorGloss": "Baggins",
+          "dependent": 11,
+          "dependentGloss": "hobbit"
+        },
+        {
+          "dep": "nsubj:pass",
+          "governor": 14,
+          "governorGloss": "swept",
+          "dependent": 11,
+          "dependentGloss": "hobbit"
+        },
+        {
+          "dep": "ref",
+          "governor": 11,
+          "governorGloss": "hobbit",
+          "dependent": 12,
+          "dependentGloss": "who"
+        },
+        {
+          "dep": "aux:pass",
+          "governor": 14,
+          "governorGloss": "swept",
+          "dependent": 13,
+          "dependentGloss": "is"
+        },
+        {
+          "dep": "acl:relcl",
+          "governor": 11,
+          "governorGloss": "hobbit",
+          "dependent": 14,
+          "dependentGloss": "swept"
+        },
+        {
+          "dep": "case",
+          "governor": 17,
+          "governorGloss": "adventure",
+          "dependent": 15,
+          "dependentGloss": "into"
+        },
+        {
+          "dep": "det",
+          "governor": 17,
+          "governorGloss": "adventure",
+          "dependent": 16,
+          "dependentGloss": "an"
+        },
+        {
+          "dep": "obl:into",
+          "governor": 14,
+          "governorGloss": "swept",
+          "dependent": 17,
+          "dependentGloss": "adventure"
+        },
+        {
+          "dep": "case",
+          "governor": 20,
+          "governorGloss": "group",
+          "dependent": 18,
+          "dependentGloss": "with"
+        },
+        {
+          "dep": "det",
+          "governor": 20,
+          "governorGloss": "group",
+          "dependent": 19,
+          "dependentGloss": "a"
+        },
+        {
+          "dep": "nmod:with",
+          "governor": 17,
+          "governorGloss": "adventure",
+          "dependent": 20,
+          "dependentGloss": "group"
+        },
+        {
+          "dep": "case",
+          "governor": 22,
+          "governorGloss": "dwarves",
+          "dependent": 21,
+          "dependentGloss": "of"
+        },
+        {
+          "dep": "nmod:of",
+          "governor": 20,
+          "governorGloss": "group",
+          "dependent": 22,
+          "dependentGloss": "dwarves"
+        },
+        {
+          "dep": "cc",
+          "governor": 26,
+          "governorGloss": "Gandalf",
+          "dependent": 23,
+          "dependentGloss": "and"
+        },
+        {
+          "dep": "det",
+          "governor": 26,
+          "governorGloss": "Gandalf",
+          "dependent": 24,
+          "dependentGloss": "the"
+        },
+        {
+          "dep": "compound",
+          "governor": 26,
+          "governorGloss": "Gandalf",
+          "dependent": 25,
+          "dependentGloss": "wizard"
+        },
+        {
+          "dep": "nmod:with",
+          "governor": 17,
+          "governorGloss": "adventure",
+          "dependent": 26,
+          "dependentGloss": "Gandalf"
+        },
+        {
+          "dep": "conj:and",
+          "governor": 20,
+          "governorGloss": "group",
+          "dependent": 26,
+          "dependentGloss": "Gandalf"
+        },
+        {
+          "dep": "mark",
+          "governor": 28,
+          "governorGloss": "reclaim",
+          "dependent": 27,
+          "dependentGloss": "to"
+        },
+        {
+          "dep": "acl:to",
+          "governor": 26,
+          "governorGloss": "Gandalf",
+          "dependent": 28,
+          "dependentGloss": "reclaim"
+        },
+        {
+          "dep": "nsubj",
+          "governor": 30,
+          "governorGloss": "guarded",
+          "dependent": 29,
+          "dependentGloss": "treasure"
+        },
+        {
+          "dep": "dep",
+          "governor": 28,
+          "governorGloss": "reclaim",
+          "dependent": 30,
+          "dependentGloss": "guarded"
+        },
+        {
+          "dep": "case",
+          "governor": 34,
+          "governorGloss": "Smaug",
+          "dependent": 31,
+          "dependentGloss": "by"
+        },
+        {
+          "dep": "det",
+          "governor": 34,
+          "governorGloss": "Smaug",
+          "dependent": 32,
+          "dependentGloss": "the"
+        },
+        {
+          "dep": "compound",
+          "governor": 34,
+          "governorGloss": "Smaug",
+          "dependent": 33,
+          "dependentGloss": "dragon"
+        },
+        {
+          "dep": "obl:by",
+          "governor": 30,
+          "governorGloss": "guarded",
+          "dependent": 34,
+          "dependentGloss": "Smaug"
+        },
+        {
+          "dep": "punct",
+          "governor": 2,
+          "governorGloss": "follows",
+          "dependent": 35,
+          "dependentGloss": "."
+        }
+      ],
+      "enhancedPlusPlusDependencies": [
+        {
+          "dep": "ROOT",
+          "governor": 0,
+          "governorGloss": "ROOT",
+          "dependent": 2,
+          "dependentGloss": "follows"
+        },
+        {
+          "dep": "nsubj",
+          "governor": 2,
+          "governorGloss": "follows",
+          "dependent": 1,
+          "dependentGloss": "It"
+        },
+        {
+          "dep": "det",
+          "governor": 4,
+          "governorGloss": "journey",
+          "dependent": 3,
+          "dependentGloss": "the"
+        },
+        {
+          "dep": "obj",
+          "governor": 2,
+          "governorGloss": "follows",
+          "dependent": 4,
+          "dependentGloss": "journey"
+        },
+        {
+          "dep": "case",
+          "governor": 7,
+          "governorGloss": "Baggins",
+          "dependent": 5,
+          "dependentGloss": "of"
+        },
+        {
+          "dep": "compound",
+          "governor": 7,
+          "governorGloss": "Baggins",
+          "dependent": 6,
+          "dependentGloss": "Bilbo"
+        },
+        {
+          "dep": "nmod:of",
+          "governor": 4,
+          "governorGloss": "journey",
+          "dependent": 7,
+          "dependentGloss": "Baggins"
+        },
+        {
+          "dep": "punct",
+          "governor": 7,
+          "governorGloss": "Baggins",
+          "dependent": 8,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "det",
+          "governor": 11,
+          "governorGloss": "hobbit",
+          "dependent": 9,
+          "dependentGloss": "a"
+        },
+        {
+          "dep": "amod",
+          "governor": 11,
+          "governorGloss": "hobbit",
+          "dependent": 10,
+          "dependentGloss": "reluctant"
+        },
+        {
+          "dep": "appos",
+          "governor": 7,
+          "governorGloss": "Baggins",
+          "dependent": 11,
+          "dependentGloss": "hobbit"
+        },
+        {
+          "dep": "nsubj:pass",
+          "governor": 14,
+          "governorGloss": "swept",
+          "dependent": 11,
+          "dependentGloss": "hobbit"
+        },
+        {
+          "dep": "ref",
+          "governor": 11,
+          "governorGloss": "hobbit",
+          "dependent": 12,
+          "dependentGloss": "who"
+        },
+        {
+          "dep": "aux:pass",
+          "governor": 14,
+          "governorGloss": "swept",
+          "dependent": 13,
+          "dependentGloss": "is"
+        },
+        {
+          "dep": "acl:relcl",
+          "governor": 11,
+          "governorGloss": "hobbit",
+          "dependent": 14,
+          "dependentGloss": "swept"
+        },
+        {
+          "dep": "case",
+          "governor": 17,
+          "governorGloss": "adventure",
+          "dependent": 15,
+          "dependentGloss": "into"
+        },
+        {
+          "dep": "det",
+          "governor": 17,
+          "governorGloss": "adventure",
+          "dependent": 16,
+          "dependentGloss": "an"
+        },
+        {
+          "dep": "obl:into",
+          "governor": 14,
+          "governorGloss": "swept",
+          "dependent": 17,
+          "dependentGloss": "adventure"
+        },
+        {
+          "dep": "case",
+          "governor": 20,
+          "governorGloss": "group",
+          "dependent": 18,
+          "dependentGloss": "with"
+        },
+        {
+          "dep": "det",
+          "governor": 20,
+          "governorGloss": "group",
+          "dependent": 19,
+          "dependentGloss": "a"
+        },
+        {
+          "dep": "nmod:with",
+          "governor": 17,
+          "governorGloss": "adventure",
+          "dependent": 20,
+          "dependentGloss": "group"
+        },
+        {
+          "dep": "case",
+          "governor": 22,
+          "governorGloss": "dwarves",
+          "dependent": 21,
+          "dependentGloss": "of"
+        },
+        {
+          "dep": "nmod:of",
+          "governor": 20,
+          "governorGloss": "group",
+          "dependent": 22,
+          "dependentGloss": "dwarves"
+        },
+        {
+          "dep": "cc",
+          "governor": 26,
+          "governorGloss": "Gandalf",
+          "dependent": 23,
+          "dependentGloss": "and"
+        },
+        {
+          "dep": "det",
+          "governor": 26,
+          "governorGloss": "Gandalf",
+          "dependent": 24,
+          "dependentGloss": "the"
+        },
+        {
+          "dep": "compound",
+          "governor": 26,
+          "governorGloss": "Gandalf",
+          "dependent": 25,
+          "dependentGloss": "wizard"
+        },
+        {
+          "dep": "nmod:with",
+          "governor": 17,
+          "governorGloss": "adventure",
+          "dependent": 26,
+          "dependentGloss": "Gandalf"
+        },
+        {
+          "dep": "conj:and",
+          "governor": 20,
+          "governorGloss": "group",
+          "dependent": 26,
+          "dependentGloss": "Gandalf"
+        },
+        {
+          "dep": "mark",
+          "governor": 28,
+          "governorGloss": "reclaim",
+          "dependent": 27,
+          "dependentGloss": "to"
+        },
+        {
+          "dep": "acl:to",
+          "governor": 26,
+          "governorGloss": "Gandalf",
+          "dependent": 28,
+          "dependentGloss": "reclaim"
+        },
+        {
+          "dep": "nsubj",
+          "governor": 30,
+          "governorGloss": "guarded",
+          "dependent": 29,
+          "dependentGloss": "treasure"
+        },
+        {
+          "dep": "dep",
+          "governor": 28,
+          "governorGloss": "reclaim",
+          "dependent": 30,
+          "dependentGloss": "guarded"
+        },
+        {
+          "dep": "case",
+          "governor": 34,
+          "governorGloss": "Smaug",
+          "dependent": 31,
+          "dependentGloss": "by"
+        },
+        {
+          "dep": "det",
+          "governor": 34,
+          "governorGloss": "Smaug",
+          "dependent": 32,
+          "dependentGloss": "the"
+        },
+        {
+          "dep": "compound",
+          "governor": 34,
+          "governorGloss": "Smaug",
+          "dependent": 33,
+          "dependentGloss": "dragon"
+        },
+        {
+          "dep": "obl:by",
+          "governor": 30,
+          "governorGloss": "guarded",
+          "dependent": 34,
+          "dependentGloss": "Smaug"
+        },
+        {
+          "dep": "punct",
+          "governor": 2,
+          "governorGloss": "follows",
+          "dependent": 35,
+          "dependentGloss": "."
+        }
+      ],
+      "openie": [
+        {
+          "subject": "It",
+          "subjectSpan": [0, 1],
+          "relation": "follows",
+          "relationSpan": [1, 2],
+          "object": "journey",
+          "objectSpan": [3, 4]
+        },
+        {
+          "subject": "It",
+          "subjectSpan": [0, 1],
+          "relation": "follows",
+          "relationSpan": [1, 2],
+          "object": "journey of Bilbo Baggins",
+          "objectSpan": [3, 7]
+        },
+        {
+          "subject": "adventure",
+          "subjectSpan": [16, 17],
+          "relation": "is with",
+          "relationSpan": [17, 18],
+          "object": "group of dwarves",
+          "objectSpan": [19, 22]
+        }
+      ],
+      "entitymentions": [
+        {
+          "docTokenBegin": 20,
+          "docTokenEnd": 22,
+          "tokenBegin": 5,
+          "tokenEnd": 7,
+          "text": "Bilbo Baggins",
+          "characterOffsetBegin": 100,
+          "characterOffsetEnd": 113,
+          "ner": "PERSON",
+          "nerConfidences": {
+            "PERSON": 0.87895984440817
+          }
+        },
+        {
+          "docTokenBegin": 40,
+          "docTokenEnd": 41,
+          "tokenBegin": 25,
+          "tokenEnd": 26,
+          "text": "Gandalf",
+          "characterOffsetBegin": 204,
+          "characterOffsetEnd": 211,
+          "ner": "ORGANIZATION",
+          "nerConfidences": {
+            "ORGANIZATION": 0.53127883312565
+          }
+        }
+      ],
+      "tokens": [
+        {
+          "index": 1,
+          "word": "It",
+          "originalText": "It",
+          "lemma": "it",
+          "characterOffsetBegin": 74,
+          "characterOffsetEnd": 76,
+          "pos": "PRP",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": "\n",
+          "after": " "
+        },
+        {
+          "index": 2,
+          "word": "follows",
+          "originalText": "follows",
+          "lemma": "follow",
+          "characterOffsetBegin": 77,
+          "characterOffsetEnd": 84,
+          "pos": "VBZ",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 3,
+          "word": "the",
+          "originalText": "the",
+          "lemma": "the",
+          "characterOffsetBegin": 85,
+          "characterOffsetEnd": 88,
+          "pos": "DT",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 4,
+          "word": "journey",
+          "originalText": "journey",
+          "lemma": "journey",
+          "characterOffsetBegin": 89,
+          "characterOffsetEnd": 96,
+          "pos": "NN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 5,
+          "word": "of",
+          "originalText": "of",
+          "lemma": "of",
+          "characterOffsetBegin": 97,
+          "characterOffsetEnd": 99,
+          "pos": "IN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 6,
+          "word": "Bilbo",
+          "originalText": "Bilbo",
+          "lemma": "Bilbo",
+          "characterOffsetBegin": 100,
+          "characterOffsetEnd": 105,
+          "pos": "NNP",
+          "ner": "PERSON",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 7,
+          "word": "Baggins",
+          "originalText": "Baggins",
+          "lemma": "Baggins",
+          "characterOffsetBegin": 106,
+          "characterOffsetEnd": 113,
+          "pos": "NNP",
+          "ner": "PERSON",
+          "speaker": "PER0",
+          "before": " ",
+          "after": ""
+        },
+        {
+          "index": 8,
+          "word": ",",
+          "originalText": ",",
+          "lemma": ",",
+          "characterOffsetBegin": 113,
+          "characterOffsetEnd": 114,
+          "pos": ",",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": "",
+          "after": " "
+        },
+        {
+          "index": 9,
+          "word": "a",
+          "originalText": "a",
+          "lemma": "a",
+          "characterOffsetBegin": 115,
+          "characterOffsetEnd": 116,
+          "pos": "DT",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 10,
+          "word": "reluctant",
+          "originalText": "reluctant",
+          "lemma": "reluctant",
+          "characterOffsetBegin": 117,
+          "characterOffsetEnd": 126,
+          "pos": "JJ",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 11,
+          "word": "hobbit",
+          "originalText": "hobbit",
+          "lemma": "hobbit",
+          "characterOffsetBegin": 127,
+          "characterOffsetEnd": 133,
+          "pos": "NN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 12,
+          "word": "who",
+          "originalText": "who",
+          "lemma": "who",
+          "characterOffsetBegin": 134,
+          "characterOffsetEnd": 137,
+          "pos": "WP",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 13,
+          "word": "is",
+          "originalText": "is",
+          "lemma": "be",
+          "characterOffsetBegin": 138,
+          "characterOffsetEnd": 140,
+          "pos": "VBZ",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 14,
+          "word": "swept",
+          "originalText": "swept",
+          "lemma": "sweep",
+          "characterOffsetBegin": 141,
+          "characterOffsetEnd": 146,
+          "pos": "VBN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 15,
+          "word": "into",
+          "originalText": "into",
+          "lemma": "into",
+          "characterOffsetBegin": 147,
+          "characterOffsetEnd": 151,
+          "pos": "IN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 16,
+          "word": "an",
+          "originalText": "an",
+          "lemma": "a",
+          "characterOffsetBegin": 152,
+          "characterOffsetEnd": 154,
+          "pos": "DT",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 17,
+          "word": "adventure",
+          "originalText": "adventure",
+          "lemma": "adventure",
+          "characterOffsetBegin": 155,
+          "characterOffsetEnd": 164,
+          "pos": "NN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 18,
+          "word": "with",
+          "originalText": "with",
+          "lemma": "with",
+          "characterOffsetBegin": 165,
+          "characterOffsetEnd": 169,
+          "pos": "IN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 19,
+          "word": "a",
+          "originalText": "a",
+          "lemma": "a",
+          "characterOffsetBegin": 170,
+          "characterOffsetEnd": 171,
+          "pos": "DT",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 20,
+          "word": "group",
+          "originalText": "group",
+          "lemma": "group",
+          "characterOffsetBegin": 172,
+          "characterOffsetEnd": 177,
+          "pos": "NN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 21,
+          "word": "of",
+          "originalText": "of",
+          "lemma": "of",
+          "characterOffsetBegin": 178,
+          "characterOffsetEnd": 180,
+          "pos": "IN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 22,
+          "word": "dwarves",
+          "originalText": "dwarves",
+          "lemma": "dwarf",
+          "characterOffsetBegin": 181,
+          "characterOffsetEnd": 188,
+          "pos": "NNS",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 23,
+          "word": "and",
+          "originalText": "and",
+          "lemma": "and",
+          "characterOffsetBegin": 189,
+          "characterOffsetEnd": 192,
+          "pos": "CC",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 24,
+          "word": "the",
+          "originalText": "the",
+          "lemma": "the",
+          "characterOffsetBegin": 193,
+          "characterOffsetEnd": 196,
+          "pos": "DT",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 25,
+          "word": "wizard",
+          "originalText": "wizard",
+          "lemma": "wizard",
+          "characterOffsetBegin": 197,
+          "characterOffsetEnd": 203,
+          "pos": "NN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 26,
+          "word": "Gandalf",
+          "originalText": "Gandalf",
+          "lemma": "Gandalf",
+          "characterOffsetBegin": 204,
+          "characterOffsetEnd": 211,
+          "pos": "NNP",
+          "ner": "ORGANIZATION",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 27,
+          "word": "to",
+          "originalText": "to",
+          "lemma": "to",
+          "characterOffsetBegin": 212,
+          "characterOffsetEnd": 214,
+          "pos": "TO",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 28,
+          "word": "reclaim",
+          "originalText": "reclaim",
+          "lemma": "reclaim",
+          "characterOffsetBegin": 215,
+          "characterOffsetEnd": 222,
+          "pos": "VB",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 29,
+          "word": "treasure",
+          "originalText": "treasure",
+          "lemma": "treasure",
+          "characterOffsetBegin": 223,
+          "characterOffsetEnd": 231,
+          "pos": "NN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 30,
+          "word": "guarded",
+          "originalText": "guarded",
+          "lemma": "guard",
+          "characterOffsetBegin": 232,
+          "characterOffsetEnd": 239,
+          "pos": "VBN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 31,
+          "word": "by",
+          "originalText": "by",
+          "lemma": "by",
+          "characterOffsetBegin": 240,
+          "characterOffsetEnd": 242,
+          "pos": "IN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 32,
+          "word": "the",
+          "originalText": "the",
+          "lemma": "the",
+          "characterOffsetBegin": 243,
+          "characterOffsetEnd": 246,
+          "pos": "DT",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 33,
+          "word": "dragon",
+          "originalText": "dragon",
+          "lemma": "dragon",
+          "characterOffsetBegin": 247,
+          "characterOffsetEnd": 253,
+          "pos": "NN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 34,
+          "word": "Smaug",
+          "originalText": "Smaug",
+          "lemma": "smaug",
+          "characterOffsetBegin": 254,
+          "characterOffsetEnd": 259,
+          "pos": "NN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": ""
+        },
+        {
+          "index": 35,
+          "word": ".",
+          "originalText": ".",
+          "lemma": ".",
+          "characterOffsetBegin": 259,
+          "characterOffsetEnd": 260,
+          "pos": ".",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": "",
+          "after": " "
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "basicDependencies": [
+        {
+          "dep": "ROOT",
+          "governor": 0,
+          "governorGloss": "ROOT",
+          "dependent": 6,
+          "dependentGloss": "faces"
+        },
+        {
+          "dep": "case",
+          "governor": 3,
+          "governorGloss": "way",
+          "dependent": 1,
+          "dependentGloss": "Along"
+        },
+        {
+          "dep": "det",
+          "governor": 3,
+          "governorGloss": "way",
+          "dependent": 2,
+          "dependentGloss": "the"
+        },
+        {
+          "dep": "obl",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 3,
+          "dependentGloss": "way"
+        },
+        {
+          "dep": "punct",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 4,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "nsubj",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 5,
+          "dependentGloss": "Bilbo"
+        },
+        {
+          "dep": "obj",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 7,
+          "dependentGloss": "trolls"
+        },
+        {
+          "dep": "punct",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 8,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "conj",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 9,
+          "dependentGloss": "goblins"
+        },
+        {
+          "dep": "punct",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 10,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "conj",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 11,
+          "dependentGloss": "elves"
+        },
+        {
+          "dep": "punct",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 12,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "amod",
+          "governor": 14,
+          "governorGloss": "spiders",
+          "dependent": 13,
+          "dependentGloss": "giant"
+        },
+        {
+          "dep": "conj",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 14,
+          "dependentGloss": "spiders"
+        },
+        {
+          "dep": "punct",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 15,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "cc",
+          "governor": 17,
+          "governorGloss": "discovers",
+          "dependent": 16,
+          "dependentGloss": "and"
+        },
+        {
+          "dep": "conj",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 17,
+          "dependentGloss": "discovers"
+        },
+        {
+          "dep": "det",
+          "governor": 20,
+          "governorGloss": "ring",
+          "dependent": 18,
+          "dependentGloss": "a"
+        },
+        {
+          "dep": "amod",
+          "governor": 20,
+          "governorGloss": "ring",
+          "dependent": 19,
+          "dependentGloss": "mysterious"
+        },
+        {
+          "dep": "obj",
+          "governor": 17,
+          "governorGloss": "discovers",
+          "dependent": 20,
+          "dependentGloss": "ring"
+        },
+        {
+          "dep": "nsubj",
+          "governor": 23,
+          "governorGloss": "shape",
+          "dependent": 21,
+          "dependentGloss": "that"
+        },
+        {
+          "dep": "aux",
+          "governor": 23,
+          "governorGloss": "shape",
+          "dependent": 22,
+          "dependentGloss": "will"
+        },
+        {
+          "dep": "acl:relcl",
+          "governor": 20,
+          "governorGloss": "ring",
+          "dependent": 23,
+          "dependentGloss": "shape"
+        },
+        {
+          "dep": "det",
+          "governor": 25,
+          "governorGloss": "fate",
+          "dependent": 24,
+          "dependentGloss": "the"
+        },
+        {
+          "dep": "obj",
+          "governor": 23,
+          "governorGloss": "shape",
+          "dependent": 25,
+          "dependentGloss": "fate"
+        },
+        {
+          "dep": "case",
+          "governor": 29,
+          "governorGloss": "earth",
+          "dependent": 26,
+          "dependentGloss": "of"
+        },
+        {
+          "dep": "compound",
+          "governor": 29,
+          "governorGloss": "earth",
+          "dependent": 27,
+          "dependentGloss": "Middle"
+        },
+        {
+          "dep": "punct",
+          "governor": 29,
+          "governorGloss": "earth",
+          "dependent": 28,
+          "dependentGloss": "-"
+        },
+        {
+          "dep": "nmod",
+          "governor": 25,
+          "governorGloss": "fate",
+          "dependent": 29,
+          "dependentGloss": "earth"
+        },
+        {
+          "dep": "punct",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 30,
+          "dependentGloss": "."
+        }
+      ],
+      "enhancedDependencies": [
+        {
+          "dep": "ROOT",
+          "governor": 0,
+          "governorGloss": "ROOT",
+          "dependent": 6,
+          "dependentGloss": "faces"
+        },
+        {
+          "dep": "case",
+          "governor": 3,
+          "governorGloss": "way",
+          "dependent": 1,
+          "dependentGloss": "Along"
+        },
+        {
+          "dep": "det",
+          "governor": 3,
+          "governorGloss": "way",
+          "dependent": 2,
+          "dependentGloss": "the"
+        },
+        {
+          "dep": "obl:along",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 3,
+          "dependentGloss": "way"
+        },
+        {
+          "dep": "punct",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 4,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "nsubj",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 5,
+          "dependentGloss": "Bilbo"
+        },
+        {
+          "dep": "obj",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 7,
+          "dependentGloss": "trolls"
+        },
+        {
+          "dep": "punct",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 8,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "obj",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 9,
+          "dependentGloss": "goblins"
+        },
+        {
+          "dep": "conj:and",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 9,
+          "dependentGloss": "goblins"
+        },
+        {
+          "dep": "punct",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 10,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "obj",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 11,
+          "dependentGloss": "elves"
+        },
+        {
+          "dep": "conj:and",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 11,
+          "dependentGloss": "elves"
+        },
+        {
+          "dep": "punct",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 12,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "amod",
+          "governor": 14,
+          "governorGloss": "spiders",
+          "dependent": 13,
+          "dependentGloss": "giant"
+        },
+        {
+          "dep": "obj",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 14,
+          "dependentGloss": "spiders"
+        },
+        {
+          "dep": "conj:and",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 14,
+          "dependentGloss": "spiders"
+        },
+        {
+          "dep": "punct",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 15,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "cc",
+          "governor": 17,
+          "governorGloss": "discovers",
+          "dependent": 16,
+          "dependentGloss": "and"
+        },
+        {
+          "dep": "obj",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 17,
+          "dependentGloss": "discovers"
+        },
+        {
+          "dep": "conj:and",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 17,
+          "dependentGloss": "discovers"
+        },
+        {
+          "dep": "det",
+          "governor": 20,
+          "governorGloss": "ring",
+          "dependent": 18,
+          "dependentGloss": "a"
+        },
+        {
+          "dep": "amod",
+          "governor": 20,
+          "governorGloss": "ring",
+          "dependent": 19,
+          "dependentGloss": "mysterious"
+        },
+        {
+          "dep": "obj",
+          "governor": 17,
+          "governorGloss": "discovers",
+          "dependent": 20,
+          "dependentGloss": "ring"
+        },
+        {
+          "dep": "nsubj",
+          "governor": 23,
+          "governorGloss": "shape",
+          "dependent": 20,
+          "dependentGloss": "ring"
+        },
+        {
+          "dep": "ref",
+          "governor": 20,
+          "governorGloss": "ring",
+          "dependent": 21,
+          "dependentGloss": "that"
+        },
+        {
+          "dep": "aux",
+          "governor": 23,
+          "governorGloss": "shape",
+          "dependent": 22,
+          "dependentGloss": "will"
+        },
+        {
+          "dep": "acl:relcl",
+          "governor": 20,
+          "governorGloss": "ring",
+          "dependent": 23,
+          "dependentGloss": "shape"
+        },
+        {
+          "dep": "det",
+          "governor": 25,
+          "governorGloss": "fate",
+          "dependent": 24,
+          "dependentGloss": "the"
+        },
+        {
+          "dep": "obj",
+          "governor": 23,
+          "governorGloss": "shape",
+          "dependent": 25,
+          "dependentGloss": "fate"
+        },
+        {
+          "dep": "case",
+          "governor": 29,
+          "governorGloss": "earth",
+          "dependent": 26,
+          "dependentGloss": "of"
+        },
+        {
+          "dep": "compound",
+          "governor": 29,
+          "governorGloss": "earth",
+          "dependent": 27,
+          "dependentGloss": "Middle"
+        },
+        {
+          "dep": "punct",
+          "governor": 29,
+          "governorGloss": "earth",
+          "dependent": 28,
+          "dependentGloss": "-"
+        },
+        {
+          "dep": "nmod:of",
+          "governor": 25,
+          "governorGloss": "fate",
+          "dependent": 29,
+          "dependentGloss": "earth"
+        },
+        {
+          "dep": "punct",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 30,
+          "dependentGloss": "."
+        }
+      ],
+      "enhancedPlusPlusDependencies": [
+        {
+          "dep": "ROOT",
+          "governor": 0,
+          "governorGloss": "ROOT",
+          "dependent": 6,
+          "dependentGloss": "faces"
+        },
+        {
+          "dep": "case",
+          "governor": 3,
+          "governorGloss": "way",
+          "dependent": 1,
+          "dependentGloss": "Along"
+        },
+        {
+          "dep": "det",
+          "governor": 3,
+          "governorGloss": "way",
+          "dependent": 2,
+          "dependentGloss": "the"
+        },
+        {
+          "dep": "obl:along",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 3,
+          "dependentGloss": "way"
+        },
+        {
+          "dep": "punct",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 4,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "nsubj",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 5,
+          "dependentGloss": "Bilbo"
+        },
+        {
+          "dep": "obj",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 7,
+          "dependentGloss": "trolls"
+        },
+        {
+          "dep": "punct",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 8,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "obj",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 9,
+          "dependentGloss": "goblins"
+        },
+        {
+          "dep": "conj:and",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 9,
+          "dependentGloss": "goblins"
+        },
+        {
+          "dep": "punct",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 10,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "obj",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 11,
+          "dependentGloss": "elves"
+        },
+        {
+          "dep": "conj:and",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 11,
+          "dependentGloss": "elves"
+        },
+        {
+          "dep": "punct",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 12,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "amod",
+          "governor": 14,
+          "governorGloss": "spiders",
+          "dependent": 13,
+          "dependentGloss": "giant"
+        },
+        {
+          "dep": "obj",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 14,
+          "dependentGloss": "spiders"
+        },
+        {
+          "dep": "conj:and",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 14,
+          "dependentGloss": "spiders"
+        },
+        {
+          "dep": "punct",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 15,
+          "dependentGloss": ","
+        },
+        {
+          "dep": "cc",
+          "governor": 17,
+          "governorGloss": "discovers",
+          "dependent": 16,
+          "dependentGloss": "and"
+        },
+        {
+          "dep": "obj",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 17,
+          "dependentGloss": "discovers"
+        },
+        {
+          "dep": "conj:and",
+          "governor": 7,
+          "governorGloss": "trolls",
+          "dependent": 17,
+          "dependentGloss": "discovers"
+        },
+        {
+          "dep": "det",
+          "governor": 20,
+          "governorGloss": "ring",
+          "dependent": 18,
+          "dependentGloss": "a"
+        },
+        {
+          "dep": "amod",
+          "governor": 20,
+          "governorGloss": "ring",
+          "dependent": 19,
+          "dependentGloss": "mysterious"
+        },
+        {
+          "dep": "obj",
+          "governor": 17,
+          "governorGloss": "discovers",
+          "dependent": 20,
+          "dependentGloss": "ring"
+        },
+        {
+          "dep": "nsubj",
+          "governor": 23,
+          "governorGloss": "shape",
+          "dependent": 20,
+          "dependentGloss": "ring"
+        },
+        {
+          "dep": "ref",
+          "governor": 20,
+          "governorGloss": "ring",
+          "dependent": 21,
+          "dependentGloss": "that"
+        },
+        {
+          "dep": "aux",
+          "governor": 23,
+          "governorGloss": "shape",
+          "dependent": 22,
+          "dependentGloss": "will"
+        },
+        {
+          "dep": "acl:relcl",
+          "governor": 20,
+          "governorGloss": "ring",
+          "dependent": 23,
+          "dependentGloss": "shape"
+        },
+        {
+          "dep": "det",
+          "governor": 25,
+          "governorGloss": "fate",
+          "dependent": 24,
+          "dependentGloss": "the"
+        },
+        {
+          "dep": "obj",
+          "governor": 23,
+          "governorGloss": "shape",
+          "dependent": 25,
+          "dependentGloss": "fate"
+        },
+        {
+          "dep": "case",
+          "governor": 29,
+          "governorGloss": "earth",
+          "dependent": 26,
+          "dependentGloss": "of"
+        },
+        {
+          "dep": "compound",
+          "governor": 29,
+          "governorGloss": "earth",
+          "dependent": 27,
+          "dependentGloss": "Middle"
+        },
+        {
+          "dep": "punct",
+          "governor": 29,
+          "governorGloss": "earth",
+          "dependent": 28,
+          "dependentGloss": "-"
+        },
+        {
+          "dep": "nmod:of",
+          "governor": 25,
+          "governorGloss": "fate",
+          "dependent": 29,
+          "dependentGloss": "earth"
+        },
+        {
+          "dep": "punct",
+          "governor": 6,
+          "governorGloss": "faces",
+          "dependent": 30,
+          "dependentGloss": "."
+        }
+      ],
+      "openie": [
+        {
+          "subject": "Bilbo",
+          "subjectSpan": [4, 5],
+          "relation": "faces",
+          "relationSpan": [5, 6],
+          "object": "trolls",
+          "objectSpan": [6, 7]
+        },
+        {
+          "subject": "Bilbo",
+          "subjectSpan": [4, 5],
+          "relation": "faces trolls Along",
+          "relationSpan": [5, 7],
+          "object": "way",
+          "objectSpan": [2, 3]
+        },
+        {
+          "subject": "trolls",
+          "subjectSpan": [6, 7],
+          "relation": "Bilbo",
+          "relationSpan": [4, 5],
+          "object": "goblins",
+          "objectSpan": [8, 9]
+        },
+        {
+          "subject": "trolls",
+          "subjectSpan": [6, 7],
+          "relation": "Bilbo",
+          "relationSpan": [4, 5],
+          "object": "elves",
+          "objectSpan": [10, 11]
+        },
+        {
+          "subject": "trolls",
+          "subjectSpan": [6, 7],
+          "relation": "Bilbo",
+          "relationSpan": [4, 5],
+          "object": "giant spiders",
+          "objectSpan": [12, 14]
+        },
+        {
+          "subject": "trolls",
+          "subjectSpan": [6, 7],
+          "relation": "Bilbo",
+          "relationSpan": [4, 5],
+          "object": "spiders",
+          "objectSpan": [13, 14]
+        }
+      ],
+      "entitymentions": [
+        {
+          "docTokenBegin": 54,
+          "docTokenEnd": 55,
+          "tokenBegin": 4,
+          "tokenEnd": 5,
+          "text": "Bilbo",
+          "characterOffsetBegin": 276,
+          "characterOffsetEnd": 281,
+          "ner": "PERSON",
+          "nerConfidences": {
+            "PERSON": 0.99787495183044
+          }
+        },
+        {
+          "docTokenBegin": 76,
+          "docTokenEnd": 79,
+          "tokenBegin": 26,
+          "tokenEnd": 29,
+          "text": "Middle-earth",
+          "characterOffsetBegin": 387,
+          "characterOffsetEnd": 399,
+          "ner": "LOCATION",
+          "nerConfidences": {
+            "LOCATION": 0.89413733788296
+          }
+        }
+      ],
+      "tokens": [
+        {
+          "index": 1,
+          "word": "Along",
+          "originalText": "Along",
+          "lemma": "along",
+          "characterOffsetBegin": 261,
+          "characterOffsetEnd": 266,
+          "pos": "IN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 2,
+          "word": "the",
+          "originalText": "the",
+          "lemma": "the",
+          "characterOffsetBegin": 267,
+          "characterOffsetEnd": 270,
+          "pos": "DT",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 3,
+          "word": "way",
+          "originalText": "way",
+          "lemma": "way",
+          "characterOffsetBegin": 271,
+          "characterOffsetEnd": 274,
+          "pos": "NN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": ""
+        },
+        {
+          "index": 4,
+          "word": ",",
+          "originalText": ",",
+          "lemma": ",",
+          "characterOffsetBegin": 274,
+          "characterOffsetEnd": 275,
+          "pos": ",",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": "",
+          "after": " "
+        },
+        {
+          "index": 5,
+          "word": "Bilbo",
+          "originalText": "Bilbo",
+          "lemma": "Bilbo",
+          "characterOffsetBegin": 276,
+          "characterOffsetEnd": 281,
+          "pos": "NNP",
+          "ner": "PERSON",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 6,
+          "word": "faces",
+          "originalText": "faces",
+          "lemma": "face",
+          "characterOffsetBegin": 282,
+          "characterOffsetEnd": 287,
+          "pos": "VBZ",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 7,
+          "word": "trolls",
+          "originalText": "trolls",
+          "lemma": "troll",
+          "characterOffsetBegin": 288,
+          "characterOffsetEnd": 294,
+          "pos": "NNS",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": ""
+        },
+        {
+          "index": 8,
+          "word": ",",
+          "originalText": ",",
+          "lemma": ",",
+          "characterOffsetBegin": 294,
+          "characterOffsetEnd": 295,
+          "pos": ",",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": "",
+          "after": " "
+        },
+        {
+          "index": 9,
+          "word": "goblins",
+          "originalText": "goblins",
+          "lemma": "goblin",
+          "characterOffsetBegin": 296,
+          "characterOffsetEnd": 303,
+          "pos": "NNS",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": ""
+        },
+        {
+          "index": 10,
+          "word": ",",
+          "originalText": ",",
+          "lemma": ",",
+          "characterOffsetBegin": 303,
+          "characterOffsetEnd": 304,
+          "pos": ",",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": "",
+          "after": " "
+        },
+        {
+          "index": 11,
+          "word": "elves",
+          "originalText": "elves",
+          "lemma": "elf",
+          "characterOffsetBegin": 305,
+          "characterOffsetEnd": 310,
+          "pos": "NNS",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": ""
+        },
+        {
+          "index": 12,
+          "word": ",",
+          "originalText": ",",
+          "lemma": ",",
+          "characterOffsetBegin": 310,
+          "characterOffsetEnd": 311,
+          "pos": ",",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": "",
+          "after": " "
+        },
+        {
+          "index": 13,
+          "word": "giant",
+          "originalText": "giant",
+          "lemma": "giant",
+          "characterOffsetBegin": 312,
+          "characterOffsetEnd": 317,
+          "pos": "JJ",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 14,
+          "word": "spiders",
+          "originalText": "spiders",
+          "lemma": "spider",
+          "characterOffsetBegin": 318,
+          "characterOffsetEnd": 325,
+          "pos": "NNS",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": ""
+        },
+        {
+          "index": 15,
+          "word": ",",
+          "originalText": ",",
+          "lemma": ",",
+          "characterOffsetBegin": 325,
+          "characterOffsetEnd": 326,
+          "pos": ",",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": "",
+          "after": " "
+        },
+        {
+          "index": 16,
+          "word": "and",
+          "originalText": "and",
+          "lemma": "and",
+          "characterOffsetBegin": 327,
+          "characterOffsetEnd": 330,
+          "pos": "CC",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 17,
+          "word": "discovers",
+          "originalText": "discovers",
+          "lemma": "discover",
+          "characterOffsetBegin": 331,
+          "characterOffsetEnd": 340,
+          "pos": "VBZ",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 18,
+          "word": "a",
+          "originalText": "a",
+          "lemma": "a",
+          "characterOffsetBegin": 341,
+          "characterOffsetEnd": 342,
+          "pos": "DT",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 19,
+          "word": "mysterious",
+          "originalText": "mysterious",
+          "lemma": "mysterious",
+          "characterOffsetBegin": 343,
+          "characterOffsetEnd": 353,
+          "pos": "JJ",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 20,
+          "word": "ring",
+          "originalText": "ring",
+          "lemma": "ring",
+          "characterOffsetBegin": 354,
+          "characterOffsetEnd": 358,
+          "pos": "NN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 21,
+          "word": "that",
+          "originalText": "that",
+          "lemma": "that",
+          "characterOffsetBegin": 359,
+          "characterOffsetEnd": 363,
+          "pos": "WDT",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 22,
+          "word": "will",
+          "originalText": "will",
+          "lemma": "will",
+          "characterOffsetBegin": 364,
+          "characterOffsetEnd": 368,
+          "pos": "MD",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 23,
+          "word": "shape",
+          "originalText": "shape",
+          "lemma": "shape",
+          "characterOffsetBegin": 369,
+          "characterOffsetEnd": 374,
+          "pos": "VB",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 24,
+          "word": "the",
+          "originalText": "the",
+          "lemma": "the",
+          "characterOffsetBegin": 375,
+          "characterOffsetEnd": 378,
+          "pos": "DT",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 25,
+          "word": "fate",
+          "originalText": "fate",
+          "lemma": "fate",
+          "characterOffsetBegin": 379,
+          "characterOffsetEnd": 383,
+          "pos": "NN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 26,
+          "word": "of",
+          "originalText": "of",
+          "lemma": "of",
+          "characterOffsetBegin": 384,
+          "characterOffsetEnd": 386,
+          "pos": "IN",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": " ",
+          "after": " "
+        },
+        {
+          "index": 27,
+          "word": "Middle",
+          "originalText": "Middle",
+          "lemma": "Middle",
+          "characterOffsetBegin": 387,
+          "characterOffsetEnd": 393,
+          "pos": "NNP",
+          "ner": "LOCATION",
+          "speaker": "PER0",
+          "before": " ",
+          "after": ""
+        },
+        {
+          "index": 28,
+          "word": "-",
+          "originalText": "-",
+          "lemma": "-",
+          "characterOffsetBegin": 393,
+          "characterOffsetEnd": 394,
+          "pos": "HYPH",
+          "ner": "LOCATION",
+          "speaker": "PER0",
+          "before": "",
+          "after": ""
+        },
+        {
+          "index": 29,
+          "word": "earth",
+          "originalText": "earth",
+          "lemma": "earth",
+          "characterOffsetBegin": 394,
+          "characterOffsetEnd": 399,
+          "pos": "NN",
+          "ner": "LOCATION",
+          "speaker": "PER0",
+          "before": "",
+          "after": ""
+        },
+        {
+          "index": 30,
+          "word": ".",
+          "originalText": ".",
+          "lemma": ".",
+          "characterOffsetBegin": 399,
+          "characterOffsetEnd": 400,
+          "pos": ".",
+          "ner": "O",
+          "speaker": "PER0",
+          "before": "",
+          "after": ""
+        }
+      ]
+    }
+  ],
+  "corefs": {
+    "15": [
+      {
+        "id": 8,
+        "text": "Bilbo Baggins , a reluctant hobbit who is swept into an adventure with a group of dwarves and the wizard Gandalf to reclaim treasure guarded by the dragon Smaug",
+        "type": "PROPER",
+        "number": "SINGULAR",
+        "gender": "MALE",
+        "animacy": "ANIMATE",
+        "startIndex": 6,
+        "endIndex": 35,
+        "headIndex": 7,
+        "sentNum": 2,
+        "position": [
+          2,
+          4
+        ],
+        "isRepresentativeMention": true
+      },
+      {
+        "id": 15,
+        "text": "Bilbo",
+        "type": "PROPER",
+        "number": "SINGULAR",
+        "gender": "MALE",
+        "animacy": "ANIMATE",
+        "startIndex": 5,
+        "endIndex": 6,
+        "headIndex": 5,
+        "sentNum": 3,
+        "position": [
+          3,
+          1
+        ],
+        "isRepresentativeMention": false
+      }
+    ]
+  }
+}

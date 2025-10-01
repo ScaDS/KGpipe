@@ -1,0 +1,42 @@
+{
+    "blocks":[],
+    "clusters": [],
+    "matches": [
+        {
+            "id_1" : "http://kg.org/rdf_1/resourceA",
+            "id_2" : "http://kg.org/seed/resourceA",
+            "score" : 0.6,
+            "id_type" : "entity"
+        },
+        {
+            "id_1" : "http://kg.org/rdf_1/resourceB",
+            "id_2" : "http://kg.org/seed/resourceC",
+            "score" : 0.4,
+            "id_type" : "entity"
+        },
+        {
+            "id_1" : "http://kg.org/rdf_1/resourceD",
+            "id_2" : "http://kg.org/seed/resourceE",
+            "score" : 0.7,
+            "id_type" : "entity"
+        },
+        {
+            "id_1" : "http://kg.org/rdf_1/relationA",
+            "id_2" : "http://kg.org/seed/relationA",
+            "score" : 0.6,
+            "id_type" : "relation"
+        },
+        {
+            "id_1" : "http://kg.org/rdf_1/relationB",
+            "id_2" : "http://kg.org/seed/relationC",
+            "score" : 0.4,
+            "id_type" : "relation"
+        },
+        {
+            "id_1" : "http://kg.org/rdf_1/relationD",
+            "id_2" : "http://kg.org/seed/relationE",
+            "score" : 0.7,
+            "id_type" : "relation"
+        }
+    ]
+}

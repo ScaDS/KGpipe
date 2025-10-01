@@ -1,0 +1,25 @@
+[
+    {
+        "task_name": "example_task",
+        "inputs": [
+          {
+            "path": "input1",
+            "format": "text"
+          },
+          {
+            "path": "input2",
+            "format": "number"
+          }
+        ],
+        "outputs": [
+          {
+            "path": "output1",
+            "format": "text"
+          }
+        ],
+        "start_ts": 1692201234.567,
+        "duration": 2.345,
+        "status": "success",
+        "error": null
+      }
+]

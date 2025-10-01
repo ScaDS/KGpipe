@@ -1,0 +1,18 @@
+@prefix ex: <http://example.org#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+ex:Animal a owl:Class .
+ex:Building a owl:Class .
+ex:Person a owl:Class .
+
+ex:hasPet a owl:ObjectProperty ;
+    rdfs:domain ex:Person ;
+    rdfs:range ex:Animal .
+
+ex:Fido a ex:Animal .
+ex:House101 a ex:Building .
+
+ex:House101 ex:hasPet ex:Fido .  # ❌ House101 is not a Person

@@ -1,0 +1,4 @@
+source_id,target_id
+http://example.org/bookstore/itemA,http://example.org/library/book1
+http://example.org/bookstore/itemB,http://example.org/library/book2
+http://example.org/bookstore/itemC,http://example.org/library/book3

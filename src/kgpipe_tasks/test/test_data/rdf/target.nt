@@ -1,0 +1,43 @@
+<http://example.org/library/book1> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/ontology/Book> .
+<http://example.org/library/book1> <http://www.w3.org/2000/01/rdf-schema#label> "book1" .
+<http://example.org/library/book1> <http://example.org/ontology/title> "The Hobbit" .
+<http://example.org/library/book1> <http://example.org/ontology/author> <http://example.org/library/authorTolkien> .
+<http://example.org/library/book1> <http://example.org/ontology/isbn> "978-0-261-10221-7" .
+
+<http://example.org/library/book2> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/ontology/Book> .
+<http://example.org/library/book2> <http://www.w3.org/2000/01/rdf-schema#label> "book2" .
+<http://example.org/library/book2> <http://example.org/ontology/title> "Pride and Prejudice" .
+<http://example.org/library/book2> <http://example.org/ontology/author> <http://example.org/library/authorAusten> .
+<http://example.org/library/book2> <http://example.org/ontology/isbn> "978-0-19-953556-9" .
+
+<http://example.org/library/book3> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/ontology/Book> .
+<http://example.org/library/book3> <http://www.w3.org/2000/01/rdf-schema#label> "book3" .
+<http://example.org/library/book3> <http://example.org/ontology/title> "Nineteen Eighty-Four" .
+<http://example.org/library/book3> <http://example.org/ontology/author> <http://example.org/library/authorOrwell> .
+<http://example.org/library/book3> <http://example.org/ontology/isbn> "978-0-452-28423-4" .
+
+<http://example.org/library/book4> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/ontology/Book> .
+<http://example.org/library/book4> <http://www.w3.org/2000/01/rdf-schema#label> "book4" .
+<http://example.org/library/book4> <http://example.org/ontology/title> "The Catcher in the Rye" .
+<http://example.org/library/book4> <http://example.org/ontology/author> <http://example.org/library/authorSalinger> .
+<http://example.org/library/book4> <http://example.org/ontology/isbn> "978-0-316-76948-0" .
+
+<http://example.org/library/authorTolkien> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/ontology/Author> .
+<http://example.org/library/authorTolkien> <http://www.w3.org/2000/01/rdf-schema#label> "J.R.R. Tolkien" .
+<http://example.org/library/authorTolkien> <http://example.org/ontology/birthDate> "1892-01-03"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://example.org/library/authorTolkien> <http://example.org/ontology/birthPlace> "Bloemfontein, Orange Free State" .
+
+<http://example.org/library/authorAusten> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/ontology/Author> .
+<http://example.org/library/authorAusten> <http://www.w3.org/2000/01/rdf-schema#label> "Jane Austen" .
+<http://example.org/library/authorAusten> <http://example.org/ontology/birthDate> "1775-12-16"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://example.org/library/authorAusten> <http://example.org/ontology/birthPlace> "Steventon, Hampshire, England" .
+
+<http://example.org/library/authorOrwell> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/ontology/Author> .
+<http://example.org/library/authorOrwell> <http://www.w3.org/2000/01/rdf-schema#label> "George Orwell" .
+<http://example.org/library/authorOrwell> <http://example.org/ontology/birthDate> "1903-06-25"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://example.org/library/authorOrwell> <http://example.org/ontology/birthPlace> "Motihari, Bengal Presidency, British India" .
+
+<http://example.org/library/authorSalinger> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/ontology/Author> .
+<http://example.org/library/authorSalinger> <http://www.w3.org/2000/01/rdf-schema#label> "J.D. Salinger" .
+<http://example.org/library/authorSalinger> <http://example.org/ontology/birthDate> "1919-01-01"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://example.org/library/authorSalinger> <http://example.org/ontology/birthPlace> "New York City, New York, USA" .

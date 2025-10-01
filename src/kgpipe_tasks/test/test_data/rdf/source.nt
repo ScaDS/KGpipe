@@ -1,0 +1,43 @@
+<http://example.org/bookstore/itemA> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/bookstore/Book> .
+<http://example.org/bookstore/itemA> <http://www.w3.org/2000/01/rdf-schema#label> "itemA" .
+<http://example.org/bookstore/itemA> <http://example.org/bookstore/bookTitle> "The Hobbit, or There and Back Again" .
+<http://example.org/bookstore/itemA> <http://example.org/bookstore/bookAuthor> <http://example.org/bookstore/authorTolkien> .
+<http://example.org/bookstore/itemA> <http://example.org/bookstore/isbn13> "9780261102217" .
+
+<http://example.org/bookstore/itemB> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/bookstore/Book> .
+<http://example.org/bookstore/itemB> <http://www.w3.org/2000/01/rdf-schema#label> "itemB" .
+<http://example.org/bookstore/itemB> <http://example.org/bookstore/bookTitle> "Pride & Prejudice" .
+<http://example.org/bookstore/itemB> <http://example.org/bookstore/bookAuthor> <http://example.org/bookstore/authorAusten> .
+<http://example.org/bookstore/itemB> <http://example.org/bookstore/isbn13> "9780199535569" .
+
+<http://example.org/bookstore/itemC> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/bookstore/Book> .
+<http://example.org/bookstore/itemC> <http://www.w3.org/2000/01/rdf-schema#label> "itemC" .
+<http://example.org/bookstore/itemC> <http://example.org/bookstore/bookTitle> "1984" .
+<http://example.org/bookstore/itemC> <http://example.org/bookstore/bookAuthor> <http://example.org/bookstore/authorOrwell> .
+<http://example.org/bookstore/itemC> <http://example.org/bookstore/isbn13> "9780452284234" .
+
+<http://example.org/bookstore/itemD> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/bookstore/Book> .
+<http://example.org/bookstore/itemD> <http://www.w3.org/2000/01/rdf-schema#label> "itemD" .
+<http://example.org/bookstore/itemD> <http://example.org/bookstore/bookTitle> "To Kill a Mockingbird" .
+<http://example.org/bookstore/itemD> <http://example.org/bookstore/bookAuthor> <http://example.org/bookstore/authorLee> .
+<http://example.org/bookstore/itemD> <http://example.org/bookstore/isbn13> "9780061120084" .
+
+<http://example.org/bookstore/authorTolkien> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/bookstore/Author> .
+<http://example.org/bookstore/authorTolkien> <http://www.w3.org/2000/01/rdf-schema#label> "J. R. R. Tolkien" .
+<http://example.org/bookstore/authorTolkien> <http://example.org/bookstore/birthDate> "1892-01-03"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://example.org/bookstore/authorTolkien> <http://example.org/bookstore/birthPlace> "Bloemfontein, Orange Free State" .
+
+<http://example.org/bookstore/authorAusten> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/bookstore/Author> .
+<http://example.org/bookstore/authorAusten> <http://www.w3.org/2000/01/rdf-schema#label> "Jane Austen" .
+<http://example.org/bookstore/authorAusten> <http://example.org/bookstore/birthDate> "1775-12-16"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://example.org/bookstore/authorAusten> <http://example.org/bookstore/birthPlace> "Steventon, Hampshire, England" .
+
+<http://example.org/bookstore/authorOrwell> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/bookstore/Author> .
+<http://example.org/bookstore/authorOrwell> <http://www.w3.org/2000/01/rdf-schema#label> "George Orwell" .
+<http://example.org/bookstore/authorOrwell> <http://example.org/bookstore/birthDate> "1903-06-25"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://example.org/bookstore/authorOrwell> <http://example.org/bookstore/birthPlace> "Motihari, Bengal Presidency, British India" .
+
+<http://example.org/bookstore/authorLee> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/bookstore/Author> .
+<http://example.org/bookstore/authorLee> <http://www.w3.org/2000/01/rdf-schema#label> "Harper Lee" .
+<http://example.org/bookstore/authorLee> <http://example.org/bookstore/birthDate> "1926-04-28"^^<http://www.w3.org/2001/XMLSchema#date> .
+<http://example.org/bookstore/authorLee> <http://example.org/bookstore/birthPlace> "Monroeville, Alabama, USA" .

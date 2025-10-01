@@ -1,0 +1,709 @@
+@prefix this: <http://kg.org/ontology/> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix wd: <http://www.wikidata.org/entity/> .
+@prefix wdt: <http://www.wikidata.org/prop/direct/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> . 
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix dbp: <http://dbpedia.org/property/> .
+@prefix dbo: <http://dbpedia.org/ontology/> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+this: a owl:Ontology .
+
+# -----
+# Movie
+# -----
+
+# seed:41d93198fab7c9527cfd87448cd25f42 a owl:Class ; # same as Q11424
+this:Film a owl:Class, rdfs:Class ;
+    owl:equivalentClass dbo:Film, wd:Q11424 ;
+    owl:subClassOf owl:Thing ;
+    rdfs:label "Movie" ;
+    rdfs:comment "An enttiy about a video, film, movie" ;
+    skos:altLabel 
+    "film" ,
+    "sequence of images that give the impression of movement, stored on film stock" ,
+    "movie" ,
+    "motion picture" ,
+    "cinematic work" ,
+    "films" ,
+    "flick" ,
+    "moving picture" ,
+    "cinema" ,
+    "motion pictures" .
+
+# dbo:genre, wdt:P136
+# seed:2b23517923a2f1fb4663cd2633428e74 a owl:DatatypeProperty ;
+this:genre a owl:DatatypeProperty, rdfs:Property ;
+    owl:equivalentProperty dbo:genre, wdt:P136 ;
+    rdfs:label "genre" ;
+    rdfs:comment "creative work's genre or an artist's field of work (P101). Use main subject (P921) to relate creative works to their topic" ;
+    rdfs:domain this:Film ; # seed:41d93198fab7c9527cfd87448cd25f42 ;
+    rdfs:range xsd:string ;
+    skos:altLabel 
+    "music genre" ,
+    "film genre" ,
+    "artistic genre" ,
+    "literary genre" ,
+    "kind of music" ,
+    "type of film" ,
+    "genre of music" ,
+    "type of music" ,
+    "art style" ,
+    "genres" ,
+    "genre of literature" .
+
+# dbo:writer, wdt:P58
+# seed:705dd76875688552c4b99b53b3c69509 a owl:ObjectProperty ;
+this:writer a owl:ObjectProperty, rdfs:Property ;
+    owl:equivalentProperty dbo:writer, wdt:P58 ;
+    rdfs:label "screenwriter" ;
+    rdfs:comment "person(s) who wrote the script for subject item" ;
+    rdfs:domain this:Film ; # seed:41d93198fab7c9527cfd87448cd25f42 ;
+    rdfs:range this:Person ; # seed:b69c4d90f0dc6a7ebff84f638c5dfe34 ;
+    skos:altLabel 
+    "scriptwriter" ,
+    "screenplay by",
+    "teleplay by" ,
+    "writer (of screenplays)" ,
+    "film script by" ,
+    "written by" ,
+    "writing credits" ,
+    "scenarist" ,
+    "story by" ,
+    "video game writer" ,
+    "game writer" .
+
+# dbo:starring, wdt:P161
+# seed:ce2de04c7ef3ff4b40e4287da8d40477 a owl:ObjectProperty ;
+this:starring a owl:ObjectProperty, rdfs:Property ; 
+    owl:equivalentProperty dbo:starring, wdt:P161 ;
+    rdfs:label "cast member" ;
+    rdfs:comment "actor in the subject production [use 'character role' (P453) and/or 'name of the character role' (P4633) as qualifiers] [use 'voice actor' (P725) for voice-only role] - [use 'recorded participant' (P11108) for non-fiction productions]" ;
+    rdfs:domain this:Film ; # seed:41d93198fab7c9527cfd87448cd25f42 ;
+    rdfs:range this:Person ; # seed:b69c4d90f0dc6a7ebff84f638c5dfe34 ;
+    skos:altLabel
+    "starring" ,
+    "film starring" ,
+    "actor" ,
+    "actress" ,
+    "contestant of a play" ,
+    "starring (film/play)" ,
+    "feat." .
+
+# dbo:productionCompany, wdt:P272
+# seed:aaf0ba9dd9d83c24d672471d651ad302 a owl:ObjectProperty ;
+this:production a owl:ObjectProperty, rdfs:Property ;
+    owl:equivalentProperty dbo:productionCompany, wdt:P272 ;
+    rdfs:label "production company" ;
+    rdfs:comment "company that produced this film, audio or performing arts work" ;
+    rdfs:domain this:Film ; # seed:41d93198fab7c9527cfd87448cd25f42 ;
+    rdfs:range this:Company ; # seed:13c5d2c147718594d5291c5378b10792 ;
+    skos:altLabel
+    "film studio" ,
+    "studio" ,
+    "motion picture studio" ,
+    "movie studio" ,
+    "production house" ,
+    "theatre company" ,
+    "theater company" ,
+    "theatrical troupe" ,
+    "ballet company" ,
+    "broadcasting company" ,
+    "produced by (company)" ,
+    "producer (company)" .
+
+# dbo:director, wdt:P57
+# seed:1900a4439ff01ce692413bcc8606c840 a owl:ObjectProperty ;
+this:director a owl:ObjectProperty, rdfs:Property ;
+    owl:equivalentProperty dbo:director, wdt:P57 ;
+    rdfs:label "director" ;
+    rdfs:comment "director(s) of film, TV-series, stageplay, video game or similar" ;
+    rdfs:domain this:Film ; # seed:41d93198fab7c9527cfd87448cd25f42 ;
+    rdfs:range this:Person ; # seed:b69c4d90f0dc6a7ebff84f638c5dfe34 ;
+    skos:altLabel
+    "directed by" ,
+    "film director" ,
+    "movie director" ,
+    "game director" .
+
+# dbo:distributor, wdt:P750
+# seed:a1674e15a73c5b4f58fc9915077717e7 a owl:ObjectProperty ;
+this:distribution a owl:ObjectProperty, rdfs:Property ;
+    owl:equivalentProperty dbo:distributor, wdt:P750 ;
+    rdfs:label "distributed by" ;
+    rdfs:comment "distributor of a creative work; distributor for a record label; news agency; film distributor" ;
+    rdfs:domain this:Film ; # seed:41d93198fab7c9527cfd87448cd25f42 ;
+    rdfs:range this:Company ; # seed:13c5d2c147718594d5291c5378b10792 ;
+    skos:altLabel
+    "distributor" .
+
+# dbo:runtime, wdt:P2047
+# seed:8ee9cec54d071c19907c50a37579a1a8 a owl:DatatypeProperty ;
+this:runtime a owl:DatatypeProperty, rdfs:Property , owl:FunctionalProperty ;
+    owl:equivalentProperty dbo:runtime, wdt:P2047 ;
+    rdfs:label "duration" ;
+    rdfs:comment "length of time of an event or process" ;
+    rdfs:domain this:Film ; # seed:41d93198fab7c9527cfd87448cd25f42 ;
+    rdfs:range xsd:double ;
+    skos:altLabel
+    "length" ,
+    "run time" ,
+    "runtime" ,
+    "running time" ,
+    "period" ,
+    "era" ,
+    "length of time" ,
+    "interval" ,
+    "timespan" ,
+    "time span" ,
+    "time interval" ,
+    "running length" ,
+    "cook time" ,
+    "time length" .
+
+# dbo:producer, wdt:P1431
+# seed:c724e53251b0b1508bf84e8cd0bc91c4 a owl:ObjectProperty ;
+this:producer a owl:ObjectProperty, rdfs:Property ;
+    owl:equivalentProperty dbo:producer, wdt:P1431 ;
+    rdfs:label "executive producer" ;
+    rdfs:comment "executive producer of a movie, TV show, or other piece of media or entertainment" ;
+    rdfs:domain this:Film ; # seed:41d93198fab7c9527cfd87448cd25f42 ;
+    rdfs:range this:Person ; # seed:b69c4d90f0dc6a7ebff84f638c5dfe34 ;
+    skos:altLabel
+    "executive producers" .
+
+# dbp:budget, wdt:P2130
+# seed:81ea818a0cbebe2aa48651ae7b1c5440 a owl:DatatypeProperty, owl:FunctionalProperty ;
+this:budget a owl:DatatypeProperty, rdfs:Property, owl:FunctionalProperty;
+    owl:equivalentProperty dbo:budget, wdt:P2130 ;
+    rdfs:label "capital cost" ;
+    rdfs:comment "amount of money spent on building or producing an object" ;
+    rdfs:domain this:Film ; # seed:41d93198fab7c9527cfd87448cd25f42 ;
+    rdfs:range xsd:double ;
+    skos:altLabel
+    "unit cost" ,
+    "budget" ,
+    "cost" .
+
+# dbo:gross, wdt:P2142
+# seed:c1adf2d63783ebe545183117b9805080 a owl:DatatypeProperty ;
+this:gross a owl:DatatypeProperty, rdfs:Property, owl:FunctionalProperty ;
+    owl:equivalentProperty dbo:gross, wdt:P2142 ;
+    rdfs:label "box office" ;
+    rdfs:comment "box office takings accumulated by a film" ;
+    rdfs:domain this:Film ; # seed:41d93198fab7c9527cfd87448cd25f42 ;
+    rdfs:range xsd:double ; 
+    skos:altLabel
+    "earnings" .
+
+# dbo:cinematography, wdt:P344
+# seed:496264d0b73eb675cf643ef48a57c132 a owl:ObjectProperty ;
+this:cinematographer a owl:ObjectProperty, rdfs:Property ;
+    owl:equivalentProperty dbo:cinematography, wdt:P344 ;
+    rdfs:label "director of photography" ;
+    rdfs:comment "person responsible for the framing, lighting, and filtration of the subject work" ;
+    rdfs:domain this:Film ; # seed:41d93198fab7c9527cfd87448cd25f42 ;
+    rdfs:range this:Person ; # seed:b69c4d90f0dc6a7ebff84f638c5dfe34 ;
+    skos:altLabel
+    "cinematographer" ,
+    "DOP" .
+
+# dbo:musicComposer, wdt:P86
+#seed:3aa0db20d155331e067131aa709eb3ae a owl:ObjectProperty ;
+this:composer a owl:ObjectProperty, rdfs:Property ;
+    owl:equivalentProperty dbo:musicComposer, wdt:P86 ;
+    rdfs:label "composer" ;
+    rdfs:comment "person(s) who wrote the music [for lyricist, use 'lyrics by' (P676)]" ;
+    rdfs:domain this:Film ; # seed:41d93198fab7c9527cfd87448cd25f42 ;
+    rdfs:range this:Person ; # seed:b69c4d90f0dc6a7ebff84f638c5dfe34 ;
+    skos:altLabel
+    "songwriter" ,
+    "composed by" ,
+    "musical score by" ,
+    "music by" ,
+    "written by" ,
+    "film score by" .
+
+# dbo:title, wdt:P1476
+# seed:1e8f5395446240b15d0b90dec5c09ae3 a owl:DatatypeProperty ;
+# this:filmTitle a owl:DatatypeProperty ;
+#     owl:equivalentProperty dbo:title, wdt:P1476 ;
+#     rdfs:label "title" ;
+#     rdfs:comment "published title of a film" ;
+#     # rdfs:comment "published name of a work, such as a newspaper article, a literary work, piece of music, a website, or a performance work" ;
+#     rdfs:domain this:Film ; # seed:41d93198fab7c9527cfd87448cd25f42 ;
+#     rdfs:range rdf:string, xsd:langString ;
+#     skos:altLabel
+#     "original title" ,
+#     "known as" ,
+#     "full title" ,
+#     "headline" ,
+#     "titled" ,
+#     "name" .
+#     # "page name" ,
+#     # "article title" .
+
+# ------
+# Person
+# ------ 
+
+# dbo:Person, wd:Q5
+# seed:b69c4d90f0dc6a7ebff84f638c5dfe34 a owl:Class ; # same as Q5
+this:Person a owl:Class, rdfs:Class ;
+    owl:equivalentClass  dbo:Person, wd:Q5 ;
+    owl:subClassOf owl:Thing ;
+    rdfs:label "Person" ;
+    rdfs:comment "A human real person" ;
+    skos:altLabel
+    "human" ,
+    "any member of Homo sapiens, unique extant species of the genus Homo" ,
+    "human being" ,
+    "people" ,
+    "individual human" ,
+    "nonfictional human" ,
+    "non-fictional human" ,
+    "person" ,
+    "individual Homo sapiens" ,
+    "modern human" .
+
+# dbo:birthDate, wdt:P569
+# seed:c212d09402af52a91979f9e91b5287af a owl:DatatypeProperty ;
+this:birthDate a owl:DatatypeProperty, rdfs:Property, owl:FunctionalProperty ;
+    owl:equivalentProperty dbo:birthDate, wdt:P569 ;
+    rdfs:label "date of birth" ;
+    rdfs:comment "date on which the subject was born" ;
+    rdfs:domain this:Person ; # seed:b69c4d90f0dc6a7ebff84f638c5dfe34 ;
+    rdfs:range xsd:date ;
+    skos:altLabel
+    "birthdate",
+    "birthyear",
+    "born",
+    "born on",
+    "year of birth",
+    "DOB",
+    "birth date",
+    "birth year".
+
+# dbo:deathDate, wdt:P570
+# seed:70462c46e50ebda4948aed2d7936549f a owl:DatatypeProperty ;
+this:deathDate a owl:DatatypeProperty, rdfs:Property, owl:FunctionalProperty ;
+    owl:equivalentProperty dbo:deathDate, wdt:P570 ;
+    rdfs:label "date of death" ;
+    rdfs:comment "date on which the subject died" ;
+    rdfs:domain this:Person ; # seed:b69c4d90f0dc6a7ebff84f638c5dfe34 ;
+    rdfs:range xsd:date ;
+    skos:altLabel
+    "date of the end",
+    "died on",
+    "DOD",
+    "year of death",
+    "dead",
+    "deathdate",
+    "death",
+    "died",
+    "death date".
+
+# dbo:birthPlace, wdt:P19  owl:FunctionalProperty
+# seed:1fb7e6b33ba34ef75f45457fdf6450a8 a owl:DatatypeProperty ;
+this:birthPlace a owl:DatatypeProperty, rdfs:Property ;
+    owl:equivalentProperty dbo:birthPlace, wdt:P19 ;
+    rdfs:label "place of birth" ;
+    rdfs:comment "most specific known birth location of a person, animal or fictional character" ;
+    rdfs:domain this:Person ; # seed:b69c4d90f0dc6a7ebff84f638c5dfe34 ;
+    rdfs:range xsd:string ;
+    skos:altLabel
+    "birthplace",
+    "born in",
+    "POB",
+    "birth place",
+    "location born",
+    "born at",
+    "birth location",
+    "location of birth",
+    "birth city",
+    "born".
+
+# dbo:deathPlace, wdt:P20 owl:FunctionalProperty 
+# seed:295aaccd3716b46acd55c8ef4544fbf5 a owl:DatatypeProperty ;
+this:deathPlace a owl:DatatypeProperty, rdfs:Property;
+    owl:equivalentProperty dbo:deathPlace, wdt:P20 ;
+    rdfs:label "place of death" ;
+    rdfs:comment "most specific known (e.g. city instead of country, or hospital instead of city) death location of a person, animal or fictional character" ;
+    rdfs:domain this:Person ; # seed:b69c4d90f0dc6a7ebff84f638c5dfe34 ;
+    rdfs:range xsd:string ;
+    skos:altLabel
+    "deathplace",
+    "died in",
+    "death place",
+    "POD",
+    "location of death",
+    "death location",
+    "killed in",
+    "died".
+
+# dbo:occupation, wdt:P106 owl:FunctionalProperty 
+# seed:ffb1c40b39a7add5dc34e07ad5e55ff6 a owl:DatatypeProperty ;
+this:occupation a owl:DatatypeProperty, rdfs:Property;
+    owl:equivalentProperty dbo:occupation, wdt:P106 ;
+    rdfs:label "occupation" ;
+    rdfs:comment "occupation of a person; see also 'field of work' (Property:P101), 'position held' (Property:P39)" ;
+    rdfs:domain this:Person ; # seed:b69c4d90f0dc6a7ebff84f638c5dfe34 ;
+    rdfs:range xsd:string ;
+    skos:altLabel
+    "profession",
+    "job",
+    "work",
+    "career",
+    "employment",
+    "craft",
+    "employ",
+    "vocation",
+    "avocation".
+
+# dbo:nationality, wdt:P27
+# seed:aa9198ade90fe336e25cea7a1a1ab56e a owl:DatatypeProperty ;
+this:nationality a owl:DatatypeProperty, rdfs:Property ;
+    owl:equivalentProperty dbo:nationality, wdt:P27 ;
+    rdfs:label "country of citizenship" ;
+    rdfs:comment "the object is a country that recognizes the subject as its citizen" ;
+    rdfs:domain this:Person ; # seed:b69c4d90f0dc6a7ebff84f638c5dfe34 ;
+    rdfs:range xsd:string ;
+    skos:altLabel
+    "subject of (country)",
+    "citizenship",
+    "citizen of",
+    "nation of citizenship",
+    "national of",
+    "(legal) nationality",
+    "nationality",
+    "country",
+    "nation".
+
+# dbo:spouse, wdt:P26
+# seed:e638d195dac58fadb5b057bc2df0774c a owl:ObjectProperty ;
+# this:spouse a owl:ObjectProperty, rdfs:Property ;
+#     owl:equivalentProperty dbo:spouse, wdt:P26 ;
+#     rdfs:label "spouse" ;
+#     rdfs:comment "the subject has the object as their spouse (husband, wife, partner, etc.). Use 'unmarried partner' (P451) for non-married companions" ;
+#     rdfs:domain this:Person ; # seed:b69c4d90f0dc6a7ebff84f638c5dfe34 ;
+#     rdfs:range this:Person ; # seed:b69c4d90f0dc6a7ebff84f638c5dfe34 ;
+#     skos:altLabel
+#     "wife",
+#     "married to",
+#     "marry",
+#     "marriage partner",
+#     "married",
+#     "wedded to",
+#     "wed",
+#     "wives",
+#     "husbands",
+#     "spouses",
+#     "husband",
+#     "marital partner",
+#     "married partner",
+#     "common-law spouse",
+#     "common-law wife",
+#     "common-law husband",
+#     "partner".
+
+# dbo:child, wdt:P40
+# seed:7f5afc76624a7d6e59dbbd45892923b1 a owl:ObjectProperty ;
+# this:child a owl:ObjectProperty, rdfs:Property ;
+#     owl:equivalentProperty dbo:child, wdt:P40 ;
+#     rdfs:label "child" ;
+#     rdfs:comment "subject has object as child. Do not use for stepchildren—use 'relative' (P1038), qualified with 'type of kinship' (P1039)" ;
+#     rdfs:domain this:Person ; # seed:b69c4d90f0dc6a7ebff84f638c5dfe34 ;
+#     rdfs:range this:Person ; # seed:b69c4d90f0dc6a7ebff84f638c5dfe34 ;
+#     skos:altLabel
+#     "son",
+#     "daughter",
+#     "kid",
+#     "has child",
+#     "children",
+#     "sons",
+#     "daughters",
+#     "kids",
+#     "has children",
+#     "has son",
+#     "has sons",
+#     "has daughter",
+#     "has daughters",
+#     "has kid",
+#     "has kids",
+#     "offspring",
+#     "progeny",
+#     "issue",
+#     "parent of",
+#     "descendants",
+#     "father of",
+#     "mother of".
+
+# dbo:award, wdt:P166
+# seed:b0de938e9fe73ff8b5dd12bbd77768e6 a owl:DatatypeProperty ;
+# this:award a owl:DatatypeProperty, rdfs:Property ;
+#     owl:equivalentProperty dbo:award, wdt:P166 ;
+#     rdfs:label "award received" ;
+#     rdfs:comment "award or recognition received by a person, organization or creative work" ;
+#     rdfs:domain this:Person ; # seed:b69c4d90f0dc6a7ebff84f638c5dfe34 ;
+#     rdfs:range xsd:string ;
+#     skos:altLabel
+#     "prize received",
+#     "awards",
+#     "honorary title",
+#     "recognition title",
+#     "award",
+#     "honours",
+#     "honors",
+#     "medals",
+#     "awarded",
+#     "award won",
+#     "prize awarded",
+#     "awards received",
+#     "win",
+#     "winner of",
+#     "received award".
+
+# ----------------------
+# Company / Organisation
+# ----------------------
+
+# seed:13c5d2c147718594d5291c5378b10792, dbo:Organisation, wd:Q891723?
+# seed:13c5d2c147718594d5291c5378b10792 a owl:Class ; # Q891723?
+this:Company a owl:Class, rdfs:Class ;
+    owl:equivalentClass dbo:Organisation, wd:Q891723 ;
+    owl:subClassOf owl:Thing ;
+    rdfs:label "Company" ;
+    rdfs:comment "company that offers its securities for sale to the general public" ;
+    skos:altLabel
+    "publicly traded company" ,
+    "publicly held company" ,
+    "listed company" ,
+    "publicly listed company" ,
+    "public corporation" .
+
+# foaf:name, wdt:P1448
+# foaf:name a owl:DatatypeProperty ;
+# this:companyName a owl:DatatypeProperty, rdfs:Property ;
+#     owl:equivalentProperty foaf:name, wdt:P1448 ;
+#     rdfs:label "official name" ;
+#     rdfs:comment "official name of the subject in its official language(s)" ;
+#     rdfs:domain this:Company ; # seed:13c5d2c147718594d5291c5378b10792 ; # TODO
+#     rdfs:range xsd:string ;
+#     skos:altLabel
+#     "long name",
+#     "complete title",
+#     "legal name",
+#     "official title",
+#     "name",
+#     "registered name",
+#     "full title",
+#     "be named",
+#     "long title".
+
+# dbo:foundingDate, wdt:P571
+# seed:dc3051b1058d7105d2aa9c9b5cab12b7 a owl:DatatypeProperty ;
+this:foundingDate a owl:DatatypeProperty, rdfs:Property ;
+    owl:equivalentProperty dbo:foundingDate, wdt:P571 ;
+    rdfs:label "inception" ;
+    rdfs:comment "time when an entity begins to exist; for date of official opening use P1619" ;
+    rdfs:domain this:Company ; # seed:13c5d2c147718594d5291c5378b10792 ;
+    rdfs:range xsd:date ;
+    skos:altLabel 
+    "instantiation date",
+    "date founded",
+    "date created",
+    "foundation",
+    "created",
+    "date of foundation",
+    "date of creation",
+    "established",
+    "establishment date",
+    "foundation date",
+    "creation date",
+    "date of establishment",
+    "founding date",
+    "date of founding",
+    "date formed",
+    "formation date",
+    "formed on date",
+    "founded on date",
+    "established on date",
+    "created on date",
+    "commencement date",
+    "date commenced",
+    "commenced on date",
+    "date of commencement",
+    "time of foundation or creation",
+    "date of foundation or creation",
+    "written on date",
+    "time of inception",
+    "year founded",
+    "year created",
+    "year written",
+    "year commenced",
+    "year established",
+    "date constructed",
+    "construction date",
+    "constructed",
+    "formation",
+    "dedication date",
+    "formed in",
+    "formed at",
+    "introduced",
+    "introduction",
+    "completed",
+    "first issue",
+    "built",
+    "foundation / creation date",
+    "founded",
+    "founded in",
+    "broke ground",
+    "initiated",
+    "composed",
+    "date of origin",
+    "created on",
+    "founded on",
+    "formed on",
+    "made on",
+    "created in",
+    "date of inception",
+    "inception date",
+    "year of inception",
+    "day of inception",
+    "year of creation",
+    "creation year",
+    "first created on",
+    "date first created",
+    "made in year",
+    "created in year",
+    "formed in year",
+    "launch date",
+    "installated in",
+    "installated on",
+    "installation date",
+    "start date",
+    "starting date",
+    "initial release date".
+
+# dbo:products, wdt:P1056 
+# seed:6c02199ac74e729e98f1ae942164e8f1 a owl:DatatypeProperty ;
+this:product a owl:DatatypeProperty, rdfs:Property ;
+    owl:equivalentProperty dbo:products, wdt:P1056 ;
+    rdfs:label "product or material produced" ;
+    rdfs:comment "material or product produced by an organization, industry, facility, or process" ;
+    rdfs:domain this:Company ; # seed:13c5d2c147718594d5291c5378b10792 ;
+    rdfs:range xsd:string ;
+    skos:altLabel
+    "material produced",
+    "produces",
+    "manufactures",
+    "makes",
+    "has product",
+    "product",
+    "maker of",
+    "manufacturer of",
+    "producer of",
+    "results in",
+    "creates",
+    "output",
+    "products",
+    "work produced",
+    "commodity",
+    "they make",
+    "produced product",
+    "produced material",
+    "service provided",
+    "provides service",
+    "product or service provided",
+    "product, material, or service " .
+
+# dbo:industry, wdt:P452
+# seed:ab2f2aea8f24e9dff0ae264da6edbc8c a owl:DatatypeProperty ;
+this:industry a owl:DatatypeProperty, rdfs:Property ;
+    owl:equivalentProperty dbo:industry, wdt:P452 ;
+    rdfs:label "industry" ;
+    rdfs:comment "specific industry of company or organization" ;
+    rdfs:domain this:Company ; # seed:13c5d2c147718594d5291c5378b10792 ;
+    rdfs:range xsd:string ;
+    skos:altLabel
+    "field of action",
+    "field of exercise",
+    "sector",
+    "branch",
+    "economic branch".
+
+# dbo:revenue, wdt:P2139
+# seed:812100860c739d2bb3b28c725dc4a5ef a owl:DatatypeProperty ;
+this:revenue a owl:DatatypeProperty, rdfs:Property ;
+    owl:equivalentProperty dbo:revenue, wdt:P2139 ;
+    rdfs:label "total revenue" ;
+    rdfs:comment "income gained by an organization during a given time frame. Not to be confused with fiscal revenue" ;
+    rdfs:domain this:Company ; # seed:13c5d2c147718594d5291c5378b10792 ;
+    rdfs:range xsd:double ;
+    skos:altLabel
+    "revenue",
+    "turnover",
+    "income",
+    "sales",
+    "gross revenue",
+    "net sales".
+
+# dbo:numberOfEmployees, wdt:P1128
+# seed:f5be8d4e210303bc34c31a4ebb8d46c1 a owl:DatatypeProperty ;
+this:employees a owl:DatatypeProperty, rdfs:Property ;
+    owl:equivalentProperty dbo:numberOfEmployees, wdt:P1128 ;
+    rdfs:label "employees" ;
+    rdfs:comment "total number of employees of a company at a given 'point in time' (P585). Most recent data would generally have preferred rank; data for previous years normal rank (not deprecated rank). Add data for recent years, don't overwrite" ;
+    rdfs:domain this:Company ; # seed:13c5d2c147718594d5291c5378b10792 ;
+    rdfs:range xsd:nonNegativeInteger ;
+    skos:altLabel
+    "number of employees",
+    "workers",
+    "personnel",
+    "employee count",
+    "number of staff",
+    "staff".
+
+# dbo:headquarter, wdt:P159
+# seed:6b9b484a6298dd11c06ad4036b601a55 a owl:DatatypeProperty ;
+this:headquarter a owl:DatatypeProperty, rdfs:Property ;
+    owl:equivalentProperty dbo:headquarter, wdt:P159 ;
+    rdfs:label "headquarters location" ;
+    rdfs:comment "city or town where an organization's headquarters is or has been situated. Use P276 qualifier for specific building" ;
+    rdfs:domain this:Company ; # seed:13c5d2c147718594d5291c5378b10792 ;
+    rdfs:range xsd:string ;
+    skos:altLabel
+    "head office location",
+    "HQ",
+    "garrison",
+    "admin HQ",
+    "seat",
+    "headquarters",
+    "head quarters",
+    "HQ location",
+    "based in",
+    "location of headquarters",
+    "principal office",
+    "headquarters city",
+    "headquarters town",
+    "headquarters locality".
+
+# -----
+# Thing
+# -----
+
+# owl:Thing a owl:Class .
+# rdfs:label a owl:DatatypeProperty, rdfs:Property, owl:FunctionalProperty .
+# rdf:type a owl:ObjectProperty, rdfs:Property .
+
+# ---------------
+# Disjoint domain
+# ---------------
+
+this:Film owl:disjointWith this:Person .
+this:Film owl:disjointWith this:Company .
+this:Person owl:disjointWith this:Company .
+

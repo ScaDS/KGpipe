@@ -1,0 +1,25 @@
+{
+    "text": "entity_id_1 entity_id_2 entity_id_3",
+    "triples": [],
+    "chains": [],
+    "links": [
+        {
+            "link_type": "entity",
+            "span": "entity_id_1",
+            "mapping": "entity_id_1",
+            "score": 0.9
+        },
+        {
+            "link_type": "entity",
+            "span": "entity_id_2",
+            "mapping": "entity_id_2",
+            "score": 0.4
+        },
+        {
+            "link_type": "entity",
+            "span": "entity_id_3",
+            "mapping": "entity_id_10",
+            "score": 0.98
+        }
+    ]
+}
