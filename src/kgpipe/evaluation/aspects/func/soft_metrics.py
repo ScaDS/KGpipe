@@ -31,6 +31,8 @@ def graph_fact_alginment(ga: Graph, ge: Graph):
     fp = len(set(ta) - set(te))
     fn = len(set(te) - set(ta))
 
+    print(f"te: {len(te)}, ta: {len(ta)}, tp: {tp}, fp: {fp}, fn: {fn}")
+
     return BinaryClassificationResult(tp, fp, 0, fn)
 
 def clean_label(label: str):
@@ -81,6 +83,8 @@ def graph_match_labels_soft(ga: Graph, ge: Graph):
 
 def graph_fact_alginment_soft_entities(ga: Graph, ge: Graph):
     uri_mappings = graph_match_labels_soft(ga, ge)
+
+    print(f"with uri mappings {len(uri_mappings)}")
     
     ga_mapped = Graph()
     for s, p, o in ga:
@@ -96,22 +100,32 @@ def graph_fact_alginment_soft_entities(ga: Graph, ge: Graph):
 def graph_fact_alginment_soft_entities_values(ga: Graph, ge: Graph):
     uri_mappings = graph_match_labels_soft(ga, ge)
 
+    print(f"with uri mappings {len(uri_mappings)}")
+
     def get_label(o: URIRef, graph: Graph):
         labels = [str(l) for l in graph.objects(o, RDFS.label)]
         if len(labels) == 0:
-            return []
+            return [str(o)]
         else:
-            return [clean_label(l) for l in labels]
+            cl = [clean_label(l) for l in labels]
+            # [print("empty label", l) for l in labels if l == ""]
+            return cl
     
     ga_mapped = Graph()
+    # checked_ga_subjects = {}
     for s, p, o in ga:
+        ns = s
         if str(s) in uri_mappings:
-            s = URIRef(uri_mappings[str(s)])
+            ns = URIRef(uri_mappings[str(s)])
+            # if str(s) in checked_ga_subjects:
+            #     if checked_ga_subjects[str(s)] != ns:
+            #         print(f"ga subject {s} already mapped to {checked_ga_subjects[str(s)]} but now mapped to {ns}")
+            # checked_ga_subjects[str(s)] = ns
         if isinstance(o, URIRef): # and p != RDF.type
             for label in get_label(o, ga):
-                ga_mapped.add((s, p, Literal(label)))
+                ga_mapped.add((ns, p, Literal(label)))
         else:
-            ga_mapped.add((s, p, o))
+            ga_mapped.add((ns, p, o))
 
     ge_mapped = Graph()
     for s, p, o in ge:
@@ -121,9 +135,14 @@ def graph_fact_alginment_soft_entities_values(ga: Graph, ge: Graph):
         else:
             ge_mapped.add((s, p, o))
 
+    # ge_mapped.serialize(destination="ge_mapped.ttl", format="turtle")
+    # ga_mapped.serialize(destination="ga_mapped.ttl", format="turtle")
+
     # encode all values
     vas = list(set([str(o) for _, _, o in ga_mapped if not isinstance(o, URIRef)]))
     ves = list(set([str(o) for _, _, o in ge_mapped if not isinstance(o, URIRef)]))
+
+    print(f"remaining object uris: {len([str(o) for o in ge_mapped.objects(None,None,unique=True) if isinstance(o, URIRef)])}")
 
     va_embeddings = encode_wrapper(vas, "Encoding actual values")
     ve_embeddings = encode_wrapper(ves, "Encoding expected values")
@@ -159,8 +178,10 @@ def graph_fact_alginment_soft_entities_values(ga: Graph, ge: Graph):
             best_match = _ves[np.argmax(cosine_scores[idx])]
             best_score = cosine_scores[idx][np.argmax(cosine_scores[idx])]
             if best_score > SOFT_VALUES_THRESHOLD:
-                actual_value = _vas[idx]
-                reference_value = best_match
+                # actual_value = _vas[idx]
+                # reference_value = best_match
+                # TODO this works quite good
+                # print(f"Matched value: {actual_value} {reference_value} {best_score}")
                 tp += 1
                 # if actual_value == reference_value:
                 #     # print(f"Found matching value for {s} {p} {actual_value}")
@@ -178,6 +199,8 @@ def graph_fact_alginment_soft_entities_values(ga: Graph, ge: Graph):
     for s, p in missing_sp:
         for _ in ge_mapped.triples((s, p, None)):
             fn += 1
+
+    print(f"te: {len(ge_mapped)}/{len(ge)}, ta: {len(ga_mapped)}/{len(ga)}, tp: {tp}, fp: {fp}, fn: {fn}")
 
     return BinaryClassificationResult(tp, fp, 0, fn)
 

@@ -17,6 +17,7 @@ from kgpipe_tasks.entity_resolution.fusion import (
 from kgpipe_tasks.construction import (
     construct_rdf_from_json,
     construct_rdf_from_te_json,
+    construct_rdf_from_te_json_mappings_only,
     construct_te_document_from_json
 )
 from kgpipe_tasks.text_processing import (
@@ -37,6 +38,7 @@ __all__ = [
     "jedai_tab_matcher",
     "construct_rdf_from_json",
     "construct_rdf_from_te_json",
+    "construct_rdf_from_te_json_mappings_only",
     "construct_te_document_from_json",
     "corenlp_openie_extraction",
     "corenlp_exchange",

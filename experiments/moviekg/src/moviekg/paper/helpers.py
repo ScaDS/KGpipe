@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import json
 from matplotlib.patches import Patch
+from matplotlib.ticker import ScalarFormatter
 from typing import Dict
 import re
 
@@ -22,6 +23,7 @@ main_classes = [
 
 
 def load_metrics_from_file(file_path):
+    print("Loading metrics from file: ", file_path)
     df = pd.read_csv(file_path, names=HEADERS, skiprows=1)
     return df
 
@@ -178,8 +180,8 @@ def plot_growth(df, metrics, kind="bar", references={}):
     g = sns.FacetGrid(
         plot_df,
         col="metric",
-        col_wrap=3,
-        height=4.5,
+        col_wrap=len(metrics),
+        height=len(metrics)*1.6,
         aspect=1.5,
         sharey=False,
         col_order=metrics,
@@ -203,46 +205,6 @@ def plot_growth(df, metrics, kind="bar", references={}):
     )
 
 
-   # Remove legend (we'll label bars directly)
-    # try:
-    #     g._legend.remove()
-    # except Exception:
-    #     pass
-
-    # === Add rotated pipeline labels under each bar ===
-    # n_h = len(HUE_ORDER)
-    # n_x = len(stage_order)
-    # import matplotlib.transforms as mtransforms
-    # for ax in g.axes.flat:
-    #     bars = [patch for patch in ax.patches if hasattr(patch, "get_x")]
-    #     # seaborn orders: for each x (stage), iterate hues in HUE_ORDER
-    #     for i_x, stg in enumerate(stage_order):
-    #         for j_h, pipe in enumerate(HUE_ORDER):
-    #             idx = i_x * n_h + j_h
-    #             if idx >= len(bars):
-    #                 continue
-    #             bar = bars[idx]
-    #             # center x of the bar in data coords
-    #             x_c = bar.get_x() + bar.get_width() / 2.0
-
-    #             # place text slightly below the x-axis using blended transform
-    #             trans = mtransforms.blended_transform_factory(ax.transData, ax.transAxes)
-    #             ax.text(
-    #                 x_c, -0.08, pipe,
-    #                 rotation=90, ha="right", va="top",
-    #                 fontsize=20,
-    #                 transform=trans,
-    #                 clip_on=False,
-    #             )
-
-    #     # tidy up axes
-    #     ax.set_xticks(range(len(stage_order)))
-    #     ax.set_xticklabels(stage_order)
-    #     ax.grid(True, axis="y", linestyle="--", alpha=0.3)
-    #     ax.margins(x=0.02)
-
-    # After plotting
-    # remove per-axes legend
     try:
         g._legend.remove()
     except Exception:
@@ -254,15 +216,32 @@ def plot_growth(df, metrics, kind="bar", references={}):
         handles, labels,
         loc="lower center",
         ncol=min(6, len(labels)),   # 6 items per row (→ 2 rows for 12 pipelines)
-        bbox_to_anchor=(0.5, -0.10), # adjust vertical offset
+        bbox_to_anchor=(0.5, -0.1), # adjust vertical offset
         frameon=False
     )
-    
+
+    for ax_idx, ax in enumerate(g.axes.flat):
+
+        # remove x axis label
+        ax.set_xlabel("")
+
+        # numbers 1 to 3
+        for stage_idx in range(1, 4):
+            value, nvalue, details = get_reference_value(df, metrics[ax_idx], "stage_"+str(stage_idx))
+            print(metrics[ax_idx], value)
+            xpos = stage_idx
+            if stage_idx == 0:
+                ax.axhline(value, ls="--", color="red")
+            else:
+                ax.axhline(value, ls="--", color="black")
+
     for ax in g.axes.flat:
         ax.set_xlabel("")
         # tidy up axes
         ax.set_xticks(range(len(stage_order)))
         ax.set_xticklabels(stage_order)
+        ax.yaxis.set_major_formatter(ScalarFormatter(useMathText=True))
+        ax.ticklabel_format(style='sci', axis='y', scilimits=(0,0))
         ax.grid(True, axis="y", linestyle="--", alpha=0.3)
         ax.margins(x=0.02)
 
@@ -801,12 +780,16 @@ def rank_metrics(
 def get_reference_value(df, metric_name, stage):
     df = df[df["metric"] == metric_name]
     df = df[df["stage"] == stage]
+    df = df[df["pipeline"] == "reference"]
+    print(df.to_string())
     value = df["value"].values[0]
     nvalue = df["normalized"].values[0]
     details = json.loads(df["details"].values[0])
     return value, nvalue, details
 
+
 def get_reference_class_counts(df) -> Dict[str, Dict[str, int]]:
+    df = df[df["pipeline"] == "reference"]
     reference_stage_class_count: Dict[str, Dict[str, int]] = defaultdict(lambda: defaultdict(int))
     df = df[df["metric"] == "class_occurrence"]
     for stage in df["stage"].unique():
@@ -826,6 +809,7 @@ from collections import defaultdict
 def plot_class_occurence_new(df, reference_stage_class_count, classes):
 
     df = df[df["metric"] == "class_occurrence"]
+
 
     pipeline_stage_class_count = defaultdict(lambda: defaultdict(lambda: defaultdict(int)))
 
@@ -851,17 +835,21 @@ def plot_class_occurence_new(df, reference_stage_class_count, classes):
 
     # df: pipeline, stage, class, count
     df = pd.DataFrame(rows)
+    df = df[df["class"] != "Other"]
 
     classes_short = [class_name.split("/")[-1] for class_name in classes]
+
+    sns.set(style="whitegrid")
 
     stage_order = list(dict.fromkeys(df["stage"]))
     g = sns.FacetGrid(
         df,
         col="class",
-        col_wrap=4,
+        col_wrap=3,
         height=4,
+        aspect=1.5,
         sharey=False,
-        col_order=classes_short+["Other"],  # preserve requested order
+        col_order=classes_short #+["Other"],  # preserve requested order
     )
     g.map_dataframe(
         sns.barplot,
@@ -876,16 +864,20 @@ def plot_class_occurence_new(df, reference_stage_class_count, classes):
     )
 
 
-    for ax_idx, ax in enumerate(g.axes.flat[:-1]):
+    for ax_idx, ax in enumerate(g.axes.flat):
         class_idx = ax_idx
         class_name = classes_short[class_idx]
 
         # remove x axis label
         ax.set_xlabel("")
 
-        for stage_idx, class_counts in enumerate(reference_stage_class_count.values()):
-            xpos = stage_idx
-            ax.axhline(class_counts[class_name], ls="--", color="red")
+        for stage, class_counts in reference_stage_class_count.items():
+            xpos = int(stage.split("_")[1])
+            if stage == "stage_0":
+                ax.axhline(class_counts[class_name], ls="--", color="red")
+            else:
+                ax.axhline(class_counts[class_name], ls="--", color="black")
+
 
     # g.add_legend()
 
@@ -924,6 +916,8 @@ def plot_class_occ_4_bar_chart(df):
                 "details": details
             }
 
+    reference_stage_class_count = get_reference_class_counts(df)
+
     # remove seed and reference pipeline
     df = df[df["pipeline"] != "seed"]
     df = df[df["pipeline"] != "reference"]
@@ -932,7 +926,6 @@ def plot_class_occ_4_bar_chart(df):
 
     classes = ["http://kg.org/ontology/Company", "http://kg.org/ontology/Person", "http://kg.org/ontology/Film"]
 
-    reference_stage_class_count = get_reference_class_counts(df)
 
     return plot_class_occurence_new(df, reference_stage_class_count, classes)
 

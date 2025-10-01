@@ -10,7 +10,7 @@ import traceback
 from typing import Dict, List, Optional, Any, Set
 import json
 from pathlib import Path
-from rdflib import URIRef, Graph
+from rdflib import URIRef, Graph, RDF
 
 from ...common.models import KG, Data, DataFormat
 from ..base import EvaluationAspect, AspectResult, AspectEvaluator, Metric, MetricResult, MetricConfig
@@ -52,6 +52,7 @@ class ReferenceConfig(MetricConfig):
     REFERENCE_KG_PATH: Optional[Path] = None
     EXPECTED_TEXT_LINKS: Optional[Path] = None
     TE_LINK_THRESHOLD: float = 0.4
+    SEED_KG_PATH: Optional[Path] = None
     source_meta: Optional[SourceMeta] = None
     dataset: Optional[Dataset] = None
 
@@ -273,7 +274,7 @@ class SourceEntityPrecisionMetric(Metric):
 
     def compute(self, kg: KG, config: ReferenceConfig, **kwargs) -> MetricResult:
 
-        from kgpipe.evaluation.aspects.func.integration_eval import evaluate_source_entity_coverage_fuzzy
+        from kgpipe.evaluation.aspects.func.integration_eval import evaluate_source_entity_precision_fuzzy, EntityCoverageResult
 
         # meta = config.source_meta
         # if meta is None or meta.entities is None:
@@ -282,13 +283,16 @@ class SourceEntityPrecisionMetric(Metric):
         if verified_source_entities_path is None:
             raise ValueError("VERIFIED_SOURCE_ENTITIES is not set")
         
-        result = evaluate_source_entity_coverage_fuzzy(kg, verified_source_entities_path)
+        result: EntityCoverageResult = evaluate_source_entity_precision_fuzzy(kg, verified_source_entities_path)
 
         # print("value", result.overlapping_entities_count / result.expected_entities_count)
         # print("normalized_score", result.overlapping_entities_count / result.expected_entities_count)
         # print("details", result.__dict__)
 
-        score = result.overlapping_entities_count / result.expected_entities_count
+        duplicates = result.possible_duplicates_count
+        found = result.found_entities_count
+
+        score = (found - duplicates) / found if found > 0 else 0.0
         if score > 1.0:
             score = 1.0
 
@@ -320,22 +324,34 @@ class ReferenceTripleAlignmentMetric(Metric):
         if reference_kg_path is None:
             raise ValueError("REFERENCE_KG_PATH is not set")
 
-        # reference_kg = KG(
-        #     id="reference_kg",
-        #     name="reference_kg",
-        #     path=reference_kg_path,
-        #     format=DataFormat.RDF_TTL
-        # )
+        seed_kg_path = config.SEED_KG_PATH
+        if seed_kg_path is None:
+            raise ValueError("SEED_KG_PATH is not set")
 
-        # result = evaluate_reference_triple_alignment(kg, reference_kg)
+        seed_graph = Graph()
+        seed_graph.parse(config.SEED_KG_PATH.as_posix())
 
-        # details = result.__dict__
-        # details["score_metric"] = "precision" # TODO: add other metrics
+        seed_triples = set([str(s)+str(p)+str(o) for s, p, o in seed_graph])
+
+        reference_graph_raw = Graph()
+        reference_graph_raw.parse(reference_kg_path.as_posix())
 
         reference_graph = Graph()
-        reference_graph.parse(reference_kg_path.as_posix())
+        for s, p, o in reference_graph_raw:
+            if str(s)+str(p)+str(o) in seed_triples:
+                continue
+            reference_graph.add((s, p, o))
 
-        result = graph_fact_alginment(kg.get_graph(), reference_graph)
+        actual_graph_raw = kg.get_graph()
+        actual_graph = Graph()
+        for s, p, o in actual_graph_raw:
+            if str(s)+str(p)+str(o) in seed_triples:
+                continue
+            actual_graph.add((s, p, o))
+
+        print("graph_fact_alginment strict")
+
+        result = graph_fact_alginment(actual_graph, reference_graph)
 
         return MetricResult(
             name=self.name,
@@ -371,10 +387,34 @@ class ReferenceTripleAlignmentMetricSoftE(Metric):
         if reference_kg_path is None:
             raise ValueError("REFERENCE_KG_PATH is not set")
 
-        reference_graph = Graph()
-        reference_graph.parse(reference_kg_path.as_posix())
+        seed_kg_path = config.SEED_KG_PATH
+        if seed_kg_path is None:
+            raise ValueError("SEED_KG_PATH is not set")
 
-        result = graph_fact_alginment_soft_entities(kg.get_graph(), reference_graph)
+        seed_graph = Graph()
+        seed_graph.parse(config.SEED_KG_PATH.as_posix())
+
+        seed_triples = set([str(s)+str(p)+str(o) for s, p, o in seed_graph])
+
+        reference_graph_raw = Graph()
+        reference_graph_raw.parse(reference_kg_path.as_posix())
+
+        reference_graph = Graph()
+        for s, p, o in reference_graph_raw:
+            if str(s)+str(p)+str(o) in seed_triples:
+                continue
+            reference_graph.add((s, p, o))
+
+        actual_graph_raw = kg.get_graph()
+        actual_graph = Graph()
+        for s, p, o in actual_graph_raw:
+            if str(s)+str(p)+str(o) in seed_triples:
+                continue
+            actual_graph.add((s, p, o))
+
+        print("graph_fact_alginment_soft_entities")
+
+        result = graph_fact_alginment_soft_entities(actual_graph, reference_graph)
 
         # matched_entities = match_entities(kg, reference_kg_path)
         # print("matched_entities", len([e for e in matched_entities.values() if e.decision == "accept"]))
@@ -386,7 +426,7 @@ class ReferenceTripleAlignmentMetricSoftE(Metric):
         return MetricResult(
             name=self.name,
             value=result.precision(),
-            normalized_score=result.precision(),
+            normalized_score=result.f1_score(),
             details=result.__dict__(),
             aspect=self.aspect
         )
@@ -409,10 +449,39 @@ class ReferenceTripleAlignmentMetricSoftEV(Metric):
         if reference_kg_path is None:
             raise ValueError("REFERENCE_KG_PATH is not set")
 
-        reference_graph = Graph()
-        reference_graph.parse(reference_kg_path.as_posix())
+        seed_kg_path = config.SEED_KG_PATH
+        if seed_kg_path is None:
+            raise ValueError("SEED_KG_PATH is not set")
 
-        result = graph_fact_alginment_soft_entities_values(kg.get_graph(), reference_graph)
+        seed_graph = Graph()
+        seed_graph.parse(config.SEED_KG_PATH.as_posix())
+
+        seed_triples = set([str(s)+str(p)+str(o) for s, p, o in seed_graph])
+
+        reference_graph_raw = Graph()
+        reference_graph_raw.parse(reference_kg_path.as_posix())
+
+        reference_graph = Graph()
+        for s, p, o in reference_graph_raw:
+            if str(s)+str(p)+str(o) in seed_triples:
+                continue
+            if str(p) == RDF.type:
+                continue
+            reference_graph.add((s, p, o))
+
+        actual_graph_raw = kg.get_graph()
+        actual_graph = Graph()
+        for s, p, o in actual_graph_raw:
+            if str(s)+str(p)+str(o) in seed_triples:
+                continue
+            if str(p) == RDF.type:
+                continue
+            actual_graph.add((s, p, o))
+
+
+        print("graph_fact_alginment_soft_entities_values")
+
+        result = graph_fact_alginment_soft_entities_values(actual_graph , reference_graph)
 
 
         # matched_entities = match_entities(kg, reference_kg_path)
@@ -426,7 +495,7 @@ class ReferenceTripleAlignmentMetricSoftEV(Metric):
         return MetricResult(
             name=self.name,
             value=result.precision(),
-            normalized_score=result.precision(),
+            normalized_score=result.f1_score(),
             details=result.__dict__(),
             aspect=self.aspect
         )

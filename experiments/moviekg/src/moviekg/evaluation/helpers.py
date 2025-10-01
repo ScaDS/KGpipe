@@ -105,7 +105,11 @@ def get_reference_config(stage: StageOut, is_ssp: bool) -> ReferenceConfig:
         raise ValueError(f"No reference KG found for split {split_id} and source type {source_type}")
     reference_path = kg_reference.root / "data_agg.nt"
 
-    
+    kg_seed = dataset.splits[f"split_0"].kg_seed
+    if kg_seed is None:
+        raise ValueError(f"No seed KG found for split {0}")
+    seed_path = kg_seed.root / "data.nt"
+
     ENTITY_MATCH_THRESHOLD_MAP = {
         "rdf_a": 0.5,
         "rdf_b": 0.5,
@@ -128,6 +132,7 @@ def get_reference_config(stage: StageOut, is_ssp: bool) -> ReferenceConfig:
         ENTITY_MATCH_THRESHOLD=ENTITY_MATCH_THRESHOLD_MAP.get(stage.root.parent.name, 0.5),
         VERIFIED_SOURCE_ENTITIES=verified_source_entities_path,
         REFERENCE_KG_PATH=reference_path,
+        SEED_KG_PATH=seed_path,
         # EXPECTED_TEXT_LINKS=Path("TODO"),
         TE_LINK_THRESHOLD=0.5,
         source_meta=meta,

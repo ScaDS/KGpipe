@@ -36,7 +36,7 @@ PREDICATE_LINK_THRESHOLD = 0.3
 def generatePredicate(surface_form, namespace):
     return URIRef(namespace + surface_form.replace(" ", "_"))
 
-def __generateRDF(doc: TE_Document, ontology: Ontology, generic: bool = False, namespace: str = "http://kg.org/text/"):
+def __generateRDF(doc: TE_Document, ontology: Ontology, newP: bool = False, newE: bool = False, namespace: str = "http://kg.org/text/"):
     """
     A processing node, part of a pipeline
     collects information from extractors, linkers, and resolvers and then it produces the final triples
@@ -123,7 +123,7 @@ def __generateRDF(doc: TE_Document, ontology: Ontology, generic: bool = False, n
         predicate = None
         if triple.predicate.mapping:
             predicate = URIRef(triple.predicate.mapping)
-        elif generic:
+        elif newP:
             predicate = generatePredicate(triple.predicate.surface_form, namespace)
 
         object = None
@@ -148,7 +148,7 @@ def __generateRDF(doc: TE_Document, ontology: Ontology, generic: bool = False, n
                 finalGraph.add((subject, RDFS.label, Literal(triple.subject.surface_form)))
 
 
-            if not subject and triple.subject.surface_form:
+            if not subject and triple.subject.surface_form and newE:
                 subject = URIRef(namespace+hash_uri(triple.subject.surface_form))
                 finalGraph.add((subject, RDFS.label, Literal(triple.subject.surface_form)))
                 print(f"new subject: {subject} {triple.subject.surface_form}")
@@ -158,7 +158,7 @@ def __generateRDF(doc: TE_Document, ontology: Ontology, generic: bool = False, n
             if domain and subject:
                 finalGraph.add((subject, RDF.type, URIRef(domain)))
 
-            if not object and triple.object.surface_form:
+            if not object and triple.object.surface_form and newE:
                 if isObjectProperty:
                     object = URIRef(namespace+hash_uri(triple.object.surface_form))
                     finalGraph.add((object, RDFS.label, Literal(triple.object.surface_form)))
@@ -274,18 +274,18 @@ def __generateRDF(doc: TE_Document, ontology: Ontology, generic: bool = False, n
 
 
 
-def generate_rdf(inputs: Dict[str, Data], outputs: Dict[str, Data], ontology: Ontology, generic: bool):
+def generate_rdf(inputs: Dict[str, Data], outputs: Dict[str, Data], ontology: Ontology, newP: bool, newE: bool):
     dir_or_file = inputs["source"].path
     graph = Graph()
     if os.path.isdir(dir_or_file):
         for file in os.listdir(dir_or_file):
             json_data = json.load(open(os.path.join(dir_or_file, file)))
             doc = TE_Document(**json_data)
-            for s, p, o in __generateRDF(doc, ontology, generic=generic):
+            for s, p, o in __generateRDF(doc, ontology, newP=newP, newE=newE):
                 graph.add(triple=(s, p, o))
     else:
         doc = TE_Document(**json.load(open(dir_or_file)))
-        graph = __generateRDF(doc, ontology, generic=generic)
+        graph = __generateRDF(doc, ontology, newP=newP, newE=newE)
 
     graph.serialize(outputs["output"].path, format="nt")
     print(f"RDF written to {outputs['output'].path}")
@@ -311,4 +311,20 @@ def construct_rdf_from_te_json(inputs: Dict[str, Data], outputs: Dict[str, Data]
 
     ontology = OntologyUtil.load_ontology_from_file(Path(ontology_path))
 
-    generate_rdf(inputs, outputs, ontology, generic=False)
+    generate_rdf(inputs, outputs, ontology, newP=False, newE=True)
+
+@Registry.task(
+    input_spec={"source": DataFormat.TE_JSON},
+    output_spec={"output": DataFormat.RDF_NTRIPLES},
+    description="Construct RDF graph from TE_Document",
+    category=["Construction"]
+)
+def construct_rdf_from_te_json_mappings_only(inputs: Dict[str, Data], outputs: Dict[str, Data]):
+
+    ontology_path = os.environ.get("ONTOLOGY_PATH", "false")
+    if ontology_path == "false":
+        raise ValueError("ONTOLOGY_PATH is not set")
+
+    ontology = OntologyUtil.load_ontology_from_file(Path(ontology_path))
+
+    generate_rdf(inputs, outputs, ontology, newP=False, newE=False)

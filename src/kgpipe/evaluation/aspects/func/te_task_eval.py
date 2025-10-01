@@ -47,14 +47,22 @@ def get_te_doc_paths_from_plan(plan: KgPipePlan, base_dir) -> list[Path]:
             paths.append(step.output[0].path)
     return paths
     
+from pyodibel.rdf_ops.construct import hash_uri
+
+def get_as_seed_uri(uri: str) -> str:
+    hash = hash_uri(uri)
+    return f"http://kg.org/resource/{hash}"
+
 def check_links(links: list[TE_Pair], expected_entity_ids: list[str], link_type: str, threshold: float = 0.5):
     true_link_cnt = 0
 
     for link in links:
         # print(link, expected_entity_ids)
         if link.link_type == link_type and link.score > threshold:
-            if link.mapping in expected_entity_ids:
+            if link.mapping in expected_entity_ids or link.mapping in [get_as_seed_uri(e) for e in expected_entity_ids]:
                 true_link_cnt += 1
+            # else:
+            #     print(f"False link: {link.mapping} not in expected entity ids {expected_entity_ids} and as seed uri {[get_as_seed_uri(e) for e in expected_entity_ids]}")
 
     false_missing_link_cnt = len(expected_entity_ids) - true_link_cnt
 
@@ -92,7 +100,7 @@ def __evaluate_expected_links(expected_entites_path: Path, kg: KG, link_type: st
                 true_link_cnt += doc_true_link_cnt
                 false_missing_link_cnt += doc_false_missing_link_cnt
             else:
-                # print(f"Doc {doc_id} not in expected_entity_links")
+                print(f"Doc {doc_id} not in expected_entity_links")
                 pass
     else:
         # print(f"te_doc_path is not a directory: {te_doc_path}")

@@ -44,11 +44,9 @@ OUTPUT_ROOT = Path(OUTPUT_DIR) / DATASET_SELECT
 pipeline_types = {
     "rdf_a": "rdf",
     "rdf_b": "rdf",
-    "rdf_b2": "rdf",
     "text_a": "text",
     "text_b": "text",
     "json_a": "json",
-    # "json_b": "json",
     "json_b": "json"
 }
 
@@ -56,24 +54,12 @@ llm_pipeline_types = {
     "json_llm_mapping_v1": "json",
     "rdf_llm_schema_align_v1": "rdf",
     "text_llm_triple_extract_v1": "text",
-    # "rdf_llm_schema_align": "rdf",
-    # "json_llm_schema_align": "json",
-    # "json_llm_semi_integration": "json",
-    # "text_llm_semi_integration": "text",
-    # "rdf_llm_full_integration": "rdf",
-    # "json_llm_full_integration": "json",
-    # "text_llm_full_integration": "text",
-    # "text_gpt_4o_mini": "text",
-    # "text_gpt_o4_mini": "text",
-    # "text_gpt_4_1_mini": "text",
-    # "text_gpt_5_nano": "text",
-    # "text_gpt_5_mini": "text"
 }
 
 ssp = {
     "rdf": "rdf_a",
     "json": "json_b",
-    "text": "text_b"
+    "text": "text_a"
 }
 
 

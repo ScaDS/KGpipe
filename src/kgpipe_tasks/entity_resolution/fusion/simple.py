@@ -33,6 +33,12 @@ def load_matches_from_file(file_path, threshold, type_filter: Optional[str] = No
             id_2 = str(match.id_2) # .split("-")[0] # paris workaround
             if id_1.endswith("-") or id_2.endswith("-"):
                 continue
+            if id_1.endswith("_uri") or id_1.endswith("_literal"):
+                id_1 = id_1.replace("_uri", "").replace("_literal", "")
+            if id_2.endswith("_uri") or id_2.endswith("_literal"):
+                id_2 = id_2.replace("_uri", "").replace("_literal", "")
+            if match.id_type == "relation":
+                print(f"Adding relation match: {id_1} {id_2}")
             matches.add_match(id_1, id_2)
 
     return matches

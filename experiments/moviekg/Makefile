@@ -54,7 +54,7 @@ start-services:
 # === Dataset ===
 
 eval-dataset:
-	micromamba run -n $(EVN_NAME) pytest -s -v src/moviekg/datasets/test_evaluate_film_data.py
+	pytest -s -v src/moviekg/datasets/test_evaluate_film_data.py
 
 # === SSPs ===
 
@@ -141,10 +141,10 @@ test-json-b2:
 
 test-json-llm-schema-align:
 # sudo rm -rf out/json_llm_schema_align;
-	pytest -v src/moviekg/pipelines/test_inc_ssp.py -k json_llm_schema_align
+	pytest -v -s src/moviekg/pipelines/test_inc_ssp.py -k json_llm
 
 eval-json-llm-schema-align:
-	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k json_llm_schema_align
+	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k json_llm
 
 test-json-llm-semi-integration:
 # sudo rm -rf out/json_llm_semi_integration;
@@ -178,10 +178,10 @@ eval-text-b:
 
 test-text-llm-semi-integration:
 # sudo rm -rf out/text_llm_semi_integration;
-	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k text_llm_semi_integration
+	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k text_llm
 
 eval-text-llm-semi-integration:
-	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k text_llm_semi_integration
+	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k text_llm
 
 test-text-llm-full-integration:
 # sudo rm -rf out/text_llm_full_integration;
@@ -201,7 +201,7 @@ eval-msp-all:
 # === Paper ===
 
 concatenate-metrics:
-	micromamba run -n $(EVN_NAME) pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k test_concatenate_long_table_rows
+	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k test_concatenate_long_table_rows
 # micromamba run -n $(EVN_NAME) pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k test_replace_with_dict
 
 paper-figtab:

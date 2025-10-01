@@ -369,8 +369,8 @@ class IncorrectRelationDirectionMetric(Metric):
                     if domain in entity_types[str(o)] and range in entity_types[str(s)]:
                         incorrect_relation_direction += 1
 
-        print("incorrect_relation_direction", incorrect_relation_direction)
-        print("correct_relation_direction", correct_relation_direction)
+        # print("incorrect_relation_direction", incorrect_relation_direction)
+        # print("correct_relation_direction", correct_relation_direction)
 
         if incorrect_relation_direction + correct_relation_direction > 0:
             normalized_score = incorrect_relation_direction / (incorrect_relation_direction + correct_relation_direction)
