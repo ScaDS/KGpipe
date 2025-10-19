@@ -1,0 +1,30 @@
+stages:
+  - build
+  - test
+
+variables:
+  PYTHON_VERSION: "3.12"
+
+# Build stage - Install dependencies and build the package
+build:
+  stage: build
+  image: ghcr.io/astral-sh/uv:debian
+  before_script:
+    - uv run python --version
+    - uv --version
+  script:
+    - echo "Installing project dependencies with uv..."
+    - uv venv
+    - uv pip install .
+    - echo "Installing development dependencies..."
+    - uv pip install pytest rdflib pydantic
+    - echo "Build completed successfully"
+  artifacts:
+    paths:
+      - .venv
+    expire_in: 1 hour
+  cache:
+    key: "uv-kglab-cache"
+    paths:
+      - ~/.cache/uv
+
