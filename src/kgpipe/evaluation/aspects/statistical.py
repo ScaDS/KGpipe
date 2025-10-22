@@ -17,6 +17,8 @@ from ...common.models import KG
 from ..base import EvaluationAspect, AspectResult, AspectEvaluator, Metric, MetricResult, MetricConfig
 from .func.namespace import count_namespace_usage
 
+from kgpipe.meta.systemgraph import kg_class, kg_function
+
 ACCEPTED_FORMATS = ['ttl', 'rdf', 'jsonld', 'nt', 'json']
 
 class StatisticalConfig(MetricConfig):
@@ -31,6 +33,7 @@ class StatisticalConfig(MetricConfig):
     namespace_usage: int = 10000
 
 @Registry.metric()
+@kg_class("EvalMetric")
 class EntityCountMetric(Metric):
     """Count the number of unique entities in the KG."""
     
@@ -41,6 +44,7 @@ class EntityCountMetric(Metric):
             aspect=EvaluationAspect.STATISTICAL
         )
     
+    @kg_function
     def compute(self, kg: KG, config: StatisticalConfig, **kwargs) -> MetricResult:
         """Compute entity count from KG file."""
         try:
@@ -119,6 +123,7 @@ class RelationCountMetric(Metric):
 
 
 @Registry.metric()
+@kg_class("EvalMetric")
 class TripleCountMetric(Metric):
     """Count the total number of triples in the KG."""
     
@@ -129,6 +134,7 @@ class TripleCountMetric(Metric):
             aspect=EvaluationAspect.STATISTICAL
         )
     
+    @kg_function
     def compute(self, kg: KG, config: StatisticalConfig, **kwargs) -> MetricResult:
         """Compute triple count from KG file."""
         try:

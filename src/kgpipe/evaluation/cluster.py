@@ -2,10 +2,9 @@ from kgpipe.execution.config import GLOBAL_STATE
 from typing import Dict, List, Set, Optional  
 import json
 import csv
-from kgpipe_tasks.common.benchutils import hash_uri
 from rdflib import Graph, URIRef
 from urllib.parse import urlparse
-
+import hashlib
 
 """
 matches CSV head
@@ -16,6 +15,12 @@ entity3a, entity3b, entity3c
 ,entity4b, entity4c
 """
 
+
+def hash_uri(uri: str) -> str:
+    """
+    Hash a URI using SHA-256.
+    """
+    return hashlib.sha256(uri.encode('utf-8')).hexdigest()
 
 class MatchCluster:
     """

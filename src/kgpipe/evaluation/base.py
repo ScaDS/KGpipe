@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
+from kgpipe.meta.systemgraph import kg_class, Track
 
 from pydantic import BaseModel
 
@@ -70,8 +71,9 @@ class AspectEvaluator(ABC):
         pass
 
 
-@dataclass
-class MetricResult:
+# @Track(with_timestamp=True)
+@kg_class(type="MetricResult", description="Result of computing a single metric.")
+class MetricResult(BaseModel):
     """Result of computing a single metric."""
     name: str
     value: float

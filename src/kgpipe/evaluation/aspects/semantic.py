@@ -17,7 +17,7 @@ from ..base import EvaluationAspect, AspectResult, AspectEvaluator, Metric, Metr
 from kgpipe.common.io import remap_data_path_for_container
 from tqdm import tqdm
 from collections import defaultdict
-from kgpipe_tasks.common.ontology import OntologyExtractor, OntologyUtil, Ontology
+from kgcore.model.ontology import OntologyExtractor, OntologyUtil, Ontology
 from kgpipe.common.registry import Registry
 import time
 

@@ -1,6 +1,6 @@
 from typing import Dict
 from rdflib import Graph, URIRef, RDF
-from kgpipe_tasks.common.ontology import Ontology, OntologyUtil
+from kgcore.model.ontology import Ontology, OntologyUtil
 import os
 from kgpipe.common import Registry, Data, DataFormat
 from pathlib import Path

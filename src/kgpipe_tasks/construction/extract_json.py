@@ -8,7 +8,7 @@ from rdflib import Graph
 from rdflib.namespace import SKOS, RDFS
 from sentence_transformers import SentenceTransformer
 from kgpipe_tasks.text_processing.relation_match import AliasAndTransformerBasedRelationLinker
-from kgpipe_tasks.common.ontology import Ontology, OntologyUtil
+from kgcore.model.ontology import Ontology, OntologyUtil
 from kgpipe.common import Registry, DataFormat, Data
 from typing import Dict
 from pathlib import Path
@@ -510,32 +510,32 @@ def construct_linkedrdf_from_json_v2(inputs: Dict[str, Data], outputs: Dict[str,
 
     final_g.serialize(format="ntriples", destination=outputs["output"].path)
 
-if __name__ == "__main__":    
+# if __name__ == "__main__":    
 
-    # --- Example run ---
-    # paths you provide
-    KG_TTL = "/home/marvin/project/data/acquisiton/film1k_bundle/split_0/kg/reference/data.nt"
-    JSON_PATH = "/home/marvin/project/code/kgflex/src/kgpipe_tasks/test/test_data/json/dbp-movie_depth=1.json"
-    OWL_TTL = "/home/marvin/project/data/acquisiton/film1k_bundle/ontology.ttl"
+#     # --- Example run ---
+#     # paths you provide
+#     KG_TTL = "/home/marvin/project/data/acquisiton/film1k_bundle/split_0/kg/reference/data.nt"
+#     JSON_PATH = "/home/marvin/project/code/kgflex/src/kgpipe_tasks/test/test_data/json/dbp-movie_depth=1.json"
+#     OWL_TTL = "/home/marvin/project/data/acquisiton/film1k_bundle/ontology.ttl"
 
-    linker = JsonToRdfLinker(KG_TTL, OWL_TTL)
-    json_obj = json.load(open(JSON_PATH))
+#     linker = JsonToRdfLinker(KG_TTL, OWL_TTL)
+#     json_obj = json.load(open(JSON_PATH))
 
-    g, decisions = linker.link_document(json_obj, URIRef("http://example.org/root/"))
+#     g, decisions = linker.link_document(json_obj, URIRef("http://example.org/root/"))
 
-    # Serialize graph
-    print(g.serialize(format="turtle"))
-    # Inspect decisions (per-object audit trail)
-    # for d in decisions:
-    #     print(d.node, d.created, d.label, d.entity_link["best"]["score"])
-    # linker = SimpleEntityLinker(KG_TTL)
-    # obj = json.load(open(JSON_PATH))
-    # res = linker.link(obj)
-    # print(json.dumps(res, indent=2, ensure_ascii=False))
+#     # Serialize graph
+#     print(g.serialize(format="turtle"))
+#     # Inspect decisions (per-object audit trail)
+#     # for d in decisions:
+#     #     print(d.node, d.created, d.label, d.entity_link["best"]["score"])
+#     # linker = SimpleEntityLinker(KG_TTL)
+#     # obj = json.load(open(JSON_PATH))
+#     # res = linker.link(obj)
+#     # print(json.dumps(res, indent=2, ensure_ascii=False))
 
-    # relation_linker = SimpleRelationLinker(OWL_TTL)
-    # links = relation_linker.link(obj)
-    # print(json.dumps(links, indent=2, ensure_ascii=False))
+#     # relation_linker = SimpleRelationLinker(OWL_TTL)
+#     # links = relation_linker.link(obj)
+#     # print(json.dumps(links, indent=2, ensure_ascii=False))
 
 # import os
 
@@ -699,3 +699,20 @@ if __name__ == "__main__":
     #     #                 pass
 
     #     # return node, None
+
+
+if __name__ == "__main__":
+    # construct_linkedrdf_from_json_v2()
+    os.environ["EMBEDDER"] = "sentence-transformer"
+    json_path="/home/marvin/project/data/final/film_10k/split_1/sources/json/data/4e9a2c199d1013b6929c50e6766af404.json"
+    json_data = json.load(open(json_path))
+
+    KG_TTL = "/home/marvin/project/data/final/film_10k/split_0/kg/reference/data.nt"
+    # JSON_PATH = "/home/marvin/project/code/kgflex/src/kgpipe_tasks/test/test_data/json/dbp-movie_depth=1.json"
+    OWL_TTL = "/home/marvin/project/data/final/movie-ontology.ttl"
+
+    linker = JsonToRdfLinker(KG_TTL, OWL_TTL)
+
+    g, decisions = linker.link_document(json_data, URIRef("http://kg.org/json/4e9a2c199d1013b6929c50e6766af404/"))
+
+    print(g.serialize(format="turtle"))

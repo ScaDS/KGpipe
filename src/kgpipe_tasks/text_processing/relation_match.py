@@ -11,7 +11,7 @@ from collections import defaultdict
 from tqdm import tqdm
 from kgpipe_tasks.transform_interop.exchange.text_extraction import TE_Pair, TE_Document
 from kgpipe.common import Data, DataFormat, Registry
-from kgpipe_tasks.common.ontology import Ontology, OwlProperty, OntologyUtil
+from kgcore.model.ontology import Ontology, OwlProperty, OntologyUtil
 
 from kgpipe.util.embeddings import global_encode
 

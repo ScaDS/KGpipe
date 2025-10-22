@@ -1,7 +1,7 @@
 from typing import Dict, List
 from kgpipe.common import Data, DataFormat, Registry
 from kgpipe_tasks.transform_interop.exchange.text_extraction import TE_Document, TE_Triple, TE_Pair, TE_Chains
-from kgpipe_tasks.common.ontology import Ontology, OntologyUtil
+from kgcore.model.ontology import Ontology, OntologyUtil
 
 from rdflib import Graph, URIRef, Literal, RDF, RDFS, XSD
 from kgpipe_tasks.common.benchutils import hash_uri

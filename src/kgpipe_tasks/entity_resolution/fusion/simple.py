@@ -1,4 +1,4 @@
-from rdflib import Graph, URIRef, RDFS, RDF, SKOS
+from rdflib import OWL, Graph, URIRef, RDFS, RDF, SKOS
 from pathlib import Path
 from kgpipe_tasks.transform_interop.exchange.entity_matching import ER_Document
 from kgpipe.evaluation.cluster import MatchCluster
@@ -7,7 +7,7 @@ from typing import Dict, Optional
 import json
 from kgpipe.common.registry import Registry
 import os
-from kgpipe_tasks.common.ontology import OntologyUtil
+from kgcore.model.ontology import OntologyUtil
 
 # TODO read from global state
 # TODO multiple target namespaces possible
@@ -349,6 +349,8 @@ def fusion_first_value(inputs: Dict[str, Data], outputs: Dict[str, Data]):
 
     current_subjects = set([str(s) for s in seed_graph.subjects(unique=True)])
 
+    sameAsProv = {}
+
     def canonicalize_entity_term(term):
         """Map a URI from the target graph to the matching source URI, if any."""
         if isinstance(term, URIRef):
@@ -361,6 +363,7 @@ def fusion_first_value(inputs: Dict[str, Data], outputs: Dict[str, Data]):
                 else:
                     for m in right_candidates:
                         # if not m == t_str:
+                        sameAsProv[str(term)] = str(m)
                         return URIRef(m)
                     return term
             else:
@@ -406,6 +409,12 @@ def fusion_first_value(inputs: Dict[str, Data], outputs: Dict[str, Data]):
                 if isinstance(s_can, URIRef):
                     current_subjects.add(str(s_can))
         
+    
+    prov_graph = Graph()
+    for sid,gid in sameAsProv.items():
+        prov_graph.add((URIRef(gid), OWL.sameAs, URIRef(sid)))
+        
+    prov_graph.serialize(outputs["output"].path.as_posix() + ".prov", format="nt")
     seed_graph.serialize(outputs["output"].path, format="nt")
 
 # @flextask({"source": "rdf", "target": "rdf", "matches": "em"}, {"output": "rdf"})

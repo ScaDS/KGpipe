@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Dict, Any
 
 from kgpipe.common import KgTask, Data, DataFormat, Registry
-from kgpipe.common.io import get_docker_volume_bindings, remap_data_paths_for_container
+from kgpipe.common.io import get_docker_volume_bindings, remap_data_path_for_container
 from kgpipe.execution import docker_client
 
 @Registry.task(
@@ -28,9 +28,9 @@ def agreementmaker_ontology_matching(inputs: Dict[str, Data], outputs: Dict[str,
     volumes, host_to_container = get_docker_volume_bindings(all_data)
     
     # Remap paths for container
-    source_path = remap_data_paths_for_container([source_data], host_to_container)[0]
-    target_path = remap_data_paths_for_container([target_data], host_to_container)[0]
-    output_path = remap_data_paths_for_container([output_data], host_to_container)[0]
+    source_path = remap_data_path_for_container(source_data, host_to_container)
+    target_path = remap_data_path_for_container(target_data, host_to_container)
+    output_path = remap_data_path_for_container(output_data, host_to_container)
     
     # Create command
     command = [

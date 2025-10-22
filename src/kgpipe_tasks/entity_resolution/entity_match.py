@@ -39,7 +39,7 @@ class LabelBasedEntityLinker:
             self.entity_with_labels.append((str(s), str(o)))
 
         entity_labels = [label for _, label in self.entity_with_labels]
-        self.label_embeddings = 
+        self.label_embeddings = global_encode(entity_labels)
         # print(self.label_embeddings.shape)
         self.match_cache = {}
 
