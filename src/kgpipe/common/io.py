@@ -19,9 +19,10 @@ def get_docker_volume_bindings(data_list: List[Data], container_base: str = "/da
     DOCKER_HOST_BIND_MAP = os.getenv("DOCKER_HOST_BIND_MAP")
     if DOCKER_HOST_BIND_MAP: 
         host_source, cont_target = DOCKER_HOST_BIND_MAP.split(":",1)
+        
     def substiute_real_host(path: Path): # TODO replaces to broadly
         if DOCKER_HOST_BIND_MAP:
-            #     print(f"SUBSTITUTING REAL DOCKER HOST PATH {cont_target} -> {host_source}")
+            print(f"SUBSTITUTING REAL DOCKER HOST PATH {cont_target} -> {host_source} for path {path}")
             return path.as_posix().replace(cont_target, host_source)
         else:
             return path

@@ -100,22 +100,33 @@ def run_helper(
         f.write(plan.model_dump_json(indent=4))
 
     reports = pipeline.run(stable_files_override=False)
-
     start_ts = reports[0].start_ts
+
+    if os.path.exists(stage_dir / "exec-report.json"):
+        print("Loading old report from", stage_dir / "exec-report.json")
+        with open(stage_dir / "exec-report.json", "r") as f:
+            old_report = KgStageReport.model_validate_json(f.read())
+            # replace skipped task_report in new reports with old report
+            old_tasks_report_dict = {report.task_name: report for report in old_report.task_reports}
+            for idx, task_report in enumerate(reports):
+                if task_report.status == "skipped":
+                    reports[idx] = old_tasks_report_dict[task_report.task_name]
+
     duration = sum([report.duration for report in reports])
     status = "success" if all([report.status == "success" for report in reports]) else "failed"
     error = None if all([report.status == "success" for report in reports]) else "Some tasks failed"
 
+    new_report = KgStageReport(
+        stage_name=f"stage_{stage_id}",
+        task_reports=reports,
+        start_ts=start_ts,
+        duration=duration,
+        status=status,
+        error=error
+    )
+
     with open(stage_dir / "exec-report.json", "w") as f:
-        stage_task_reports = KgStageReport(
-            stage_name=f"stage_{stage_id}",
-            task_reports=reports,
-            start_ts=start_ts,
-            duration=duration,
-            status=status,
-            error=error
-        )
-        f.write(stage_task_reports.model_dump_json(indent=4))
+        f.write(new_report.model_dump_json(indent=4))
 
     return PipeOut(root=output_dir, pipeline_name=pipeline_name, stages=[
         StageOut(
@@ -124,7 +135,7 @@ def run_helper(
             tasks=[],
             resultKG=stage_dir / "result.nt",
             plan=KgPipePlan.model_validate(pipeline.plan),
-            report=stage_task_reports
+            report=new_report
         )
     ])
 

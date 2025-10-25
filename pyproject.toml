@@ -12,6 +12,8 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "kgcore>=0.1.0",
+    "pyodible>=0.1.0",
     "docker>=7.0.0", # docker-sdk-for-python
     "PyYAML>=6.0",
     "click>=8.0",

@@ -7,15 +7,47 @@ import numpy as np
 
 embedder = None
 
+
+# in your module where get_embedder() lives
+from kgpipe.util.embeddings.cache import (
+    CachingEmbedder, InMemoryLRUCache, SQLiteCache
+)
+
+def _make_cache_from_env():
+    spec = os.getenv("EMBED_CACHE", "memory").strip()
+    ttl = int(os.getenv("EMBED_CACHE_TTL", "0")) or None  # seconds; 0 = no TTL
+
+    if spec == "memory":
+        capacity = int(os.getenv("EMBED_CACHE_CAPACITY", "50000"))
+        return InMemoryLRUCache(capacity=capacity, ttl_seconds=ttl)
+
+    if spec.startswith("sqlite://"):
+        # e.g. EMBED_CACHE="sqlite:///tmp/emb_cache.db"
+        path = spec[len("sqlite://"):]
+        return SQLiteCache(path=path, ttl_seconds=ttl)
+
+    raise ValueError(f"Unknown EMBED_CACHE backend: {spec}")
+
 def get_embedder() -> Embedder:
     global embedder
     if embedder is None:
+        # pick the real embedder first
         if os.getenv("EMBEDDER") == "openwebui":
-            embedder = openwebui_emb.OpenWebUIEmbedder()
+            base = openwebui_emb.OpenWebUIEmbedder()
+            model_id = getattr(base, "model_id", os.getenv("OPENWEBUI_MODEL", "openwebui-default"))
         elif os.getenv("EMBEDDER") == "sentence-transformer":
-            embedder = st_emb.SentenceTransformerEmbedder()
+            base = st_emb.SentenceTransformerEmbedder()
+            model_id = getattr(base, "model_name", os.getenv("ST_MODEL", "st-default"))
         else:
             raise ValueError(f"Invalid embedder: {os.getenv('EMBEDDER')}")
+
+        # wrap with cache if enabled
+        if os.getenv("EMBED_CACHE_DISABLE", "0") == "1":
+            embedder = base
+        else:
+            cache = _make_cache_from_env()
+            ttl = int(os.getenv("EMBED_CACHE_TTL", "0")) or None
+            embedder = CachingEmbedder(inner=base, cache=cache, model_id=model_id, default_ttl_seconds=ttl)
     return embedder
 
 

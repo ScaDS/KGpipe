@@ -110,3 +110,5 @@ class StageResultManager():
       with open(self.stage_path / "exec-plan.json", "r") as f:
          json_data =  json.load(f)
          return KgPipePlan(**json_data)
+
+

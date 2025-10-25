@@ -1,6 +1,7 @@
 from tokenize import Octnumber
 from typing import Iterator
 import re
+import os
 import json
 import hashlib
 import numpy as np
@@ -195,6 +196,9 @@ from rdflib import Graph, URIRef, BNode, Literal, Namespace
 from rdflib.namespace import RDF, RDFS, SKOS, XSD, DCTERMS
 from sentence_transformers import SentenceTransformer
 
+# Provenance tracking type: json_path -> iri
+Provenance = Dict[str, str]  # json_path -> source_uri_or_bnode
+
 @dataclass
 class LinkDecision:
     node: URIRef | BNode
@@ -202,23 +206,8 @@ class LinkDecision:
     label: Optional[str]
     entity_link: Optional[dict] = None  # from SimpleEntityLinker.link
     type_candidates: List[URIRef] = field(default_factory=list)
-
-# class IriMint:
-#     """
-#     Simple URI minting strategy for new entities.
-#     """
-#     def __init__(self, base: str):
-#         if not base.endswith(("/", "#")):
-#             base = base.rstrip("/") + "/"
-#         self.base = base
-
-#     def new(self, hint: Optional[str] = None) -> URIRef:
-#         # slug from hint, fallback to uuid
-#         if hint:
-#             slug = re.sub(r"[^a-zA-Z0-9\-]+", "-", hint.strip().lower()).strip("-")
-#             if slug:
-#                 return URIRef(self.base + slug + "-" + uuid.uuid4().hex[:8])
-#         return URIRef(self.base + uuid.uuid4().hex)
+    json_path: Optional[str] = None  # JSON path that led to this node
+    provenance: Optional[Provenance] = None  # nested provenance for this node
 
 def guess_literal(value):
     """
@@ -287,7 +276,7 @@ class JsonToRdfLinker:
 
     # ---------- public API ----------
 
-    def link_document(self, obj: dict, parent: URIRef) -> tuple[Graph, List[LinkDecision]]:
+    def link_document(self, obj: dict, parent: URIRef, trace: bool = True) -> tuple[Graph, List[LinkDecision], Optional[Provenance]]:
         g = Graph()
         g.bind("rdf", RDF)
         g.bind("rdfs", RDFS)
@@ -296,12 +285,10 @@ class JsonToRdfLinker:
         g.bind("ex", self.base)
 
         decisions: List[LinkDecision] = []
-        # root_node, type = 
-        self._materialize(g, obj, parent=parent, via_pred=None, decisions=decisions)
-
-        # Mark the root (optional)
-        # g.add((root_node, DCTERMS.source, Literal("json-root")))
-        return g, decisions
+        provenance: Provenance = {} if trace else None
+        self._materialize(g, obj, parent=parent, via_pred=None, decisions=decisions, 
+                         current_path="$", provenance=provenance, trace=trace)
+        return g, decisions, provenance
 
     # ---------- internals ----------
 
@@ -312,42 +299,81 @@ class JsonToRdfLinker:
         parent: URIRef,
         via_pred: Optional[URIRef],
         decisions: List[LinkDecision],
+        current_path: str = "$",
+        provenance: Optional[Provenance] = None,
+        trace: bool = True,
     ) -> URIRef | BNode | None:
         
-
         if isinstance(obj, dict):
-
-            # TODO if not accept build a new node from tree
-
+            # Create entity decision with provenance tracking
             ent_decision = self._link_or_create_entity(obj)
+            ent_decision.json_path = current_path
             decisions.append(ent_decision)
 
-            predicate_matches =  self.relation_linker.link(obj)
-            label = ent_decision.label
+            # Record provenance for this node
+            if trace and provenance is not None:
+                provenance[current_path] = str(ent_decision.node)
 
+            predicate_matches = self.relation_linker.link(obj)
+            label = ent_decision.label
 
             if label:
                 g.add((ent_decision.node, RDFS.label, Literal(label)))
             
-            domains = set()
+            # Process nested objects with provenance tracking
             for match in predicate_matches:
                 if match["decision"] == "accept":
-                    # instead of range get property type
-
                     nested_obj = obj[match["query_text"]]
-
                     best_pred = get_best_candidate(match)
+                    
+                    # Create path for nested property
+                    prop_path = f"{current_path}.{match['query_text']}"
 
                     if isinstance(nested_obj, dict):
-                        self._materialize(g, nested_obj, URIRef(ent_decision.node), best_pred, decisions)
+                        # Recursively process nested object
+                        child_provenance = {} if trace else None
+                        self._materialize(g, nested_obj, URIRef(ent_decision.node), best_pred, 
+                                        decisions, prop_path, child_provenance, trace)
+                        
+                        # Merge child provenance
+                        if trace and provenance is not None and child_provenance:
+                            for child_path, child_iri in child_provenance.items():
+                                if child_path == "$":
+                                    provenance[prop_path] = child_iri
+                                elif child_path.startswith("$"):
+                                    # Replace the root $ with the current prop_path
+                                    provenance[child_path.replace("$", prop_path, 1)] = child_iri
+                                else:
+                                    # Append child_path to prop_path
+                                    provenance[f"{prop_path}{child_path}"] = child_iri
+                        
                         return ent_decision.node
-                    elif isinstance(nested_obj, list): # process list
-                        for item in nested_obj:
-                            node = self._materialize(g, item, URIRef(ent_decision.node), best_pred, decisions)
+                        
+                    elif isinstance(nested_obj, list):
+                        # Process list items
+                        for idx, item in enumerate(nested_obj):
+                            item_path = f"{prop_path}[{idx}]"
+                            child_provenance = {} if trace else None
+                            node = self._materialize(g, item, URIRef(ent_decision.node), best_pred, 
+                                                   decisions, item_path, child_provenance, trace)
                             if isinstance(node, URIRef):
                                 g.add((parent, best_pred, node))
-                    else: # pass as literal
-                        node = self._materialize(g, nested_obj, URIRef(ent_decision.node), best_pred, decisions)
+                            
+                            # Record provenance for list items
+                            if trace and provenance is not None:
+                                if isinstance(node, URIRef):
+                                    provenance[item_path] = str(node)
+                                elif child_provenance and item_path in child_provenance:
+                                    # If it was processed as a shallow object, get the node from child provenance
+                                    provenance[item_path] = child_provenance[item_path]
+                                elif child_provenance and "$" in child_provenance:
+                                    # Fallback: if child_provenance has root mapping, use that
+                                    provenance[item_path] = child_provenance["$"]
+                    else:
+                        # Process literal value
+                        literal_path = prop_path
+                        node = self._materialize(g, nested_obj, URIRef(ent_decision.node), best_pred, 
+                                               decisions, literal_path, provenance, trace)
 
             return ent_decision.node
 
@@ -358,13 +384,21 @@ class JsonToRdfLinker:
     
                 if prop_meta and str(prop_meta["type"]) == "ObjectProperty":
                     print(f"try linking shallow object {obj}")
-                    node = self._materialize(g, { "label": obj }, parent, via_pred, decisions)
+                    # Create a wrapper object for shallow literals
+                    wrapper_obj = {"label": obj}
+                    child_provenance = {} if trace else None
+                    # Use current_path directly for shallow objects to avoid duplication
+                    node = self._materialize(g, wrapper_obj, parent, via_pred, decisions, 
+                                           current_path, child_provenance, trace)
                     print(node)
                     if isinstance(node, URIRef):
                         g.add((parent, via_pred, node))
                         if prop_meta["range"] and prop_meta["range"] != "None":
                             g.add((node, RDF.type, URIRef(prop_meta["range"])))
-
+                        
+                        # For shallow objects, just record the current path -> node mapping
+                        if trace and provenance is not None:
+                            provenance[current_path] = str(node)
 
                 elif prop_meta:
                     if prop_meta["range"] and prop_meta["range"] != "None":
@@ -374,14 +408,11 @@ class JsonToRdfLinker:
                         literal_value = guess_literal(obj)
                         g.add((parent, via_pred, literal_value))   
                     if prop_meta["domain"] and prop_meta["domain"] != "None":
-                        g.add((parent, RDF.type, URIRef(prop_meta["domain"]))) # TODO check if this can be improved
+                        g.add((parent, RDF.type, URIRef(prop_meta["domain"])))
                 else:
                     print(f"no prop meta for {str(via_pred)}")
             else:
                 raise ValueError(f"Unsupported type: {type(obj)}")
-
-
-
 
     def _link_or_create_entity(self, obj: dict) -> LinkDecision:
 
@@ -405,13 +436,6 @@ class JsonToRdfLinker:
         else:
             # Mint new entity
             node = URIRef(self.base + hash_obj(obj))
-            # if not self.mint:
-            #     # If minting disabled, use a blank node
-            #     node = BNode()
-            # else:
-            #     node = self.minter.new(hint=label_val or top_level_kv_string(obj)[:40])
-
-            # Optionally add to index using discovered labels/ids to help future linking
             if self.add_created and self.dynamic_index:
                 new_aliases: list[tuple[str, str]] = []
                 # Use labelish and any ID-like keys as aliases
@@ -436,16 +460,6 @@ class JsonToRdfLinker:
         )
 
 
-# def link_json(json_path: str, kg_path: str, ontology_path: str):
-    # linker = SimpleEntityLinker(kg_path)
-    # relation_linker = SimpleRelationLinker(ontology_path)
-    # obj = json.load(open(json_path))
-    # res = linker.link(obj)
-    # links = relation_linker.link(obj)
-    # return res, links
-
-import os
-
 @Registry.task(
     input_spec={"source": DataFormat.JSON, "target": DataFormat.RDF_NTRIPLES},
     output_spec={"output": DataFormat.RDF_NTRIPLES},
@@ -469,11 +483,11 @@ def construct_linkedrdf_from_json(inputs: Dict[str, Data], outputs: Dict[str, Da
             if file.endswith(".json"):
                 json_file = os.path.join(json_path, file)
                 json_data = json.load(open(json_file))
-                g, decisions = linker.link_document(json_data, URIRef("http://kg.org/json/"+ file.split(".")[0])+"/")
+                g, decisions, provenance = linker.link_document(json_data, URIRef("http://kg.org/json/"+ file.split(".")[0])+"/")
                 final_g += g
     else:
         json_data = json.load(open(json_path))
-        g, decisions = linker.link_document(json_data, URIRef("http://kg.org/json/"+ json_path.name.split(".")[0])+"/")
+        g, decisions, provenance = linker.link_document(json_data, URIRef("http://kg.org/json/"+ json_path.name.split(".")[0])+"/")
         final_g += g
 
     final_g.serialize(format="ntriples", destination=outputs["output"].path)
@@ -501,14 +515,47 @@ def construct_linkedrdf_from_json_v2(inputs: Dict[str, Data], outputs: Dict[str,
             if file.endswith(".json"):
                 json_file = os.path.join(json_path, file)
                 json_data = json.load(open(json_file))
-                g, decisions = linker.link_document(json_data, URIRef("http://kg.org/json/"+ file.split(".")[0])+"/")
+                g, decisions, provenance = linker.link_document(json_data, URIRef("http://kg.org/json/"+ file.split(".")[0])+"/")
                 final_g += g
     else:
         json_data = json.load(open(json_path))
-        g, decisions = linker.link_document(json_data, URIRef("http://kg.org/json/"+ json_path.name.split(".")[0])+"/")
+        g, decisions, provenance = linker.link_document(json_data, URIRef("http://kg.org/json/"+ json_path.name.split(".")[0])+"/")
         final_g += g
 
     final_g.serialize(format="ntriples", destination=outputs["output"].path)
+
+
+if __name__ == "__main__":
+    # construct_linkedrdf_from_json_v2()
+
+
+    os.environ["EMBED_CACHE"] = "sqlite:///tmp/emb_cache.db"
+
+    os.environ["EMBEDDER"] = "sentence-transformer"
+    json_path="/home/marvin/project/data/final/film_10k/split_1/sources/json/data/4e9a2c199d1013b6929c50e6766af404.json"
+    json_data = json.load(open(json_path))
+
+    KG_TTL = "/home/marvin/project/data/final/film_10k/split_0/kg/reference/data.nt"
+    # JSON_PATH = "/home/marvin/project/code/kgflex/src/kgpipe_tasks/test/test_data/json/dbp-movie_depth=1.json"
+    OWL_TTL = "/home/marvin/project/data/final/movie-ontology.ttl"
+
+    linker = JsonToRdfLinker(KG_TTL, OWL_TTL)
+
+    g, decisions, provenance = linker.link_document(json_data, URIRef("http://kg.org/json/4e9a2c199d1013b6929c50e6766af404/"))
+
+    print("=== LINKING DECISIONS ===")
+    for dec in decisions:
+        print(f"Node: {dec.node}")
+        print(f"JSON Path: {dec.json_path}")
+        print(f"Created: {dec.created}")
+        print(f"Label: {dec.label}")
+        print("---")
+    
+    print("\n=== PROVENANCE TRACING ===")
+    for json_path, iri in provenance.items():
+        print(f"{json_path} -> {iri}")
+
+    print(g.serialize(format="turtle"))
 
 # if __name__ == "__main__":    
 
@@ -700,19 +747,3 @@ def construct_linkedrdf_from_json_v2(inputs: Dict[str, Data], outputs: Dict[str,
 
     #     # return node, None
 
-
-if __name__ == "__main__":
-    # construct_linkedrdf_from_json_v2()
-    os.environ["EMBEDDER"] = "sentence-transformer"
-    json_path="/home/marvin/project/data/final/film_10k/split_1/sources/json/data/4e9a2c199d1013b6929c50e6766af404.json"
-    json_data = json.load(open(json_path))
-
-    KG_TTL = "/home/marvin/project/data/final/film_10k/split_0/kg/reference/data.nt"
-    # JSON_PATH = "/home/marvin/project/code/kgflex/src/kgpipe_tasks/test/test_data/json/dbp-movie_depth=1.json"
-    OWL_TTL = "/home/marvin/project/data/final/movie-ontology.ttl"
-
-    linker = JsonToRdfLinker(KG_TTL, OWL_TTL)
-
-    g, decisions = linker.link_document(json_data, URIRef("http://kg.org/json/4e9a2c199d1013b6929c50e6766af404/"))
-
-    print(g.serialize(format="turtle"))

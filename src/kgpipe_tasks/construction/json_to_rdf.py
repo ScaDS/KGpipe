@@ -4,6 +4,9 @@ from typing import Any, Dict, Tuple, Optional, Iterable, List
 from rdflib import Graph, Namespace, URIRef, Literal
 from rdflib.namespace import RDF, RDFS, SKOS, XSD
 
+# Provenance tracking type: json_path -> iri
+Provenance = Dict[str, str]  # json_path -> source_uri_or_bnode
+
 # --------------------------------------------------------------------------------------
 # Helpers: label detection (simple & robust) and the object-vs-literal heuristic
 # --------------------------------------------------------------------------------------
@@ -170,7 +173,7 @@ def _literal(v: Any) -> Literal:
         return Literal(v, datatype=XSD.decimal)
     return Literal(str(v))
 
-def json_to_rdf(obj: Dict[str, Any], root_kind: str = "Root") -> Tuple[Graph, URIRef]:
+def json_to_rdf(obj: Dict[str, Any], root_kind: str = "Root", trace: bool = True) -> Tuple[Graph, URIRef, Optional[Provenance]]:
     """
     Builds a richer RDF:
       - root gets rdfs:label/skos:prefLabel from find_labelish_value
@@ -183,12 +186,21 @@ def json_to_rdf(obj: Dict[str, Any], root_kind: str = "Root") -> Tuple[Graph, UR
     g = Graph()
     g.bind("exs", EXS); g.bind("exp", EXP); g.bind("expl", EXPL)
     g.bind("rdfs", RDFS); g.bind("skos", SKOS)
+    
+    provenance: Provenance = {} if trace else None
 
-    def add_entity(o: Dict[str, Any], kind: str, generate_type: bool = False) -> URIRef:
-        base = "http://example.com/test/"
-        s = URIRef(base + root_kind) #_mint_entity_uri(kind)
+    def add_entity(o: Dict[str, Any], kind: str, generate_type: bool = False, 
+                   current_path: str = "$", parent_provenance: Optional[Provenance] = None) -> URIRef:
+        # Generate unique URI based on path and content hash
+        import hashlib
+        content_hash = hashlib.md5(str(o).encode()).hexdigest()[:8]
+        s = URIRef(f"http://example.com/test/{kind}_{content_hash}")
         if generate_type:
             g.add((s, RDF.type, URIRef(f"{EXC}{kind}")))
+
+        # Record provenance for this entity
+        if trace and provenance is not None:
+            provenance[current_path] = str(s)
 
         # Root/entity labels
         lab = find_labelish_value(o)
@@ -216,42 +228,57 @@ def json_to_rdf(obj: Dict[str, Any], root_kind: str = "Root") -> Tuple[Graph, UR
             else:
                 # Case 2: object-ish
                 if isinstance(v, dict):
-                    o2 = add_entity(v, kind=root_kind + "_" + k_norm.capitalize())
+                    prop_path = f"{current_path}.{k}"
+                    o2 = add_entity(v, kind=root_kind + "_" + k_norm.capitalize(), 
+                                   current_path=prop_path, parent_provenance=provenance)
                     g.add((s, p_obj, o2))
                 elif isinstance(v, list):
                     # emit verbatim literals for provenance/compat, and mint nodes where possible
-                    for item in v:
+                    for idx, item in enumerate(v):
+                        item_path = f"{current_path}.{k}[{idx}]"
                         if isinstance(item, dict):
-                            o2 = add_entity(item, kind=root_kind + "_" + k_norm.capitalize())
+                            o2 = add_entity(item, kind=root_kind + "_" + k_norm.capitalize(),
+                                           current_path=item_path, parent_provenance=provenance)
                             g.add((s, p_obj, o2))
                         elif isinstance(item, (str, int, float)) and str(item).strip():
                             # provenance literal
                             # g.add((s, p_lit, _literal(item)))
                             # mint a node with label if it looks like an entity-ish string
                             lab_str = str(item).strip()
-                            o2 = URIRef(base + root_kind + "_" + k_norm.capitalize()) #_mint_entity_uri(root_kind + "_" + k_norm.capitalize())
+                            item_hash = hashlib.md5(lab_str.encode()).hexdigest()[:8]
+                            o2 = URIRef(f"http://example.com/test/{k_norm.capitalize()}_{item_hash}")
                             g.add((o2, RDFS.label, Literal(lab_str)))
                             
                             if generate_type:
                                 g.add((o2, RDF.type, URIRef(f"{EXC}{k_norm.capitalize()}")))    
                             # g.add((o2, SKOS.prefLabel, Literal(lab_str)))
                             g.add((s, p_obj, o2))
+                            
+                            # Record provenance for list item
+                            if trace and provenance is not None:
+                                provenance[item_path] = str(o2)
                 else:
                     # single primitive that looks like an entity name → dual representation
                     if v is not None and str(v).strip():
+                        prop_path = f"{current_path}.{k}"
                         # g.add((s, p_lit, _literal(v)))  # keep raw literal
                         lab_str = str(v).strip()
-                        o2 = URIRef(base + root_kind + "_" + k_norm.capitalize()) #_mint_entity_uri(root_kind + "_" + k_norm.capitalize())
+                        item_hash = hashlib.md5(lab_str.encode()).hexdigest()[:8]
+                        o2 = URIRef(f"http://example.com/test/{k_norm.capitalize()}_{item_hash}")
                         g.add((o2, RDFS.label, Literal(lab_str)))
                         if generate_type:
                             g.add((o2, RDF.type, URIRef(f"{EXC}{k_norm.capitalize()}")))    
                         # g.add((o2, SKOS.prefLabel, Literal(lab_str)))
                         g.add((s, p_obj, o2))
+                        
+                        # Record provenance for single primitive
+                        if trace and provenance is not None:
+                            provenance[prop_path] = str(o2)
 
         return s
 
     root = add_entity(obj, root_kind)
-    return g, root
+    return g, root, provenance
 
 import json, os
 from kgpipe.common import Registry, DataFormat, Data
@@ -271,15 +298,21 @@ def construct_rdf_from_json2(inputs: Dict[str, Data], outputs: Dict[str, Data]):
             if file.endswith(".json"):
                 json_path = os.path.join(file_or_dir_path, file)
                 json_data = json.load(open(json_path))
-                g, root = json_to_rdf(json_data, file.split(".")[0])
+                g, root, provenance = json_to_rdf(json_data, file.split(".")[0])
                 final_g += g
         final_g.serialize(format="nt", destination=outputs["output"].path)
     else:
         json_data = json.load(open(file_or_dir_path))
-        g, root = json_to_rdf(json_data)
+        g, root, provenance = json_to_rdf(json_data)
         g.serialize(format="nt", destination=outputs["output"].path)
 
 if __name__ == "__main__":
     json = json.load(open("code/kgflex/src/kgpipe_tasks/test/test_data/json/dbp-movie_depth=1.json"))
-    g, root = json_to_rdf(json)
+    g, root, provenance = json_to_rdf(json)
+    
+    print("=== PROVENANCE TRACING ===")
+    for json_path, iri in provenance.items():
+        print(f"{json_path} -> {iri}")
+    
+    print("\n=== RDF OUTPUT ===")
     print(g.serialize(format="ttl"))

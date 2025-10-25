@@ -8,6 +8,7 @@ from collections import defaultdict
 from typing import Dict, List, Optional, Any
 import json
 from pathlib import Path
+from pydantic import BaseModel
 from rdflib import Graph, URIRef, Literal, RDF, RDFS
 import time
 
@@ -44,7 +45,7 @@ class EntityCountMetric(Metric):
             aspect=EvaluationAspect.STATISTICAL
         )
     
-    @kg_function
+    # @kg_function
     def compute(self, kg: KG, config: StatisticalConfig, **kwargs) -> MetricResult:
         """Compute entity count from KG file."""
         try:
@@ -78,8 +79,13 @@ class EntityCountMetric(Metric):
                 aspect=self.aspect
             )
 
+class RelationCountMetricDetails(BaseModel):
+    unique_relations: int
+    relations: int
+
 
 @Registry.metric()
+@kg_class("EvalMetric")
 class RelationCountMetric(Metric):
     """Count the number of unique relations in the KG."""
     
@@ -189,6 +195,7 @@ class TripleCountMetric(Metric):
         return count
 
 @Registry.metric()
+@kg_class("EvalMetric")
 class ClassCountMetric(Metric):
     """Count the number of unique classes in the KG."""
     
@@ -227,6 +234,7 @@ class ClassCountMetric(Metric):
             )
             
 @Registry.metric()
+@kg_class("EvalMetric")
 class ClassOccurrenceMetric(Metric):
 
     def __init__(self):
@@ -253,6 +261,7 @@ class ClassOccurrenceMetric(Metric):
         )
 
 @Registry.metric()
+@kg_class("EvalMetric")
 class RelationOccurrenceMetric(Metric):
     def __init__(self):
         super().__init__(
@@ -279,6 +288,7 @@ class RelationOccurrenceMetric(Metric):
         )
 
 @Registry.metric()
+@kg_class("EvalMetric")
 class PropertyOccurrenceMetric(Metric):
     def __init__(self):
         super().__init__(
@@ -304,6 +314,7 @@ class PropertyOccurrenceMetric(Metric):
         )
 
 @Registry.metric()
+@kg_class("EvalMetric")
 class NamespaceUsageMetric(Metric):
 
     def __init__(self):
@@ -330,6 +341,7 @@ class NamespaceUsageMetric(Metric):
             aspect=self.aspect
         )
 
+@kg_class("EvalMetric")
 class LooseEntityCountMetric(Metric):
     def __init__(self):
         super().__init__(
@@ -356,6 +368,7 @@ class LooseEntityCountMetric(Metric):
             aspect=self.aspect
         )
 
+@kg_class("EvalMetric")
 class ShallowEntityCountMetric(Metric):
     def __init__(self):
         super().__init__(

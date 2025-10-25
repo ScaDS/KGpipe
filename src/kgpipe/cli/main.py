@@ -10,7 +10,7 @@ import click
 from rich.console import Console
 
 # Import all subcommands
-from .run import run_cmd, batch_cmd
+# from .run import run_cmd, batch_cmd
 from .eval import eval_cmd
 from .report import report_cmd
 from .list import list_cmd
@@ -18,6 +18,7 @@ from .show import show_cmd
 from .config import config_cmd
 from .registry import registry_cmd
 from .clean import clean_cmd
+from .task import task_cmd
 
 # Initialize Rich console for pretty output
 console = Console()
@@ -69,8 +70,8 @@ def cli(ctx: click.Context, config: Optional[str], verbose: bool, quiet: bool):
 
 
 # Add all subcommands
-cli.add_command(run_cmd)
-cli.add_command(batch_cmd)
+# cli.add_command(run_cmd)
+# cli.add_command(batch_cmd)
 cli.add_command(eval_cmd)
 cli.add_command(report_cmd)
 cli.add_command(list_cmd)
@@ -78,6 +79,7 @@ cli.add_command(show_cmd)
 cli.add_command(config_cmd)
 cli.add_command(registry_cmd)
 cli.add_command(clean_cmd)
+cli.add_command(task_cmd)
 
 
 if __name__ == "__main__":

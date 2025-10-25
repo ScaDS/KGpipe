@@ -8,29 +8,20 @@ from matplotlib.patches import Patch
 from matplotlib.ticker import ScalarFormatter
 from typing import Dict
 import re
+import pandas as pd
 
+import pandas as pd
+from typing import List, Optional
+
+from moviekg.paper.config import HEADERS, main_classes
 
 from moviekg.pipelines.test_inc_ssp import pipeline_types, llm_pipeline_types
-
-HEADERS = ["pipeline", "stage", "aspect", "metric", "value", "normalized", "duration", "details"]
-
-# Only keep these classes and aggregate the rest into "Other"
-main_classes = [
-    "http://kg.org/ontology/Company",
-    "http://kg.org/ontology/Person",
-    "http://kg.org/ontology/Film"
-]
 
 
 def load_metrics_from_file(file_path):
     print("Loading metrics from file: ", file_path)
     df = pd.read_csv(file_path, names=HEADERS, skiprows=1)
     return df
-
-# def load_metrics_from_dir(dir_path):
-#     # load all csv files in dir_path
-#     files = glob.glob(os.path.join(dir_path, "*.csv"))
-#     return [load_metrics_from_file(file) for file in files]
 
 def plot_growth_v1(df, metrics):
     """
@@ -201,7 +192,7 @@ def plot_growth(df, metrics, kind="bar", references={}):
         palette=PALETTE,
         order=stage_order,
         dodge=True,
-        ci=None,
+        errorbar=None
     )
 
 
@@ -245,19 +236,7 @@ def plot_growth(df, metrics, kind="bar", references={}):
         ax.grid(True, axis="y", linestyle="--", alpha=0.3)
         ax.margins(x=0.02)
 
-    # g.fig.subplots_adjust(bottom=0.2)
-    # plt.subplots_adjust(top=-0.88)
-    # g.fig.suptitle("Pipeline Growth Across Stages")
-
     return g
-
-    # if kind == "line":
-    #     g.map_dataframe(
-    #         sns.lineplot,
-    #         x="stage",
-    #         y="value",
-    #         marker="o"
-    #     )
 
 def _stage_sort_key(s):
     """
@@ -449,17 +428,6 @@ def plot_actual_expected_stacked(df,
     plt.subplots_adjust(bottom=0.08 + 0.05 * max(0, nrows_leg - 1))
 
     return fig
-    # # fig.legend(handles=handles, loc="upper center", ncol=min(4, len(handles)), bbox_to_anchor=(0.5, 1.02))
-    # # fig.suptitle(suptitle, fontsize=14)
-    # fig.legend(
-    #     handles=handles,
-    #     loc="upper center",
-    #     ncol=min(4, len(handles)),
-    #     bbox_to_anchor=(0.5, 1.08)  # push further up
-    # )
-    # fig.suptitle(suptitle, y=1.12, fontsize=14)  # lift title as well
-    # # fig.tight_layout(rect=[0, 0, 1, 0.92])
-    # return fig
 
 
 def plot_expected_actual_from_nested(
@@ -489,14 +457,6 @@ def plot_expected_actual_from_nested(
         sharey=True,
         col_order=pipeline_order
     )
-
-
-
-    # Palettes for stacks
-    # blues = sns.color_palette("Blues", n_colors=max(3, len(classes)))
-    # oranges = sns.color_palette("Oranges", n_colors=max(3, len(classes)))
-    # color_map_actual = {cls: blues[i % len(blues)] for i, cls in enumerate(classes)}
-    # color_map_expected = {cls: oranges[i % len(oranges)] for i, cls in enumerate(classes)}
 
     df[['Actual','Expected']] = df[['Actual','Expected']].fillna(0)
 
@@ -546,129 +506,6 @@ def plot_class_occurence(df):
 
     return plot_expected_actual_from_nested(class_counts_by_stage_by_pipeline, col_wrap=2, height=4, suptitle="Actual vs Reference by Stage • Stacked by Class")
 
-# def plot_expected_actual_by_pipeline(
-#     df_classwise,
-#     classes,
-#     pipeline_col="Pipeline",
-#     stage_col="Stage Label",
-#     class_col="Class",
-#     actual_col="Actual",
-#     expected_col="Expected",
-#     suptitle="Stacked Actual vs Expected by Class and Stage per Pipeline",
-#     col_wrap=3,
-#     height=4,
-# ):
-#     """
-#     Draws a facet plot with one subplot per pipeline. For each stage on that subplot,
-#     there are two stacked bars: one for Actual and one for Expected, each stacked by Class.
-
-#     Parameters
-#     ----------
-#     df_classwise : pd.DataFrame
-#         Must contain columns: [pipeline_col, stage_col, class_col, actual_col, expected_col]
-#     classes : list[str]
-#         Ordered list of class names to stack (controls stack order and legend order).
-#     pipeline_col, stage_col, class_col, actual_col, expected_col : str
-#         Column names in df_classwise.
-#     suptitle : str
-#         Figure title.
-#     col_wrap : int
-#         FacetGrid col_wrap.
-#     height : float
-#         Facet height.
-
-#     Returns
-#     -------
-#     g : seaborn.axisgrid.FacetGrid
-#     """
-#     # Validate columns
-#     needed = {pipeline_col, stage_col, class_col, actual_col, expected_col}
-#     missing = needed - set(df_classwise.columns)
-#     if missing:
-#         raise ValueError(f"Missing required columns: {sorted(missing)}")
-
-#     # Aggregate in case there are multiple rows per (pipeline, stage, class)
-#     df_stage = (
-#         df_classwise
-#         .groupby([pipeline_col, stage_col, class_col])[[actual_col, expected_col]]
-#         .sum()
-#         .reset_index()
-#     )
-
-#     # Long format for FacetGrid grouping (Type = Actual/Expected)
-#     df_long = df_stage.melt(
-#         id_vars=[pipeline_col, stage_col, class_col],
-#         value_vars=[actual_col, expected_col],
-#         var_name="Type",
-#         value_name="Value"
-#     )
-
-#     # Nice style
-#     sns.set(style="whitegrid")
-
-#     # Build the facet grid
-#     # sharey=True so scales are comparable between pipelines
-#     g = sns.FacetGrid(
-#         df_long,
-#         col=pipeline_col,
-#         col_wrap=col_wrap,
-#         height=height,
-#         sharey=True
-#     )
-
-#     # Palettes for stacks
-#     blues = sns.color_palette("Blues", n_colors=max(3, len(classes)))
-#     oranges = sns.color_palette("Oranges", n_colors=max(3, len(classes)))
-#     color_map_actual = {cls: blues[i % len(blues)] for i, cls in enumerate(classes)}
-#     color_map_expected = {cls: oranges[i % len(oranges)] for i, cls in enumerate(classes)}
-
-#     # Draw stacked bars manually on each facet
-#     for ax, (pipeline, data) in zip(g.axes.flat, df_long.groupby(pipeline_col, sort=False)):
-#         # Stage order: first appearance within this pipeline
-#         stage_labels = pd.Index(data[stage_col].astype(str)).drop_duplicates().tolist()
-#         xpos = range(len(stage_labels))
-
-#         # Build quick lookup for values: dict[(stage, cls, type)] -> value
-#         keyval = {}
-#         for _, row in data.iterrows():
-#             key = (str(row[stage_col]), row[class_col], row["Type"])
-#             keyval[key] = keyval.get(key, 0.0) + float(row["Value"])
-
-#         # For each stage, plot two bars (Actual at x-0.2, Expected at x+0.2), each stacked by class
-#         width = 0.4
-#         for i, stage in enumerate(stage_labels):
-#             bottom_actual = 0.0
-#             bottom_expected = 0.0
-#             for cls in classes:
-#                 va = keyval.get((stage, cls, actual_col), 0.0) or keyval.get((stage, cls, "Actual"), 0.0)
-#                 ve = keyval.get((stage, cls, expected_col), 0.0) or keyval.get((stage, cls, "Expected"), 0.0)
-
-#                 # Only draw segment if nonzero (keeps things tidy)
-#                 if va:
-#                     ax.bar(i - 0.2, va, width=width, bottom=bottom_actual, color=color_map_actual[cls])
-#                     bottom_actual += va
-#                 if ve:
-#                     ax.bar(i + 0.2, ve, width=width, bottom=bottom_expected, color=color_map_expected[cls])
-#                     bottom_expected += ve
-
-#         # Ax cosmetics
-#         ax.set_title(f"{pipeline}")
-#         ax.set_xticks(list(xpos))
-#         ax.set_xticklabels(stage_labels)
-#         ax.set_xlabel(stage_col)
-#         ax.set_ylabel("Count")
-
-#     # Custom legend: show class stacks for Actual and Expected
-#     handles = (
-#         [Patch(facecolor=color_map_actual[cls], label=f"{cls} • Actual") for cls in classes] +
-#         [Patch(facecolor=color_map_expected[cls], label=f"{cls} • Expected") for cls in classes]
-#     )
-#     g.fig.legend(handles=handles, loc='upper center', ncol=min(4, len(handles)), bbox_to_anchor=(0.5, 1.02))
-#     g.fig.suptitle(suptitle, fontsize=14)
-#     plt.subplots_adjust(top=0.86)
-
-#     return g
-
 
 def rank_pipeline_stage(group_df, metric_names, metric_weights):
     weights = pd.Series(metric_weights, index=metric_names)
@@ -688,10 +525,6 @@ def rank_metrics_apply(df, metric_names, metric_weights):
            .reset_index()
     )
 
-import pandas as pd
-
-import pandas as pd
-from typing import List, Optional
 
 def rank_metrics(
     df: pd.DataFrame,
@@ -752,30 +585,6 @@ def rank_metrics(
     scores = pivot.dot(weights).rename(score_col)
 
     return scores.reset_index()
-
-
-# def rank_pipeline_stage(row, metric_weights):
-#     """
-#     row: pandas dataframe row with columns: pipeline, stage, metric, normalized
-#     metric_names: list of metric names to rank
-#     metric_weights: list of weights for each metric
-#     """
-#     return sum(row["normalized"] * metric_weights)
-
-# def rank_metrics(df, metric_names, metric_weights):
-#     """
-#     df: pandas dataframe with columns: pipeline, stage, aspect, metric, value, normalized, details
-#     metric_names: list of metric names to rank
-#     metric_weights: list of weights for each metric
-#     """
-#     # filter df for metrics
-#     df = df[df["metric"].isin(metric_names)]
-#     # select pipleine, stage, metric, and normalized
-#     df = df[["pipeline", "stage", "metric", "normalized"]]
-
-#     # group by pipeline and stage
-#     df = df.groupby(["pipeline", "stage"]).apply(lambda x: rank_pipeline_stage(x, metric_weights))
-#     print(df)
 
 def get_reference_value(df, metric_name, stage):
     df = df[df["metric"] == metric_name]
@@ -860,7 +669,7 @@ def plot_class_occurence_new(df, reference_stage_class_count, classes):
         palette=PALETTE,
         order=stage_order,
         dodge=True,
-        ci=None,
+        errorbar=None
     )
 
 
@@ -924,47 +733,7 @@ def plot_class_occ_4_bar_chart(df):
 
     subplot_source_entity_integration(df)
 
-    classes = ["http://kg.org/ontology/Company", "http://kg.org/ontology/Person", "http://kg.org/ontology/Film"]
+    classes = ["http://kg.org/ontology/Film", "http://kg.org/ontology/Person", "http://kg.org/ontology/Company"]
 
 
     return plot_class_occurence_new(df, reference_stage_class_count, classes)
-
-
-    # reference = np.array([10, 20, 15])
-
-    # # Approaches
-    # approach1 = np.array([9, 19, 16])
-    # approach2 = np.array([11, 22, 14])
-    # approach3 = np.array([10, 18, 15])
-    # approaches = [approach1, approach2, approach3]
-    # labels = ["Approach 1", "Approach 2", "Approach 3"]
-
-    # # =====================================
-    # # UPDATED OPTION 1: Separate chart per metric (handles very different scales)
-    # # =====================================
-    # width = 0.25
-    # x = np.arange(len(labels))
-
-    # subplots = []
-
-    # for idx, m in enumerate(metrics):
-    #     fig = plt.figure(figsize=(6, 4))
-    #     vals = [a[idx] for a in approaches]
-    #     plt.bar(x, vals, width)
-    #     # Reference line for this metric
-    #     plt.axhline(reference[idx], linestyle="--", linewidth=1)
-    #     plt.xticks(x, labels, rotation=0)
-    #     plt.ylabel(f"{m} Value")
-    #     plt.title(f"Absolute Values vs Reference — Metric {m}")
-    #     # Label the reference value
-    #     plt.text(len(labels)-0.2, reference[idx], f"Ref {m}={reference[idx]}", va="center")
-    #     plt.tight_layout()
-    #     subplots.append(fig)
-
-    # # combine subplots into one figure
-    # fig = plt.figure(figsize=(6, 4))
-    # for subplot in subplots:
-    #     fig.add_subplot(subpl)
-    # plt.tight_layout()
-
-    # return fig

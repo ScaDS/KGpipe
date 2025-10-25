@@ -88,11 +88,11 @@ def load_pipe_out(path: Path) -> PipeOut:
     )
     return pipe_out
     
-def test_load_pipe_out():
-    path = Path("/home/marvin/project/code/kgflex/src/kgpipe/test_data/inc/pipeline_1")
+# def test_load_pipe_out():
+#     path = Path("/home/marvin/project/code/kgflex/src/kgpipe/test_data/inc/pipeline_1")
 
-    pipe_out = load_pipe_out(path)
-    print(pipe_out.model_dump_json(indent=2))
+#     pipe_out = load_pipe_out(path)
+#     print(pipe_out.model_dump_json(indent=2))
 
-if __name__ == "__main__":
-    test_load_pipe_out()
+# if __name__ == "__main__":
+#     test_load_pipe_out()

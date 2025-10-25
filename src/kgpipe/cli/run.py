@@ -16,7 +16,7 @@ from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from kgpipe.common.models import KgPipe, Data, DataFormat
-from kgpipe.execution.runner import PipelineRunner
+# from kgpipe.execution.runner import PipelineRunner
 
 # Placeholder classes for missing components
 class YamlPipelineLoader:
@@ -76,169 +76,169 @@ def show_execution_summary(reports):
     console.print(table)
 
 
-@click.command()
-@click.argument("pipeline_file", type=click.Path(exists=True))
-@click.option(
-    "--output", 
-    "-o", 
-    type=click.Path(), 
-    help="Output directory for results"
-)
-@click.option(
-    "--temp-dir", 
-    "-t", 
-    type=click.Path(), 
-    help="Temporary directory for intermediate files"
-)
-@click.option(
-    "--dry-run", 
-    is_flag=True, 
-    help="Show execution plan without running"
-)
-@click.pass_context
-def run_cmd(ctx: click.Context, pipeline_file: str, output: Optional[str], temp_dir: Optional[str], dry_run: bool):
-    """
-    Execute one pipeline file.
+# @click.command()
+# @click.argument("pipeline_file", type=click.Path(exists=True))
+# @click.option(
+#     "--output", 
+#     "-o", 
+#     type=click.Path(), 
+#     help="Output directory for results"
+# )
+# @click.option(
+#     "--temp-dir", 
+#     "-t", 
+#     type=click.Path(), 
+#     help="Temporary directory for intermediate files"
+# )
+# @click.option(
+#     "--dry-run", 
+#     is_flag=True, 
+#     help="Show execution plan without running"
+# )
+# @click.pass_context
+# def run_cmd(ctx: click.Context, pipeline_file: str, output: Optional[str], temp_dir: Optional[str], dry_run: bool):
+#     """
+#     Execute one pipeline file.
     
-    PIPELINE_FILE: Path to the pipeline YAML file to execute
-    """
-    console.print(f"[bold blue]Executing pipeline:[/bold blue] {pipeline_file}")
+#     PIPELINE_FILE: Path to the pipeline YAML file to execute
+#     """
+#     console.print(f"[bold blue]Executing pipeline:[/bold blue] {pipeline_file}")
     
-    try:
-        # Load pipeline
-        loader = YamlPipelineLoader()
-        pipeline = loader.load(pipeline_file)
+#     try:
+#         # Load pipeline
+#         loader = YamlPipelineLoader()
+#         pipeline = loader.load(pipeline_file)
         
-        if dry_run:
-            console.print("[yellow]DRY RUN - Showing execution plan:[/yellow]")
-            show_pipeline_plan(pipeline)
-            return
+#         if dry_run:
+#             console.print("[yellow]DRY RUN - Showing execution plan:[/yellow]")
+#             show_pipeline_plan(pipeline)
+#             return
         
-        # Set up output directory
-        if output:
-            output_path = Path(output)
-            output_path.mkdir(parents=True, exist_ok=True)
-        else:
-            output_path = Path.cwd() / "kgpipe_output"
-            output_path.mkdir(exist_ok=True)
+#         # Set up output directory
+#         if output:
+#             output_path = Path(output)
+#             output_path.mkdir(parents=True, exist_ok=True)
+#         else:
+#             output_path = Path.cwd() / "kgpipe_output"
+#             output_path.mkdir(exist_ok=True)
         
-        # Execute pipeline
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console
-        ) as progress:
-            task = progress.add_task("Executing pipeline...", total=None)
+#         # Execute pipeline
+#         with Progress(
+#             SpinnerColumn(),
+#             TextColumn("[progress.description]{task.description}"),
+#             console=console
+#         ) as progress:
+#             task = progress.add_task("Executing pipeline...", total=None)
             
-            runner = PipelineRunner()
-            # Create mock input data for now
-            mock_input = Data(Path("mock_input.nt"), DataFormat.RDF)
-            execution_report = runner.run_pipeline(pipeline, [mock_input])
-            reports = [report.__dict__ for report in execution_report.task_reports]
+#             runner = PipelineRunner()
+#             # Create mock input data for now
+#             mock_input = Data(Path("mock_input.nt"), DataFormat.RDF)
+#             execution_report = runner.run_pipeline(pipeline, [mock_input])
+#             reports = [report.__dict__ for report in execution_report.task_reports]
             
-            progress.update(task, completed=True)
+#             progress.update(task, completed=True)
         
-        # Display results
-        console.print(f"[green]✓ Pipeline completed successfully![/green]")
-        console.print(f"[dim]Results saved to:[/dim] {output_path}")
+#         # Display results
+#         console.print(f"[green]✓ Pipeline completed successfully![/green]")
+#         console.print(f"[dim]Results saved to:[/dim] {output_path}")
         
-        # Show summary
-        show_execution_summary(reports)
+#         # Show summary
+#         show_execution_summary(reports)
         
-    except Exception as e:
-        console.print(f"[red]✗ Pipeline execution failed:[/red] {e}")
-        if ctx.obj["verbose"]:
-            console.print_exception()
-        sys.exit(1)
+#     except Exception as e:
+#         console.print(f"[red]✗ Pipeline execution failed:[/red] {e}")
+#         if ctx.obj["verbose"]:
+#             console.print_exception()
+#         sys.exit(1)
 
 
-@click.command()
-@click.argument("batch_file", type=click.Path(exists=True))
-@click.option(
-    "--output", 
-    "-o", 
-    type=click.Path(), 
-    help="Output directory for results"
-)
-@click.option(
-    "--parallel", 
-    "-p", 
-    type=int, 
-    default=1, 
-    help="Number of parallel executions"
-)
-@click.option(
-    "--continue-on-error", 
-    is_flag=True, 
-    help="Continue execution even if some pipelines fail"
-)
-@click.pass_context
-def batch_cmd(ctx: click.Context, batch_file: str, output: Optional[str], parallel: int, continue_on_error: bool):
-    """
-    Execute multiple pipelines from a batch file.
+# @click.command()
+# @click.argument("batch_file", type=click.Path(exists=True))
+# @click.option(
+#     "--output", 
+#     "-o", 
+#     type=click.Path(), 
+#     help="Output directory for results"
+# )
+# @click.option(
+#     "--parallel", 
+#     "-p", 
+#     type=int, 
+#     default=1, 
+#     help="Number of parallel executions"
+# )
+# @click.option(
+#     "--continue-on-error", 
+#     is_flag=True, 
+#     help="Continue execution even if some pipelines fail"
+# )
+# @click.pass_context
+# def batch_cmd(ctx: click.Context, batch_file: str, output: Optional[str], parallel: int, continue_on_error: bool):
+#     """
+#     Execute multiple pipelines from a batch file.
     
-    BATCH_FILE: Path to the batch YAML file containing pipeline definitions
-    """
-    console.print(f"[bold blue]Executing batch:[/bold blue] {batch_file}")
+#     BATCH_FILE: Path to the batch YAML file containing pipeline definitions
+#     """
+#     console.print(f"[bold blue]Executing batch:[/bold blue] {batch_file}")
     
-    try:
-        # Load batch configuration
-        with open(batch_file, 'r') as f:
-            batch_config = yaml.safe_load(f)
+#     try:
+#         # Load batch configuration
+#         with open(batch_file, 'r') as f:
+#             batch_config = yaml.safe_load(f)
         
-        pipelines = batch_config.get('pipelines', [])
-        console.print(f"[dim]Found {len(pipelines)} pipelines to execute[/dim]")
+#         pipelines = batch_config.get('pipelines', [])
+#         console.print(f"[dim]Found {len(pipelines)} pipelines to execute[/dim]")
         
-        # Set up output directory
-        if output:
-            output_path = Path(output)
-            output_path.mkdir(parents=True, exist_ok=True)
-        else:
-            output_path = Path.cwd() / "kgpipe_batch_output"
-            output_path.mkdir(exist_ok=True)
+#         # Set up output directory
+#         if output:
+#             output_path = Path(output)
+#             output_path.mkdir(parents=True, exist_ok=True)
+#         else:
+#             output_path = Path.cwd() / "kgpipe_batch_output"
+#             output_path.mkdir(exist_ok=True)
         
-        # Execute pipelines
-        successful = 0
-        failed = 0
+#         # Execute pipelines
+#         successful = 0
+#         failed = 0
         
-        with Progress(
-            SpinnerColumn(),
-            TextColumn("[progress.description]{task.description}"),
-            console=console
-        ) as progress:
-            task = progress.add_task("Executing batch...", total=len(pipelines))
+#         with Progress(
+#             SpinnerColumn(),
+#             TextColumn("[progress.description]{task.description}"),
+#             console=console
+#         ) as progress:
+#             task = progress.add_task("Executing batch...", total=len(pipelines))
             
-            for i, pipeline_config in enumerate(pipelines):
-                try:
-                    progress.update(task, description=f"Executing pipeline {i+1}/{len(pipelines)}")
+#             for i, pipeline_config in enumerate(pipelines):
+#                 try:
+#                     progress.update(task, description=f"Executing pipeline {i+1}/{len(pipelines)}")
                     
-                    # Execute individual pipeline
-                    pipeline_file = pipeline_config['file']
-                    loader = YamlPipelineLoader()
-                    pipeline = loader.load(pipeline_file)
+#                     # Execute individual pipeline
+#                     pipeline_file = pipeline_config['file']
+#                     loader = YamlPipelineLoader()
+#                     pipeline = loader.load(pipeline_file)
                     
-                    runner = PipelineRunner()
-                    mock_input = Data(Path("mock_input.nt"), DataFormat.RDF)
-                    execution_report = runner.run_pipeline(pipeline, [mock_input])
+#                     runner = PipelineRunner()
+#                     mock_input = Data(Path("mock_input.nt"), DataFormat.RDF)
+#                     execution_report = runner.run_pipeline(pipeline, [mock_input])
                     
-                    successful += 1
+#                     successful += 1
                     
-                except Exception as e:
-                    failed += 1
-                    console.print(f"[red]Pipeline {i+1} failed:[/red] {e}")
+#                 except Exception as e:
+#                     failed += 1
+#                     console.print(f"[red]Pipeline {i+1} failed:[/red] {e}")
                     
-                    if not continue_on_error:
-                        raise e
+#                     if not continue_on_error:
+#                         raise e
                 
-                progress.update(task, advance=1)
+#                 progress.update(task, advance=1)
         
-        # Display results
-        console.print(f"[green]✓ Batch completed![/green]")
-        console.print(f"[dim]Successful:[/dim] {successful}, [dim]Failed:[/dim] {failed}")
-        console.print(f"[dim]Results saved to:[/dim] {output_path}")
+#         # Display results
+#         console.print(f"[green]✓ Batch completed![/green]")
+#         console.print(f"[dim]Successful:[/dim] {successful}, [dim]Failed:[/dim] {failed}")
+#         console.print(f"[dim]Results saved to:[/dim] {output_path}")
         
-    except Exception as e:
-        console.print(f"[red]✗ Batch execution failed:[/red] {e}")
-        if ctx.obj["verbose"]:
-            console.print_exception()
-        sys.exit(1) 
+#     except Exception as e:
+#         console.print(f"[red]✗ Batch execution failed:[/red] {e}")
+#         if ctx.obj["verbose"]:
+#             console.print_exception()
+#         sys.exit(1) 

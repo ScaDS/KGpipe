@@ -9,7 +9,7 @@ from kgpipe.evaluation.writer import render_as_table_multi, render_metric_as_tab
 from moviekg.datasets.pipe_out import StageOut
 
 from pyodibel.datasets.mp_mf.multipart_multisource import load_dataset, Dataset
-from kgpipe_tasks.common.ontology import  Ontology, OntologyUtil
+from kgcore.model.ontology import  Ontology, OntologyUtil
 
 from typing import List, Dict, Tuple
 from pathlib import Path

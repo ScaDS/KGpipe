@@ -14,76 +14,6 @@ import os
 
 
 
-# def generate_triple_from_json(json_data, parent_s: str, parent_p: str) -> List[Tuple[str, str, str]]:
-#     triplets = []
-
-#     if isinstance(json_data, Dict):
-#         for key, value in json_data.items():
-#             triplets.extend(generate_triple_from_json(value, parent_s, key))
-#     elif isinstance(json_data, List):
-#         for item in json_data:
-#             triplets.extend(generate_triple_from_json(item, parent_s, parent_p))
-#     else:
-#         triplets.append((parent_s, parent_p, json_data))
-
-#     return triplets
-
-# # def test_json_map():
-# #     json_data = json.loads(open("/home/marvin/project/data/current/sources/source.json/0a0d9846a69456249a3261102d4fd534.json").read())
-
-# #     triplets = generate_triple_from_json(json_data, "0a0d9846a69456249a3261102d4fd534", "root")
-
-# #     print(triplets)
-
-
-# # JSONb
-# # TODO
-
-# # JSONb
-# # 1. JSON to TE_Document
-# # 2. ReL on TE_Document
-# # 3. TE_Document to KG
-
-# # Idea:
-# # For each key in json find a mapping to the ontology
-
-# def create_triple(s: str, p: str, o: str) -> TE_Triple:
-#     print(s, p, o)
-#     return TE_Triple(subject=TE_Span(text=s, start=0, end=len(s)), predicate=TE_Span(text=p, start=0, end=len(p)), object=TE_Span(text=o, start=0, end=len(o)))
-
-# # TODO see mapping_tasks.py triplify_json_dm
-# def __extract_triplets_from_json(json_data, parent_s: str, parent_p: str) -> List[TE_Triple]:
-#     triplets = []
-
-#     if isinstance(json_data, Dict):
-#         for key, value in json_data.items():
-#             triplets.extend(__extract_triplets_from_json(value, parent_s, key))
-#     elif isinstance(json_data, List):
-#         for item in json_data:
-#             triplets.extend(__extract_triplets_from_json(item, parent_s, parent_p))
-#     else:
-#         triplets.append(create_triple(parent_s, parent_p, json_data))
-
-#     # print(triplets)
-    
-#     return triplets
-
-# def __link_relations(doc: TE_Document, rel_matcher: AliasAndTransformerBasedRelationLinker) -> List[RelationMatch]:
-#     relations : List[str] = list({ triple.predicate.text for triple in doc.triples if triple.predicate.text is not None})
-
-#     # print(relations)
-
-#     matches = rel_matcher.link_relations(relations)
-
-#     return matches
-#     # for match in matches:
-#     #     print(match.relation, match.predicate.equivalent, match.score)
-
-
-# def derive_triple_from_document(doc: TE_Document) -> List[TE_Triple]:
-#     return [triple for triple in doc.triples if triple.predicate.text is not None]
-
-
 
 def __getSubject(data):
     # Ensure stable serialization for consistent hashing
@@ -725,3 +655,76 @@ if __name__ == "__main__":
         # elif not isinstance(value, dict):
         #     decision, score, features = heuristic_decide_object_vs_literal(key, value)
         #     print(key, value, decision, score, features)
+
+
+
+
+
+# def generate_triple_from_json(json_data, parent_s: str, parent_p: str) -> List[Tuple[str, str, str]]:
+#     triplets = []
+
+#     if isinstance(json_data, Dict):
+#         for key, value in json_data.items():
+#             triplets.extend(generate_triple_from_json(value, parent_s, key))
+#     elif isinstance(json_data, List):
+#         for item in json_data:
+#             triplets.extend(generate_triple_from_json(item, parent_s, parent_p))
+#     else:
+#         triplets.append((parent_s, parent_p, json_data))
+
+#     return triplets
+
+# # def test_json_map():
+# #     json_data = json.loads(open("/home/marvin/project/data/current/sources/source.json/0a0d9846a69456249a3261102d4fd534.json").read())
+
+# #     triplets = generate_triple_from_json(json_data, "0a0d9846a69456249a3261102d4fd534", "root")
+
+# #     print(triplets)
+
+
+# # JSONb
+# # TODO
+
+# # JSONb
+# # 1. JSON to TE_Document
+# # 2. ReL on TE_Document
+# # 3. TE_Document to KG
+
+# # Idea:
+# # For each key in json find a mapping to the ontology
+
+# def create_triple(s: str, p: str, o: str) -> TE_Triple:
+#     print(s, p, o)
+#     return TE_Triple(subject=TE_Span(text=s, start=0, end=len(s)), predicate=TE_Span(text=p, start=0, end=len(p)), object=TE_Span(text=o, start=0, end=len(o)))
+
+# # TODO see mapping_tasks.py triplify_json_dm
+# def __extract_triplets_from_json(json_data, parent_s: str, parent_p: str) -> List[TE_Triple]:
+#     triplets = []
+
+#     if isinstance(json_data, Dict):
+#         for key, value in json_data.items():
+#             triplets.extend(__extract_triplets_from_json(value, parent_s, key))
+#     elif isinstance(json_data, List):
+#         for item in json_data:
+#             triplets.extend(__extract_triplets_from_json(item, parent_s, parent_p))
+#     else:
+#         triplets.append(create_triple(parent_s, parent_p, json_data))
+
+#     # print(triplets)
+    
+#     return triplets
+
+# def __link_relations(doc: TE_Document, rel_matcher: AliasAndTransformerBasedRelationLinker) -> List[RelationMatch]:
+#     relations : List[str] = list({ triple.predicate.text for triple in doc.triples if triple.predicate.text is not None})
+
+#     # print(relations)
+
+#     matches = rel_matcher.link_relations(relations)
+
+#     return matches
+#     # for match in matches:
+#     #     print(match.relation, match.predicate.equivalent, match.score)
+
+
+# def derive_triple_from_document(doc: TE_Document) -> List[TE_Triple]:
+#     return [triple for triple in doc.triples if triple.predicate.text is not None]

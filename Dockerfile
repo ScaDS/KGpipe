@@ -10,8 +10,13 @@ WORKDIR /app
 
 # ---------- Build wheel for kgcore (from external context) ----------
 FROM base AS build-kgcore
-WORKDIR /src
-COPY --from=kgcore / /src
+WORKDIR /src_kgcore
+COPY --from=kgcore / /src_kgcore
+RUN uv build --wheel
+
+FROM base AS build-pyodibel
+WORKDIR /src_pyodibel
+COPY --from=pyodibel / /src_pyodibel
 RUN uv build --wheel
 
 # ---------- Final app stage ----------
@@ -23,7 +28,9 @@ COPY pyproject.toml ./
 
 # Bring in kgcore wheel
 RUN mkdir -p /wheelhouse
-COPY --from=build-kgcore /src/dist/*.whl /wheelhouse/
+COPY --from=build-kgcore /src_kgcore/dist/*.whl /wheelhouse/
+
+COPY --from=build-pyodibel /src_pyodibel/dist/*.whl /wheelhouse/
 
 # Copy app source
 COPY . .

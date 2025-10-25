@@ -86,9 +86,14 @@ class DataFormat(Enum):
 
     @classmethod
     def from_extension(cls, extension: str) -> DataFormat:
-        """Get a format by file extension."""
-        return cls(extension.upper())
-    
+        """Get a format by file extension. If fails print available formats and raise ValueError."""
+        try:
+            return cls(extension)
+        except ValueError:
+            print(f"Available formats: {[f.value for f in cls]}")
+            raise ValueError(f"Invalid format: {extension}")
+
+
     @property
     def extension(self) -> str:
         """Get the file extension for this format."""

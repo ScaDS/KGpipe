@@ -20,7 +20,9 @@ elif scheme == "postgres":
 elif scheme == "sqlite":
     endpoint = f"sqlite:///{rest}"
 else:
-    raise ValueError(f"Unsupported scheme: {scheme}")
+    print("Unsupported schema fallback to memory")
+    scheme = "memory"
+    # raise ValueError(f"Unsupported scheme: {scheme}")
 
 try:
     SYS_KG: KGGraph = KG(backend=scheme, endpoint=endpoint, username=config.SYS_KG_USR, password=config.SYS_KG_PSW)
