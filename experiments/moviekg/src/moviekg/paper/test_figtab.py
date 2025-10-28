@@ -212,7 +212,7 @@ def test_wide_table_smoth():
     df.to_csv(OUTPUT_ROOT / "paper/test_wide_table_smoth.csv", sep="\t")
 
 
-def test_table_with_structure_metrics():
+def test_table_with_statistic_metrics():
     metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
     metrics = ["entity_count", "relation_count", "triple_count", "class_count", "loose_entity_count", "shallow_entity_count"]
 
@@ -237,8 +237,10 @@ def test_table_with_structure_metrics():
     # (Optional) Flatten the column index if needed
     pivot_df.columns.name = None  # remove "metric" header
 
+    # column selection and order Pipeline FC EC RC TC Time
+    pivot_df = pivot_df[["pipeline", "FC", "EC", "RC", "TC", "Time"]]
     # save as TSV
-    output_path = OUTPUT_ROOT / "paper/test_tab_dataset_stats"
+    output_path = OUTPUT_ROOT / "paper/test_tab_2_statistic_metrics.csv"
     pivot_df.to_csv(output_path, sep="\t")
 
 
@@ -274,31 +276,49 @@ def test_table_with_semantic_metrics():
     long_name_row = {col: SEM_METRIC_LONG_NAMES.get(col, col) for col in pivot_df.columns}
     pivot_df = pd.concat([pd.DataFrame([long_name_row], index=["metric_long_name"]), pivot_df])
 
-    output_path = OUTPUT_ROOT / "paper/test_tab_ssp_semantic_eval"
+    # column selection and order pipeline 𝑂𝐷𝑇 𝑂𝐷 𝑂𝑅 𝑂𝑅𝐷 𝑂𝐿𝑇 𝑂𝐿𝐹 𝑂𝐴𝑣𝑔
+
+    output_path = OUTPUT_ROOT / "paper/test_tab_3_ssp_semantic_eval"
     pivot_df.to_csv(output_path, sep="\t")
 
-def test_table_with_matching_and_linking_metrics():
+def test_table_with_matching_metrics():
 
     metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
-
-    # replace pipeline name with name_mapping
     metric_df["pipeline"] = metric_df["pipeline"].map(map_pipeline_name)
 
-    filter_metrics = ["ER_EntityMatchMetric", "ER_RelationMatchMetric", "TE_ExpectedEntityLinkMetric"]
+    filter_metrics = ["ER_EntityMatchMetric", "ER_RelationMatchMetric"]
     metric_df = metric_df[metric_df["metric"].isin(filter_metrics)]
-    # details not cotain "error" keyword
-    # metric_df = metric_df[~metric_df["details"].str.contains("error")]
-    
-    # only pipeline, stage, metric, normalized
-    erl_df = metric_df[["pipeline", "stage", "metric", "normalized"]]
-    erl_df["normalized"] = erl_df["normalized"].round(2)
+    metric_df = metric_df[["pipeline", "stage", "metric", "normalized"]]
+    metric_df["normalized"] = metric_df["normalized"].round(2)
 
-    pivot_df = erl_df.pivot_table(index=["pipeline", "stage"], 
+    pivot_df = metric_df.pivot_table(index=["pipeline", "stage"], 
                                 columns="metric", 
                                 values="normalized").reset_index()
-    # save as TSV
-    output_path = OUTPUT_ROOT / "paper/test_tab_er_el_ssp"
+                                
+    output_path = OUTPUT_ROOT / "paper/test_tab_4_matching_metrics"
     pivot_df.to_csv(output_path, sep="\t")
+
+def test_table_with_linking_metrics():
+    metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
+    metric_df["pipeline"] = metric_df["pipeline"].map(map_pipeline_name)
+
+    filter_metrics = ["TE_ExpectedEntityLinkMetric", "TE_ExpectedRelationLinkMetric"]
+    metric_df = metric_df[metric_df["metric"].isin(filter_metrics)]
+    metric_df = metric_df[["pipeline", "stage", "metric", "normalized"]]
+    metric_df["normalized"] = metric_df["normalized"].round(2)
+
+    pivot_df = metric_df.pivot_table(index=["pipeline", "stage"], columns="metric", values="normalized").reset_index()
+    output_path = OUTPUT_ROOT / "paper/test_tab_5_linking_metrics"
+    pivot_df.to_csv(output_path, sep="\t")
+
+
+def test_table_6():
+    """
+    External KG R @inc (film)
+    EC (no Seed) REI @inc (film)
+    Pipeline | f1@1 f1@2 f1@3 p@3 | f1@1 f@2 f@3
+    """
+    pass
 
 def test_table_with_reference_overlap_metrics():
     # "Pipeline Inc. P R F1 ∼P ∼F ∼F1"
@@ -423,7 +443,97 @@ def test_rank_reference_alignment_focused():
 def test_rank_efficiency_oriented():
     _rank_and_save(PRESETS["efficiency_oriented"], "test_rank_efficiency_oriented", agg_df)
 
+def test_full_ranking_table():
+    """
+    for each rank table read it and then concatenate them into one table joining on the index
+    for example:
+        test_rank_equal.csv:
+            pipeline combined
+            0 json_rdf_text 0.855084
+            1 json_text_rdf 0.867719
+            2 rdf_json_text 0.855081
+            3 rdf_text_json 0.867721
+            4 text_json_rdf 0.864522
+            5 text_rdf_json 0.864522
+        test_rank_quantity_focused.csv:
+            pipeline combined
+            0 rdf_json_text 0.950847
+            1 text_rdf_json 0.940847
+            2 json_text_rdf 0.93847
+            3 rdf_text_json 0.920847
+            4 json_rdf_text 0.910847
+            5 text_json_rdf 0.900847
 
+    the result should be:
+    pipeline combined
+    0 json_rdf_text 0.855084 rdf_json_text_0.950847
+    1 json_text_rdf 0.867719 text_rdf_json_0.940847
+    2 rdf_json_text 0.855081 json_text_rdf_0.93847
+    3 rdf_text_json 0.867721 rdf_text_json_0.920847
+    4 text_json_rdf 0.864522 json_rdf_text_0.910847
+    5 text_rdf_json 0.864522 text_json_rdf_0.900847
+
+    rename the "combined" column for each to the name of the file
+    """
+
+    ranking_files = [
+        "test_rank_equal.csv",
+        "test_rank_quantity_focused.csv",
+        "test_rank_quality_focused.csv",
+        "test_rank_reference_alignment_focused.csv",
+        "test_rank_efficiency_oriented.csv"
+    ]
+
+    PIPLEINE_NAME_MAP = {
+        "json_rdf_text": "JRT",
+        "json_text_rdf": "JTR",
+        "rdf_json_text": "RJT",
+        "rdf_text_json": "RTJ",
+        "text_json_rdf": "TJR",
+        "text_rdf_json": "TRJ",
+        "json_a": "J_A",
+        "json_b": "J_B",
+        "json_c": "J_C",
+        "rdf_a": "R_A",
+        "rdf_b": "R_B",
+        "rdf_c": "R_C",
+        "text_a": "T_A",
+        "text_b": "T_B",
+        "text_c": "T_C",
+    }
+
+    ranking_files = [OUTPUT_ROOT / "paper" / file for file in ranking_files]
+
+    # Base frame with fixed ranks 0..5 (top to bottom)
+    result = pd.DataFrame({"rank": range(15)})
+    # result = pd.DataFrame()
+
+    for file in ranking_files:
+        name = Path(file).stem  # e.g., "test_rank_equal"
+        df = pd.read_csv(file, sep="\t")
+        # Ensure we have at least 6 rows; if more, keep top-6; if fewer, allow NaNs
+        # df = df.head(6).reset_index(drop=True)
+
+        # pipeline name != reference and reset index
+        df = df[df["pipeline"] != "reference"]
+        df["pipeline"] = df["pipeline"].map(PIPLEINE_NAME_MAP)
+        df = df.reset_index(drop=True)
+    
+
+        # Build two columns for this file: pipeline + score
+        sub = pd.DataFrame({
+            "rank": df.index,
+            f"{name.split(".")[0]}_pipe": df["pipeline"],
+            f"{name.split(".")[0]}_score": df["combined"]
+        })
+
+        # Join on rank to keep rows aligned 0..5
+        result = result.merge(sub, on="rank", how="left")
+
+    # Make 'rank' the index if you prefer, or keep as a column
+    result = result.set_index("rank")
+
+    result.to_csv(OUTPUT_ROOT / "paper/test_tab_7_full_ranking_table.csv", sep="\t")
 
 # === Log 
 

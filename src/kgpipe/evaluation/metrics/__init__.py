@@ -6,14 +6,11 @@ Base classes and types for evaluation metrics.
 
 from ..base import Metric, MetricResult
 
-
-
 """
 Metrics Registration Module
 
 This module registers all evaluation metrics for discovery by the CLI.
 """
-
 from kgpipe.evaluation.aspects.statistical import (
     EntityCountMetric, RelationCountMetric, TripleCountMetric, ClassCountMetric
 )

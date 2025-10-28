@@ -16,3 +16,7 @@ def load_config():
     """
     config = ConfigLoader("kgpipe").load_config(KgPipeConfig)
     return config
+
+SOURCE_NAMESPACE = "http://kg.org/rdf/"
+TARGET_RESOURCE_NAMESPACE = "http://kg.org/resource/"
+TARGET_ONTOLOGY_NAMESPACE = "http://kg.org/ontology/"

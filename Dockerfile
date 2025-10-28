@@ -14,6 +14,11 @@ WORKDIR /src_kgcore
 COPY --from=kgcore / /src_kgcore
 RUN uv build --wheel
 
+FROM base AS build-kgback
+WORKDIR /src_kgback
+COPY --from=kgback / /src_kgback
+RUN uv build --wheel
+
 FROM base AS build-pyodibel
 WORKDIR /src_pyodibel
 COPY --from=pyodibel / /src_pyodibel
@@ -30,6 +35,8 @@ COPY pyproject.toml ./
 RUN mkdir -p /wheelhouse
 COPY --from=build-kgcore /src_kgcore/dist/*.whl /wheelhouse/
 
+COPY --from=build-kgback /src_kgback/dist/*.whl /wheelhouse/
+
 COPY --from=build-pyodibel /src_pyodibel/dist/*.whl /wheelhouse/
 
 # Copy app source
@@ -39,9 +46,10 @@ COPY . .
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv pip install --find-links /wheelhouse -e .
 
-RUN /opt/venv/bin/python -c "import kgcore" \
-    && /opt/venv/bin/python -c "import importlib.metadata as m; print('OK:', any(d.metadata.get('Name')=='kgcore' for d in m.distributions()))"
+# RUN /opt/venv/bin/python -c "import kgcore" \
+#     && /opt/venv/bin/python -c "import importlib.metadata as m; print('OK:', any(d.metadata.get('Name')=='kgcore' for d in m.distributions()))"
 
+# RUN /opt/venv/bin/python -c "import kgback" 
 
 # Run the installed console entry point directly (no uv auto-sync)
 CMD ["kgpipe"]

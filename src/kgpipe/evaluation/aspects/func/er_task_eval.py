@@ -294,7 +294,7 @@ def get_er_doc_from_kg(kg: KG) -> ER_Document:
     # print("loading er_doc from", paths[-1])
     return ER_Document(**json.load(open(paths[-1]))) # only the last one
 
-def load_actual_matches(er_doc_path: Path | KG, threshold: float = 0.5) -> MatchCluster:
+def load_actual_matches(er_doc_path: Path | KG, threshold: float = 0.5, type_filter: str = "") -> MatchCluster:
     if isinstance(er_doc_path, KG):
         er_doc = get_er_doc_from_kg(er_doc_path)
     else:
@@ -303,7 +303,7 @@ def load_actual_matches(er_doc_path: Path | KG, threshold: float = 0.5) -> Match
     # BIG TODO: this needs to be read correctly as there are inverse matches aswell
     cluster = MatchCluster()
     for match in er_doc.matches:
-        if match.score > threshold:
+        if match.score > threshold and (match.id_type == type_filter or type_filter == ""):
             cluster.add_match(match.id_1, match.id_2)
     return cluster
 

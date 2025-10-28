@@ -136,7 +136,9 @@ def get_reference_config(stage: StageOut, is_ssp: bool) -> ReferenceConfig:
         # EXPECTED_TEXT_LINKS=Path("TODO"),
         TE_LINK_THRESHOLD=0.5,
         source_meta=meta,
-        dataset=dataset
+        dataset=dataset,
+        JSON_EXPECTED_DIR="/home/marvin/project/data/work/json"
+        #dataset.splits[f"split_{split_id}"].sources["json"].data.dir.as_posix()
     )
 
 from kgpipe.evaluation.base import MetricResult, EvaluationAspect

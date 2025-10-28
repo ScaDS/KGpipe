@@ -383,14 +383,14 @@ class JsonToRdfLinker:
                 prop_meta = self.prop_meta.get(str(via_pred), {"domain": "None", "range": "None"})
     
                 if prop_meta and str(prop_meta["type"]) == "ObjectProperty":
-                    print(f"try linking shallow object {obj}")
+                    # print(f"try linking shallow object {obj}")
                     # Create a wrapper object for shallow literals
                     wrapper_obj = {"label": obj}
                     child_provenance = {} if trace else None
                     # Use current_path directly for shallow objects to avoid duplication
                     node = self._materialize(g, wrapper_obj, parent, via_pred, decisions, 
                                            current_path, child_provenance, trace)
-                    print(node)
+                    # print(node)
                     if isinstance(node, URIRef):
                         g.add((parent, via_pred, node))
                         if prop_meta["range"] and prop_meta["range"] != "None":
@@ -459,6 +459,9 @@ class JsonToRdfLinker:
             type_candidates=t_candidates,
         )
 
+def save_provenance(provenance: Provenance, file_path: str):
+    with open(file_path, "w") as f:
+        json.dump(provenance, f, indent=4)
 
 @Registry.task(
     input_spec={"source": DataFormat.JSON, "target": DataFormat.RDF_NTRIPLES},
@@ -477,6 +480,7 @@ def construct_linkedrdf_from_json(inputs: Dict[str, Data], outputs: Dict[str, Da
     linker = JsonToRdfLinker(kg_path.as_posix(), ontology_path)
     
     final_g = Graph()
+    file_provenance = {}
 
     if os.path.isdir(json_path):
         for file in tqdm(os.listdir(json_path), desc="Processing JSON files"):
@@ -484,12 +488,15 @@ def construct_linkedrdf_from_json(inputs: Dict[str, Data], outputs: Dict[str, Da
                 json_file = os.path.join(json_path, file)
                 json_data = json.load(open(json_file))
                 g, decisions, provenance = linker.link_document(json_data, URIRef("http://kg.org/json/"+ file.split(".")[0])+"/")
+                file_provenance[file] = provenance
                 final_g += g
     else:
         json_data = json.load(open(json_path))
         g, decisions, provenance = linker.link_document(json_data, URIRef("http://kg.org/json/"+ json_path.name.split(".")[0])+"/")
+        file_provenance[json_path.name] = provenance
         final_g += g
 
+    save_provenance(file_provenance, os.path.join(outputs["output"].path.as_posix() + ".prov"))
     final_g.serialize(format="ntriples", destination=outputs["output"].path)
 
 @Registry.task(
@@ -510,18 +517,23 @@ def construct_linkedrdf_from_json_v2(inputs: Dict[str, Data], outputs: Dict[str,
     
     final_g = Graph()
 
+    file_provenance = {}
+
     if os.path.isdir(json_path):
         for file in tqdm(os.listdir(json_path), desc="Processing JSON files"):
             if file.endswith(".json"):
                 json_file = os.path.join(json_path, file)
                 json_data = json.load(open(json_file))
                 g, decisions, provenance = linker.link_document(json_data, URIRef("http://kg.org/json/"+ file.split(".")[0])+"/")
+                file_provenance[file] = provenance
                 final_g += g
     else:
         json_data = json.load(open(json_path))
         g, decisions, provenance = linker.link_document(json_data, URIRef("http://kg.org/json/"+ json_path.name.split(".")[0])+"/")
+        file_provenance[json_path.name] = provenance
         final_g += g
 
+    save_provenance(file_provenance, os.path.join(outputs["output"].path.as_posix() + ".prov"))
     final_g.serialize(format="ntriples", destination=outputs["output"].path)
 
 
@@ -543,13 +555,13 @@ if __name__ == "__main__":
 
     g, decisions, provenance = linker.link_document(json_data, URIRef("http://kg.org/json/4e9a2c199d1013b6929c50e6766af404/"))
 
-    print("=== LINKING DECISIONS ===")
-    for dec in decisions:
-        print(f"Node: {dec.node}")
-        print(f"JSON Path: {dec.json_path}")
-        print(f"Created: {dec.created}")
-        print(f"Label: {dec.label}")
-        print("---")
+    # print("=== LINKING DECISIONS ===")
+    # for dec in decisions:
+    #     print(f"Node: {dec.node}")
+    #     print(f"JSON Path: {dec.json_path}")
+    #     print(f"Created: {dec.created}")
+    #     print(f"Label: {dec.label}")
+    #     print("---")
     
     print("\n=== PROVENANCE TRACING ===")
     for json_path, iri in provenance.items():

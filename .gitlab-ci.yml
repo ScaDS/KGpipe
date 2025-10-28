@@ -13,18 +13,15 @@ build:
     - uv run python --version
     - uv --version
   script:
-    - echo "Installing project dependencies with uv..."
-    - uv venv
-    - uv pip install .
-    - echo "Installing development dependencies..."
-    - uv pip install pytest rdflib pydantic
-    - echo "Build completed successfully"
-  artifacts:
-    paths:
-      - .venv
-    expire_in: 1 hour
-  cache:
-    key: "uv-kglab-cache"
-    paths:
-      - ~/.cache/uv
+    - echo "Installing project dependencies with uv...TODO"
+
+  #   - uv venv
+  #   - uv pip install .
+  #   - echo "Installing development dependencies..."
+  #   - uv pip install pytest rdflib pydantic
+  #   - echo "Build completed successfully"
+  # cache:
+  #   key: "uv-kglab-cache"
+  #   paths:
+  #     - ~/.cache/uv
 

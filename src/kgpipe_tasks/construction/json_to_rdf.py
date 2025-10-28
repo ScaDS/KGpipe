@@ -1,11 +1,12 @@
 from __future__ import annotations
 import re, uuid
-from typing import Any, Dict, Tuple, Optional, Iterable, List
+from typing import Any, Dict, Tuple, Optional, Iterable, List, Mapping
+from pydantic import root_model
 from rdflib import Graph, Namespace, URIRef, Literal
 from rdflib.namespace import RDF, RDFS, SKOS, XSD
 
 # Provenance tracking type: json_path -> iri
-Provenance = Dict[str, str]  # json_path -> source_uri_or_bnode
+Provenance = Mapping[str, str]  # json_path -> source_uri_or_bnode
 
 # --------------------------------------------------------------------------------------
 # Helpers: label detection (simple & robust) and the object-vs-literal heuristic
@@ -195,6 +196,13 @@ def json_to_rdf(obj: Dict[str, Any], root_kind: str = "Root", trace: bool = True
         import hashlib
         content_hash = hashlib.md5(str(o).encode()).hexdigest()[:8]
         s = URIRef(f"http://example.com/test/{kind}_{content_hash}")
+        # print(s)
+        # debug_list = ['http://example.com/test/Starring_1e665d1a', 'http://example.com/test/Starring_9fc1c802']
+        # if str(s) in debug_list:
+        #     print("--------------------------------")
+        #     print(s)
+        #     print(str(o))
+        #     print("--------------------------------")
         if generate_type:
             g.add((s, RDF.type, URIRef(f"{EXC}{kind}")))
 
@@ -247,6 +255,13 @@ def json_to_rdf(obj: Dict[str, Any], root_kind: str = "Root", trace: bool = True
                             lab_str = str(item).strip()
                             item_hash = hashlib.md5(lab_str.encode()).hexdigest()[:8]
                             o2 = URIRef(f"http://example.com/test/{k_norm.capitalize()}_{item_hash}")
+                            debug_list = ['http://example.com/test/Starring_1e665d1a', 'http://example.com/test/Starring_9fc1c802']
+                            if str(o2) in debug_list:
+                                print("--------------------------------1")
+                                print(o2)
+                                print(root_kind)
+                                print(lab_str)
+                                print("--------------------------------")
                             g.add((o2, RDFS.label, Literal(lab_str)))
                             
                             if generate_type:
@@ -265,6 +280,12 @@ def json_to_rdf(obj: Dict[str, Any], root_kind: str = "Root", trace: bool = True
                         lab_str = str(v).strip()
                         item_hash = hashlib.md5(lab_str.encode()).hexdigest()[:8]
                         o2 = URIRef(f"http://example.com/test/{k_norm.capitalize()}_{item_hash}")
+                        debug_list = ['http://example.com/test/Starring_1e665d1a', 'http://example.com/test/Starring_9fc1c802']
+                        if str(o2) in debug_list:
+                            print("--------------------------------2")
+                            print(o2)
+                            print(lab_str)
+                            print("--------------------------------")
                         g.add((o2, RDFS.label, Literal(lab_str)))
                         if generate_type:
                             g.add((o2, RDF.type, URIRef(f"{EXC}{k_norm.capitalize()}")))    
@@ -283,6 +304,10 @@ def json_to_rdf(obj: Dict[str, Any], root_kind: str = "Root", trace: bool = True
 import json, os
 from kgpipe.common import Registry, DataFormat, Data
 
+def save_provenance(provenance: Provenance, file_path: str):
+    with open(file_path, "w") as f:
+        json.dump(provenance, f, indent=4)
+
 @Registry.task(
     input_spec={"source": DataFormat.JSON},
     output_spec={"output": DataFormat.RDF_NTRIPLES},
@@ -291,6 +316,7 @@ from kgpipe.common import Registry, DataFormat, Data
 )
 def construct_rdf_from_json2(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     file_or_dir_path = inputs["source"].path
+    file_provenance = {}
     if os.path.isdir(file_or_dir_path):
         final_g = Graph()
         # os.makedirs(outputs["output"].path, exist_ok=True)
@@ -299,12 +325,15 @@ def construct_rdf_from_json2(inputs: Dict[str, Data], outputs: Dict[str, Data]):
                 json_path = os.path.join(file_or_dir_path, file)
                 json_data = json.load(open(json_path))
                 g, root, provenance = json_to_rdf(json_data, file.split(".")[0])
+                file_provenance[file.split("/")[-1]] = provenance
                 final_g += g
         final_g.serialize(format="nt", destination=outputs["output"].path)
     else:
         json_data = json.load(open(file_or_dir_path))
         g, root, provenance = json_to_rdf(json_data)
+        file_provenance[file_or_dir_path.split("/")[-1]] = provenance
         g.serialize(format="nt", destination=outputs["output"].path)
+    save_provenance(file_provenance, os.path.join(outputs["output"].path.as_posix() + ".prov"))
 
 if __name__ == "__main__":
     json = json.load(open("code/kgflex/src/kgpipe_tasks/test/test_data/json/dbp-movie_depth=1.json"))

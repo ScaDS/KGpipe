@@ -67,8 +67,16 @@ METRIC_NAME_MAP = {
 
 }
 
+# long: 
+# disjoint_domain
+# incorrect_relation_domain
+# incorrect_relation_range
+# incorrect_relation_direction
+# incorrect_datatype
+# incorrect_datatype_format
+# short:ODT OD OR ORD OLT OLF OAvg
 SEM_METRIC_SHORT_NAMES = {
-    "reasoning" : "EO0",
+    # "reasoning" : "EO0",
     "disjoint_domain": "$O_{DT}$",
     "incorrect_relation_direction": "$O_{RD}$",
     "incorrect_relation_cardinality": "$O_{CA}$",
@@ -76,9 +84,9 @@ SEM_METRIC_SHORT_NAMES = {
     "incorrect_relation_domain": "$O_{D}$",
     "incorrect_datatype": "$O_{LT}$",
     "incorrect_datatype_format": "$O_{LF}$",
-    "ontology_class_coverage": "$O_{CC}$",
-    "ontology_relation_coverage": "$O_{RC}$",
-    "ontology_namespace_coverage": "$O_{NC}$",
+    # "ontology_class_coverage": "$O_{CC}$",
+    # "ontology_relation_coverage": "$O_{RC}$",
+    # "ontology_namespace_coverage": "$O_{NC}$",
 }
 
 METRIC_NAME_INDEX_PRETTY = [

@@ -18,13 +18,22 @@ def _make_cache_from_env():
     ttl = int(os.getenv("EMBED_CACHE_TTL", "0")) or None  # seconds; 0 = no TTL
 
     if spec == "memory":
+        print("Using in-memory cache")
         capacity = int(os.getenv("EMBED_CACHE_CAPACITY", "50000"))
         return InMemoryLRUCache(capacity=capacity, ttl_seconds=ttl)
 
     if spec.startswith("sqlite://"):
+        print("Using sqlite cache")
         # e.g. EMBED_CACHE="sqlite:///tmp/emb_cache.db"
         path = spec[len("sqlite://"):]
         return SQLiteCache(path=path, ttl_seconds=ttl)
+
+    if spec.startswith("redis://"):
+        print("Using redis cache")
+        # e.g. EMBED_CACHE="redis://localhost:6379"
+        url = spec
+        from kgpipe.util.embeddings.chache_redis import RedisCache
+        return RedisCache(url=url, ttl_seconds=ttl)
 
     raise ValueError(f"Unknown EMBED_CACHE backend: {spec}")
 

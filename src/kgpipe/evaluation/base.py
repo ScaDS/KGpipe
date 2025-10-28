@@ -21,6 +21,7 @@ class EvaluationAspect(Enum):
     STATISTICAL = "statistical"
     SEMANTIC = "semantic"
     REFERENCE = "reference"
+    SPECIFIC = "specific"
 
 
 @dataclass

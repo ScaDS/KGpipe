@@ -1,0 +1,51 @@
+version: "3.9"
+
+services:
+  dbpedia-spotlight:
+    image: local/spotlight
+    #container_name: dbpedia-spotlight.en
+    restart: unless-stopped
+    command: ["spotlight.sh", "en"]
+    volumes:
+      - spotlight-model:/opt/spotlight
+    networks:
+      - kglab
+
+
+  virtdb:
+    image: openlink/virtuoso-opensource-7:latest
+    restart: unless-stopped
+    tty: true
+    stdin_open: true
+    environment:
+      - DBA_PASSWORD=mysecret
+    ports:
+      - "18890:8890"
+    volumes:
+      - ./virtdb:/data
+    networks:
+      - kglab
+
+
+volumes:
+  spotlight-model:
+
+networks:
+  kglab:
+    name: kglab
+
+
+#      ports:
+#      - "2222:80"
+      # - "1111:1111"
+# services:
+#   kgpipe:
+#     image: kgpipe
+#     container_name: kgpipe-test
+#     working_dir: /app/experiments/moviekg
+#     command: bash -c "make test-rdf-a"
+#     volumes:
+#       - /home/marvin/project/data:/home/marvin/project/data
+#       - /var/run/docker.sock:/var/run/docker.sock
+#       - ./moviekg.env:/app/experiments/moviekg/.env
+#     restart: "no"  # Equivalent to --rm (container not restarted)
