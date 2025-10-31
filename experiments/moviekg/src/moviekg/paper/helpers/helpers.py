@@ -14,12 +14,11 @@ import pandas as pd
 from typing import List, Optional
 
 from moviekg.paper.config import HEADERS, main_classes
-
 from moviekg.pipelines.test_inc_ssp import pipeline_types, llm_pipeline_types
 
 
 def load_metrics_from_file(file_path):
-    print("Loading metrics from file: ", file_path)
+    # print("Loading metrics from file: ", file_path)
     df = pd.read_csv(file_path, names=HEADERS, skiprows=1)
     return df
 
@@ -117,6 +116,7 @@ def plot_growth_v1(df, metrics):
 PALETTE = {
     # JSON solo
     "json_a": "#9ecae1", "json_b": "#1f77b4", "json_c": "21f77b4",
+    # "json_baseA": "#9ecae1",
     # RDF solo
     "rdf_a":  "#a1d99b", "rdf_b":  "#2ca02c", "rdf_c": "#3ca02c",
     # TEXT solo
@@ -219,7 +219,7 @@ def plot_growth(df, metrics, kind="bar", references={}):
         # numbers 1 to 3
         for stage_idx in range(1, 4):
             value, nvalue, details = get_reference_value(df, metrics[ax_idx], "stage_"+str(stage_idx))
-            print(metrics[ax_idx], value)
+            # print(metrics[ax_idx], value)
             xpos = stage_idx
             if stage_idx == 0:
                 ax.axhline(value, ls="--", color="red")
@@ -590,7 +590,7 @@ def get_reference_value(df, metric_name, stage):
     df = df[df["metric"] == metric_name]
     df = df[df["stage"] == stage]
     df = df[df["pipeline"] == "reference"]
-    print(df.to_string())
+    # print(df.to_string())
     value = df["value"].values[0]
     nvalue = df["normalized"].values[0]
     details = json.loads(df["details"].values[0])
@@ -610,8 +610,8 @@ def get_reference_class_counts(df) -> Dict[str, Dict[str, int]]:
 
     return reference_stage_class_count
 
-def subplot_source_entity_integration(df):
-    pass
+# def subplot_source_entity_integration(df):
+#     pass
 
 from collections import defaultdict
 
@@ -731,7 +731,7 @@ def plot_class_occ_4_bar_chart(df):
     df = df[df["pipeline"] != "seed"]
     df = df[df["pipeline"] != "reference"]
 
-    subplot_source_entity_integration(df)
+    # subplot_source_entity_integration(df)
 
     classes = ["http://kg.org/ontology/Film", "http://kg.org/ontology/Person", "http://kg.org/ontology/Company"]
 

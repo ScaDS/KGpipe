@@ -119,6 +119,9 @@ def fusion_first_value(inputs: Dict[str, Data], outputs: Dict[str, Data]):
 
     entity_matching_threshold = float(os.environ.get("ENTITY_MATCHING_THRESHOLD", 0.5))
     relation_matching_threshold = float(os.environ.get("RELATION_MATCHING_THRESHOLD", 0.5))
+    print(f"[CONFIG] Fusion entity matching threshold: {entity_matching_threshold}")
+    print(f"[CONFIG] Fusion relation matching threshold: {relation_matching_threshold}")
+
     allowed_predicates = set[str]([str(p.uri) for p in ontology.properties]+[str(RDFS.label), str(RDF.type), str(SKOS.altLabel)])
     fusable_properties = set[str]([str(p.uri) for p in ontology.properties if p.max_cardinality == 1]+[str(RDFS.label), str(RDF.type)])
 
@@ -163,6 +166,10 @@ def fusion_first_value(inputs: Dict[str, Data], outputs: Dict[str, Data]):
             mapped = relation_matches.has_match_to_namespace(t_str, TARGET_ONTOLOGY_NAMESPACE)
             if mapped:
                 return URIRef(mapped)
+            else: # TODO this is a workaround for the base pipelines...
+                mapped = relation_matches.has_match_to_namespace(t_str, str(RDFS))
+                if mapped:
+                    return URIRef(mapped)
         return term
 
     selected: List[TrackRecord] = []

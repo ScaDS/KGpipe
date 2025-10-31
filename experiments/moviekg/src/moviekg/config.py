@@ -47,7 +47,8 @@ pipeline_types = {
     "text_a": "text",
     "text_b": "text",
     "json_a": "json",
-    "json_b": "json"
+    "json_b": "json",
+    "json_baseA": "json"
 }
 
 llm_pipeline_types = {

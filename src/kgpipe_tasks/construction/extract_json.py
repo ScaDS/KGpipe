@@ -22,6 +22,12 @@ LABEL_KEYS = re.compile(r"(?:^|_)(name|label|title|display.?name|prefLabel)$", r
 ID_KEYS    = re.compile(r"(?:^|_)(id|code|sku|gtin|ean|isbn|doi|cas)$", re.I)
 THRESHOLD  = 0.70  # tune later
 
+class EntityLinker():
+    pass
+
+class RelationLinker():
+    pass
+
 # --- Helpers ---
 def find_labelish(obj: dict) -> tuple[str, str] | None:
     """
@@ -90,7 +96,7 @@ class LabelIndex:
         return [(self.uris[i], self.texts[i], float(sims[i])) for i in idx]
 
 # --- Baseline linker ---
-class SimpleEntityLinker:
+class SimpleEntityLinker(EntityLinker):
     def __init__(self, ttl_path: str):
         # self.model = SentenceTransformer(EMB_MODEL)
         items = load_kg_labels(ttl_path)
@@ -122,8 +128,47 @@ class SimpleEntityLinker:
             "decision": decision
         }
 
+class BaseRelationLinker(RelationLinker):
+    """
+    Uses emebdding only on key and predicate/relation name
+    """
+    def __init__(self, ontology_path: str):
+        ontlogy = OntologyUtil.load_ontology_from_file(Path(ontology_path))
+        self.properties = ontlogy.properties
+        label_uri = []
+        for prop in self.properties:
+            label_uri.append((prop.uri, prop.label))
+            # for alias in prop.alias:
+            #     label_uri.append((prop.uri, alias))
+        self.label_uri = label_uri
+        self.index = LabelIndex(label_uri, global_encode)
+        self.cache = {}
 
-class SimpleRelationLinker:
+    def link(self, obj: dict):
+        links = []
+        # TODO use literal object heuristic to select a better candidate
+        for keys in obj.keys():
+            query = keys
+            strategy = "key-only"
+            if query in self.cache:
+                links.append(self.cache[query])
+                continue
+            
+            candidates = self.index.search(query, k=5)
+            best_uri, best_text, best_score = candidates[0]
+            decision = "accept" if best_score >= THRESHOLD else "review"
+
+            links.append({
+                "strategy": strategy,
+                "query_text": query,
+                "best": {"uri": best_uri, "label": best_text, "score": best_score},
+                "candidates": candidates,
+                "decision": decision
+            })
+            self.cache[query] = links[-1]
+        return links
+
+class SimpleRelationLinker(RelationLinker):
 
     def __init__(self, ontology_path: str):
         ontlogy = OntologyUtil.load_ontology_from_file(Path(ontology_path))
@@ -251,11 +296,14 @@ class JsonToRdfLinker:
         self,
         kg_path: str,
         ontology_path: str,
+        entity_linker: EntityLinker,
+        relation_linker: RelationLinker,
         base_ns: str = "http://kg.org/json/",
         soft_validate_domain_range: bool = True,
         mint_new_entities: bool = True,
         add_created_entities_to_index: bool = True,
         dynamic_index: bool = True,
+
     ):
         self.entity_linker = SimpleEntityLinker(kg_path)
         self.relation_linker = SimpleRelationLinker(ontology_path)
@@ -286,9 +334,10 @@ class JsonToRdfLinker:
 
         decisions: List[LinkDecision] = []
         provenance: Provenance = {} if trace else None
+        relation_provenance: Provenance = {} if trace else None
         self._materialize(g, obj, parent=parent, via_pred=None, decisions=decisions, 
-                         current_path="$", provenance=provenance, trace=trace)
-        return g, decisions, provenance
+                         current_path="$", provenance=provenance, relation_provenance=relation_provenance, trace=trace)
+        return g, decisions, provenance, relation_provenance
 
     # ---------- internals ----------
 
@@ -301,6 +350,7 @@ class JsonToRdfLinker:
         decisions: List[LinkDecision],
         current_path: str = "$",
         provenance: Optional[Provenance] = None,
+        relation_provenance: Optional[Provenance] = None,
         trace: bool = True,
     ) -> URIRef | BNode | None:
         
@@ -313,7 +363,6 @@ class JsonToRdfLinker:
             # Record provenance for this node
             if trace and provenance is not None:
                 provenance[current_path] = str(ent_decision.node)
-
             predicate_matches = self.relation_linker.link(obj)
             label = ent_decision.label
 
@@ -325,15 +374,18 @@ class JsonToRdfLinker:
                 if match["decision"] == "accept":
                     nested_obj = obj[match["query_text"]]
                     best_pred = get_best_candidate(match)
-                    
+
+                    if trace and relation_provenance is not None:
+                        relation_provenance[match["query_text"]] = str(best_pred)
                     # Create path for nested property
                     prop_path = f"{current_path}.{match['query_text']}"
 
                     if isinstance(nested_obj, dict):
                         # Recursively process nested object
                         child_provenance = {} if trace else None
+                        child_relation_provenance = {} if trace else None
                         self._materialize(g, nested_obj, URIRef(ent_decision.node), best_pred, 
-                                        decisions, prop_path, child_provenance, trace)
+                                        decisions, prop_path, child_provenance, child_relation_provenance, trace)
                         
                         # Merge child provenance
                         if trace and provenance is not None and child_provenance:
@@ -346,6 +398,10 @@ class JsonToRdfLinker:
                                 else:
                                     # Append child_path to prop_path
                                     provenance[f"{prop_path}{child_path}"] = child_iri
+
+                        if trace and relation_provenance is not None and child_relation_provenance:
+                            for child_path, child_iri in child_relation_provenance.items():
+                                relation_provenance[child_path] = child_iri
                         
                         return ent_decision.node
                         
@@ -354,8 +410,9 @@ class JsonToRdfLinker:
                         for idx, item in enumerate(nested_obj):
                             item_path = f"{prop_path}[{idx}]"
                             child_provenance = {} if trace else None
+                            child_relation_provenance = {} if trace else None
                             node = self._materialize(g, item, URIRef(ent_decision.node), best_pred, 
-                                                   decisions, item_path, child_provenance, trace)
+                                                   decisions, item_path, child_provenance, child_relation_provenance, trace)
                             if isinstance(node, URIRef):
                                 g.add((parent, best_pred, node))
                             
@@ -369,11 +426,15 @@ class JsonToRdfLinker:
                                 elif child_provenance and "$" in child_provenance:
                                     # Fallback: if child_provenance has root mapping, use that
                                     provenance[item_path] = child_provenance["$"]
+                            
+                            if trace and relation_provenance is not None and child_relation_provenance:
+                                for child_path, child_iri in child_relation_provenance.items():
+                                    relation_provenance[child_path] = child_iri
                     else:
                         # Process literal value
                         literal_path = prop_path
                         node = self._materialize(g, nested_obj, URIRef(ent_decision.node), best_pred, 
-                                               decisions, literal_path, provenance, trace)
+                                               decisions, literal_path, provenance, relation_provenance, trace)
 
             return ent_decision.node
 
@@ -477,7 +538,10 @@ def construct_linkedrdf_from_json(inputs: Dict[str, Data], outputs: Dict[str, Da
     if not ontology_path:
         raise ValueError("ONTOLOGY_PATH environment variable is not set")
 
-    linker = JsonToRdfLinker(kg_path.as_posix(), ontology_path)
+
+    entity_linker = SimpleEntityLinker(kg_path.as_posix())
+    relation_linker = SimpleRelationLinker(ontology_path)
+    linker = JsonToRdfLinker(kg_path.as_posix(), ontology_path, entity_linker, relation_linker)
     
     final_g = Graph()
     file_provenance = {}
@@ -513,7 +577,10 @@ def construct_linkedrdf_from_json_v2(inputs: Dict[str, Data], outputs: Dict[str,
     if not ontology_path:
         raise ValueError("ONTOLOGY_PATH environment variable is not set")
 
-    linker = JsonToRdfLinker(kg_path.as_posix(), ontology_path, dynamic_index=False)
+
+    entity_linker = SimpleEntityLinker(kg_path.as_posix())
+    relation_linker = SimpleRelationLinker(ontology_path)
+    linker = JsonToRdfLinker(kg_path.as_posix(), ontology_path, entity_linker, relation_linker, dynamic_index=False)
     
     final_g = Graph()
 
@@ -536,6 +603,49 @@ def construct_linkedrdf_from_json_v2(inputs: Dict[str, Data], outputs: Dict[str,
     save_provenance(file_provenance, os.path.join(outputs["output"].path.as_posix() + ".prov"))
     final_g.serialize(format="ntriples", destination=outputs["output"].path)
 
+
+@Registry.task(
+    input_spec={"source": DataFormat.JSON, "target": DataFormat.RDF_NTRIPLES},
+    output_spec={"output": DataFormat.RDF_NTRIPLES},
+    description="Construct RDF graph from JSON using simple entity and relation linking",
+    category=["Construction"]
+)
+def construct_linkedrdf_from_json_v3(inputs: Dict[str, Data], outputs: Dict[str, Data]):
+    json_path = inputs["source"].path
+    kg_path = inputs["target"].path
+
+    ontology_path = os.getenv("ONTOLOGY_PATH")
+    if not ontology_path:
+        raise ValueError("ONTOLOGY_PATH environment variable is not set")
+
+
+    entity_linker = SimpleEntityLinker(kg_path.as_posix())
+    relation_linker = BaseRelationLinker(ontology_path)
+    linker = JsonToRdfLinker(kg_path.as_posix(), ontology_path, entity_linker, relation_linker, dynamic_index=False)
+    
+    final_g = Graph()
+
+    file_entity_provenance = {}
+    file_relation_provenance = {}
+    if os.path.isdir(json_path):
+        for file in tqdm(os.listdir(json_path), desc="Processing JSON files"):
+            if file.endswith(".json"):
+                json_file = os.path.join(json_path, file)
+                json_data = json.load(open(json_file))
+                g, decisions, provenance, relation_provenance = linker.link_document(json_data, URIRef("http://kg.org/json/"+ file.split(".")[0])+"/")
+                file_entity_provenance[file] = provenance
+                file_relation_provenance[file] = relation_provenance
+                final_g += g
+    else:
+        json_data = json.load(open(json_path))
+        g, decisions, provenance, relation_provenance = linker.link_document(json_data, URIRef("http://kg.org/json/"+ json_path.name.split(".")[0])+"/")
+        file_relation_provenance[json_path.name] = relation_provenance
+        file_entity_provenance[json_path.name] = provenance
+        final_g += g
+
+    save_provenance(file_relation_provenance, os.path.join(outputs["output"].path.as_posix() + ".relation.prov"))
+    save_provenance(file_entity_provenance, os.path.join(outputs["output"].path.as_posix() + ".entity.prov"))
+    final_g.serialize(format="ntriples", destination=outputs["output"].path)
 
 if __name__ == "__main__":
     # construct_linkedrdf_from_json_v2()

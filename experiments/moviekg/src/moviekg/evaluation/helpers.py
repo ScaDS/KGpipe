@@ -111,13 +111,17 @@ def get_reference_config(stage: StageOut, is_ssp: bool) -> ReferenceConfig:
     seed_path = kg_seed.root / "data.nt"
 
     ENTITY_MATCH_THRESHOLD_MAP = {
-        "rdf_a": 0.5,
+        "json_baseA": 0.99,
+        "json_a": 0.99,
+        "rdf_a": 0.99,
         "rdf_b": 0.5,
         "rdf_b2": 0.5,
         "rdf_c": 0.5,
     }
 
     RELATION_MATCH_THRESHOLD_MAP = {
+        "json_a": 0.5,
+        "json_baseA": 0.5,
         "rdf_a": 0.5,
         "rdf_b": 0.1,
         "rdf_b2": 0.1,
@@ -137,7 +141,8 @@ def get_reference_config(stage: StageOut, is_ssp: bool) -> ReferenceConfig:
         TE_LINK_THRESHOLD=0.5,
         source_meta=meta,
         dataset=dataset,
-        JSON_EXPECTED_DIR="/home/marvin/project/data/work/json"
+        JSON_EXPECTED_DIR="/home/marvin/project/data/work/json", #TODO later
+        JSON_EXPECTED_RELATION_FILE="/home/marvin/project/data/final/film_10k/split_0/sources/json/meta/verified_relation_matches.json" # TODO later
         #dataset.splits[f"split_{split_id}"].sources["json"].data.dir.as_posix()
     )
 

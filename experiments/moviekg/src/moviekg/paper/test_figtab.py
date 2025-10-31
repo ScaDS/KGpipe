@@ -23,6 +23,31 @@ if not DATASET_SELECT:
 OUTPUT_ROOT = Path(OUTPUT_DIR) / DATASET_SELECT
 (OUTPUT_ROOT / "paper").mkdir(parents=True, exist_ok=True)
 
+PIPLEINE_NAME_MAP = {
+    "json_rdf_text": "JRT",
+    "json_text_rdf": "JTR",
+    "rdf_json_text": "RJT",
+    "rdf_text_json": "RTJ",
+    "text_json_rdf": "TJR",
+    "text_rdf_json": "TRJ",
+    "json_a": "J_A",
+    "json_b": "J_B",
+    "json_c": "J_C",
+    "json_llm_mapping_v1": "J_C",
+    "json_baseA": "J_baseA",
+    "rdf_a": "R_A",
+    "rdf_b": "R_B",
+    "rdf_c": "R_C",
+    "rdf_llm_schema_align_v1": "R_C",
+    "text_a": "T_A",
+    "text_b": "T_B",
+    "text_c": "T_C",
+    "text_llm_triple_extract_v1": "T_C",
+    }
+
+def map_pipeline_name_pretty(pipeline_name):
+    return PIPLEINE_NAME_MAP.get(pipeline_name, pipeline_name)
+
 # === Helper Functions ===
 
 def map_pipeline_name(pipeline_name):
@@ -115,6 +140,7 @@ def get_statistics_df(df):
 
     # union df and class_count_df
     df = pd.concat([df, class_count_df])
+    df[["pipeline"]] = df[["pipeline"]].map(map_pipeline_name)
 
     # rename metric to short name
     df["metric"] = df["metric"].map(map_metric_name_pretty)
@@ -225,7 +251,9 @@ def test_table_with_statistic_metrics():
     metric_df = pd.concat([metric_df, duration_df])
 
     metric_df["metric"] = metric_df["metric"].map(map_metric_name)
-
+    metric_df["pipeline"] = metric_df["pipeline"].map(map_pipeline_name_pretty)
+    # only stage = stage_3
+    metric_df = metric_df[metric_df["stage"] == "stage_3"]
 
     # Assuming your dataframe is called df
     pivot_df = metric_df.pivot_table(
@@ -238,7 +266,7 @@ def test_table_with_statistic_metrics():
     pivot_df.columns.name = None  # remove "metric" header
 
     # column selection and order Pipeline FC EC RC TC Time
-    pivot_df = pivot_df[["pipeline", "FC", "EC", "RC", "TC", "Time"]]
+    pivot_df = pivot_df[["pipeline", "FC", "EC", "RC", "TC", "SEC", "Time"]]
     # save as TSV
     output_path = OUTPUT_ROOT / "paper/test_tab_2_statistic_metrics.csv"
     pivot_df.to_csv(output_path, sep="\t")
@@ -247,24 +275,27 @@ def test_table_with_statistic_metrics():
 def test_table_with_semantic_metrics():
     metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
     # replace pipeline name with name_mapping
-    metric_df["pipeline"] = metric_df["pipeline"].map(map_pipeline_name)
+    metric_df["pipeline"] = metric_df["pipeline"].map(map_pipeline_name_pretty)
     # remove details colums
     local_metric_df = metric_df.drop(columns=["details"])
 
     # only stage = stage_1 and aspect = statistical
     stage_3_df = local_metric_df[local_metric_df["stage"] == "stage_3"]
     statistical_df = stage_3_df[stage_3_df["aspect"] == "semantic"]
+    # statistical_df["pipeline"] = statistical_df["pipeline"].map(map_pipeline_name_pretty)
 
     # print all available metric names
     print(statistical_df["metric"].unique())
 
     # rename metric to short name and remove metrics that are not in SEM_METRIC_SHORT_NAMES 
     statistical_df = statistical_df[statistical_df["metric"].isin(list(SEM_METRIC_SHORT_NAMES.keys()))]
-
     statistical_df["metric"] = statistical_df["metric"].map(SEM_METRIC_SHORT_NAMES)
 
     # format normalized value to 2 decimal places
-    statistical_df["normalized"] = statistical_df["normalized"].round(2)
+    statistical_df["normalized"] = statistical_df["normalized"].round(3)
+
+    # only stage = stage_3
+    statistical_df = statistical_df[statistical_df["stage"] == "stage_3"]
 
     # make CSV with, x axis: pipeline, y axis: metric_name, cell: value
     # Pivot the table: index=metric, columns=pipeline, values=value
@@ -278,38 +309,142 @@ def test_table_with_semantic_metrics():
 
     # column selection and order pipeline 𝑂𝐷𝑇 𝑂𝐷 𝑂𝑅 𝑂𝑅𝐷 𝑂𝐿𝑇 𝑂𝐿𝐹 𝑂𝐴𝑣𝑔
 
-    output_path = OUTPUT_ROOT / "paper/test_tab_3_ssp_semantic_eval"
+    output_path = OUTPUT_ROOT / "paper/test_tab_3_ssp_semantic_eval.csv"
     pivot_df.to_csv(output_path, sep="\t")
 
 def test_table_with_matching_metrics():
+    from moviekg.paper.helpers.getter import TABLE_DISPLAY_NAMES, get_pipeline_stage_metric_dict, ref_entity_matching_f1, ref_relation_matching_f1, ref_json_entity_matching_f1
 
     metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
-    metric_df["pipeline"] = metric_df["pipeline"].map(map_pipeline_name)
+    metric_df["pipeline"] = metric_df["pipeline"].map(map_pipeline_name_pretty)
+    metrics = [metric for metric in list(TABLE_DISPLAY_NAMES.keys()) if metric in [ref_entity_matching_f1.__name__, ref_relation_matching_f1.__name__, ref_json_entity_matching_f1.__name__]]
 
-    filter_metrics = ["ER_EntityMatchMetric", "ER_RelationMatchMetric"]
-    metric_df = metric_df[metric_df["metric"].isin(filter_metrics)]
-    metric_df = metric_df[["pipeline", "stage", "metric", "normalized"]]
-    metric_df["normalized"] = metric_df["normalized"].round(2)
+    metric_dict = get_pipeline_stage_metric_dict(metric_df, metrics)
+    
+    df_rows = []
+    for pipeline, stage_dict in metric_dict.items():
+        for stage, metric_dict in stage_dict.items():
+            rdf_em_f1 = metric_dict.get(ref_entity_matching_f1.__name__, -1)
+            json_em_f1 = metric_dict.get(ref_json_entity_matching_f1.__name__, -1)
+            em_f1 = -1
+            if rdf_em_f1 != -1:
+                em_f1 = rdf_em_f1
+            elif json_em_f1 != -1:
+                em_f1 = json_em_f1
 
-    pivot_df = metric_df.pivot_table(index=["pipeline", "stage"], 
-                                columns="metric", 
-                                values="normalized").reset_index()
-                                
-    output_path = OUTPUT_ROOT / "paper/test_tab_4_matching_metrics"
-    pivot_df.to_csv(output_path, sep="\t")
+            rdf_rm_f1 = metric_dict.get(ref_relation_matching_f1.__name__, -1)
+            json_el_r = -1 # metric_dict.get(ref.__name__, -1)
+            rm_f1 = -1
+            if rdf_rm_f1 != -1:
+                rm_f1 = rdf_rm_f1
+            elif json_el_r != -1:
+                rm_f1 = json_el_r
+
+            df_rows.append({"pipeline": pipeline, "stage": stage, "EM_f1": em_f1, "RM_f1": rm_f1})
+
+    # remove -1 rows
+    df_rows = [row for row in df_rows if row["EM_f1"] != -1 and row["RM_f1"] != -1]
+
+    df = pd.DataFrame(df_rows)
+    # df = df.pivot(index=["pipeline", "stage"], columns="metric", values="value")
+    # df = df.reset_index()
+    output_path = OUTPUT_ROOT / "paper/test_tab_4_matching_metrics.csv"
+    df.to_csv(output_path, sep="\t")
+
+def test_table_with_matching_metrics_pr():
+    from moviekg.paper.helpers.getter import (
+        TABLE_DISPLAY_NAMES, get_pipeline_stage_metric_dict, 
+        ref_entity_matching_f1, ref_entity_matching_p, ref_entity_matching_r,
+        ref_relation_matching_f1, ref_relation_matching_p, ref_relation_matching_r, 
+        ref_json_entity_matching_f1, ref_json_entity_matching_p, ref_json_entity_matching_r
+    )
+
+    
+
+    metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
+    metric_df["pipeline"] = metric_df["pipeline"].map(map_pipeline_name_pretty)
+    metrics = [
+        ref_entity_matching_p.__name__, ref_entity_matching_r.__name__,
+        ref_relation_matching_p.__name__, ref_relation_matching_r.__name__, 
+        ref_json_entity_matching_p.__name__, ref_json_entity_matching_r.__name__
+    ]
+
+    psmd = get_pipeline_stage_metric_dict(metric_df, metrics)
+    
+    df_rows = []
+    for pipeline, stage_dict in psmd.items():    
+        for stage, metric_dict in stage_dict.items():
+            rdf_em_p = metric_dict.get(ref_entity_matching_p.__name__, -1)
+            rdf_em_r = metric_dict.get(ref_entity_matching_r.__name__, -1)
+            json_em_p = metric_dict.get(ref_json_entity_matching_p.__name__, -1)
+            json_em_r = metric_dict.get(ref_json_entity_matching_r.__name__, -1)
+            em_p = -1
+            em_r = -1
+            if rdf_em_p != -1:
+                em_p = rdf_em_p
+                em_r = rdf_em_r
+            elif json_em_p != -1:
+                em_p = json_em_p
+                em_r = json_em_r
+
+            # print(json.dumps(metric_dict, indent=4))
+            # print("--------------------------------")
+
+            rdf_rm_p = metric_dict.get(ref_relation_matching_p.__name__, -1)
+            rdf_rm_r = metric_dict.get(ref_relation_matching_r.__name__, -1)
+            json_rm_p = metric_dict.get(ref_relation_matching_p.__name__, -1)
+            json_rm_r = metric_dict.get(ref_relation_matching_r.__name__, -1)
+
+            rm_p = -1
+            rm_r = -1
+            if rdf_rm_p != -1:
+                rm_p = rdf_rm_p
+                rm_r = rdf_rm_r
+            elif json_rm_p != -1:
+                rm_p = json_rm_p
+                rm_r = json_rm_r
+
+            df_rows.append({"pipeline": pipeline, "stage": stage, "EM_p": em_p, "EM_r": em_r, "RM_p": rm_p, "RM_r": rm_r})
+
+    # remove -1 rows
+    df_rows = [row for row in df_rows if row["EM_p"] != -1 and row["EM_r"] != -1 and row["RM_p"] != -1 and row["RM_r"] != -1]
+
+    df = pd.DataFrame(df_rows)
+    # df = df.pivot(index=["pipeline", "stage"], columns="metric", values="value")
+    # df = df.reset_index()
+    output_path = OUTPUT_ROOT / "paper/test_tab_4_matching_metrics_pr.csv"
+    df.to_csv(output_path, sep="\t")
 
 def test_table_with_linking_metrics():
+    from moviekg.paper.helpers.getter import TABLE_DISPLAY_NAMES, get_pipeline_stage_metric_dict, ref_entity_linking_r, ref_json_entity_linking_r
+
     metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
-    metric_df["pipeline"] = metric_df["pipeline"].map(map_pipeline_name)
+    metric_df["pipeline"] = metric_df["pipeline"].map(map_pipeline_name_pretty)
+    metrics = [metric for metric in list(TABLE_DISPLAY_NAMES.keys()) if metric in [ref_entity_linking_r.__name__, ref_json_entity_linking_r.__name__]]
 
-    filter_metrics = ["TE_ExpectedEntityLinkMetric", "TE_ExpectedRelationLinkMetric"]
-    metric_df = metric_df[metric_df["metric"].isin(filter_metrics)]
-    metric_df = metric_df[["pipeline", "stage", "metric", "normalized"]]
-    metric_df["normalized"] = metric_df["normalized"].round(2)
+    metric_dict = get_pipeline_stage_metric_dict(metric_df, metrics)
+    
+    df_rows = []
+    for pipeline, stage_dict in metric_dict.items():
+        for stage, metric_dict in stage_dict.items():
+            rdf_el_r = metric_dict.get(ref_entity_linking_r.__name__, -1)
+            json_el_r = metric_dict.get(ref_json_entity_linking_r.__name__, -1)
+            el_r = -1
+            if rdf_el_r != -1:
+                el_r = rdf_el_r
+            elif json_el_r != -1:
+                el_r = json_el_r
 
-    pivot_df = metric_df.pivot_table(index=["pipeline", "stage"], columns="metric", values="normalized").reset_index()
-    output_path = OUTPUT_ROOT / "paper/test_tab_5_linking_metrics"
-    pivot_df.to_csv(output_path, sep="\t")
+            df_rows.append({"pipeline": pipeline, "stage": stage, "EL_r": el_r})
+
+    # remove -1 rows
+    df_rows = [row for row in df_rows if row["EL_r"] != -1]
+
+    df = pd.DataFrame(df_rows)
+    # df = df.pivot(index=["pipeline", "stage"], columns="metric", values="value")
+    # df = df.reset_index()
+    output_path = OUTPUT_ROOT / "paper/test_tab_5_linking_metrics.csv"
+    df.to_csv(output_path, sep="\t")
 
 
 def test_table_6():
@@ -318,7 +453,47 @@ def test_table_6():
     EC (no Seed) REI @inc (film)
     Pipeline | f1@1 f1@2 f1@3 p@3 | f1@1 f@2 f@3
     """
-    pass
+    metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
+    metric_df["pipeline"] = metric_df["pipeline"].map(map_pipeline_name_pretty)
+    from moviekg.paper.helpers.getter import (
+        get_pipeline_stage_metric_dict, ref_kg_f1, ref_kg_p, ref_kg_r, ref_source_entity_f1, ref_source_entity_p, ref_source_entity_r
+    )
+
+    metrics = [
+        ref_kg_f1.__name__, ref_kg_p.__name__, ref_kg_r.__name__, ref_source_entity_f1.__name__, ref_source_entity_p.__name__, ref_source_entity_r.__name__
+    ]
+
+    psmd = get_pipeline_stage_metric_dict(metric_df, metrics)
+    # import json
+    # json.dump(psmd, open(OUTPUT_ROOT / "paper/test_tab_6_metrics.json", "w"), indent=4)
+
+    rows = []
+
+    round_to = 2
+
+    for pipeline, stage_dict in psmd.items():
+        if pipeline in ["reference", "seed"]:
+            continue
+        kg_p = [0, 0, 0]
+        kg_r = [0, 0, 0]
+        se_p = [0, 0, 0]
+        se_r = [0, 0, 0]
+
+
+        for stage, metric_dict in stage_dict.items():
+            kg_p[int(stage.split("_")[1]) - 1] = round(metric_dict.get(ref_kg_p.__name__, -1), round_to)
+            kg_r[int(stage.split("_")[1]) - 1] = round(metric_dict.get(ref_kg_r.__name__, -1), round_to)
+            se_p[int(stage.split("_")[1]) - 1] = round(metric_dict.get(ref_source_entity_p.__name__, -1), round_to)
+            se_r[int(stage.split("_")[1]) - 1] = round(metric_dict.get(ref_source_entity_r.__name__, -1), round_to)
+        
+        rows.append({
+            "pipeline": pipeline, 
+            "kg_p@1": kg_p[0], "kg_r@1": kg_r[0], "kg_p@2": kg_p[1], "kg_r@2": kg_r[1], "kg_p@3": kg_p[2], "kg_r@3": kg_r[2],
+            "se_p@1": se_p[0], "se_r@1": se_r[0], "se_p@2": se_p[1], "se_r@2": se_r[1], "se_p@3": se_p[2], "se_r@3": se_r[2]})
+
+    df = pd.DataFrame(rows)
+    output_path = OUTPUT_ROOT / "paper/test_tab_6_reference_alignment.csv"
+    df.to_csv(output_path, sep="\t")
 
 def test_table_with_reference_overlap_metrics():
     # "Pipeline Inc. P R F1 ∼P ∼F ∼F1"
@@ -417,9 +592,15 @@ PRESETS = {
     },
 }
 
-from moviekg.paper.helpers.ranking import _rank_and_save
+from moviekg.paper.helpers.ranking import _rank_and_save, _rank_and_save2csv
+from moviekg.paper.helpers.getter import get_pipeline_stage_metric_dict, TABLE_DISPLAY_NAMES, apply_selected_updates
 
 norm_df, agg_df = aggregate_ranking_df()
+
+psmd_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
+
+psmd = get_pipeline_stage_metric_dict(psmd_df, TABLE_DISPLAY_NAMES.keys())
+psmd = apply_selected_updates(psmd)
 
 def test_rank_save_norm_df():
     norm_df["normalized"] = norm_df["normalized"].round(2)
@@ -429,19 +610,24 @@ def test_rank_save_norm_df():
 
 # c1 size, c2 sem, c3 ref, c4 eff
 def test_rank_equal():
-    _rank_and_save(PRESETS["equal"], "test_rank_equal", agg_df)
+    # _rank_and_save(PRESETS["equal"], "test_rank_equal", agg_df)
+    _rank_and_save2csv(PRESETS["equal"], "test_rank_equal", psmd)
 
 def test_rank_quantity_focused():
-    _rank_and_save(PRESETS["quantity_focused"], "test_rank_quantity_focused", agg_df)
+    #_rank_and_save(PRESETS["quantity_focused"], "test_rank_quantity_focused", agg_df)
+    _rank_and_save2csv(PRESETS["quantity_focused"], "test_rank_quantity_focused", psmd)
 
 def test_rank_quality_focused():
-    _rank_and_save(PRESETS["quality_focused"], "test_rank_quality_focused", agg_df)
+    #_rank_and_save(PRESETS["quality_focused"], "test_rank_quality_focused", agg_df)
+    _rank_and_save2csv(PRESETS["quality_focused"], "test_rank_quality_focused", psmd)
 
 def test_rank_reference_alignment_focused():
-    _rank_and_save(PRESETS["reference_alignment_focused"], "test_rank_reference_alignment_focused", agg_df)
+    #_rank_and_save(PRESETS["reference_alignment_focused"], "test_rank_reference_alignment_focused", agg_df)
+    _rank_and_save2csv(PRESETS["reference_alignment_focused"], "test_rank_reference_alignment_focused", psmd)
 
 def test_rank_efficiency_oriented():
-    _rank_and_save(PRESETS["efficiency_oriented"], "test_rank_efficiency_oriented", agg_df)
+    #_rank_and_save(PRESETS["efficiency_oriented"], "test_rank_efficiency_oriented", agg_df)
+    _rank_and_save2csv(PRESETS["efficiency_oriented"], "test_rank_efficiency_oriented", psmd)
 
 def test_full_ranking_table():
     """
@@ -484,23 +670,6 @@ def test_full_ranking_table():
         "test_rank_efficiency_oriented.csv"
     ]
 
-    PIPLEINE_NAME_MAP = {
-        "json_rdf_text": "JRT",
-        "json_text_rdf": "JTR",
-        "rdf_json_text": "RJT",
-        "rdf_text_json": "RTJ",
-        "text_json_rdf": "TJR",
-        "text_rdf_json": "TRJ",
-        "json_a": "J_A",
-        "json_b": "J_B",
-        "json_c": "J_C",
-        "rdf_a": "R_A",
-        "rdf_b": "R_B",
-        "rdf_c": "R_C",
-        "text_a": "T_A",
-        "text_b": "T_B",
-        "text_c": "T_C",
-    }
 
     ranking_files = [OUTPUT_ROOT / "paper" / file for file in ranking_files]
 
@@ -534,6 +703,17 @@ def test_full_ranking_table():
     result = result.set_index("rank")
 
     result.to_csv(OUTPUT_ROOT / "paper/test_tab_7_full_ranking_table.csv", sep="\t")
+
+
+def test_newtest():
+    from moviekg.paper.helpers.getter import get_pipeline_stage_metric_dict, TABLE_DISPLAY_NAMES, apply_selected_updates
+    from moviekg.paper.helpers.ranking import _rank_and_save2csv
+    metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
+    psmd = get_pipeline_stage_metric_dict(metric_df, TABLE_DISPLAY_NAMES.keys())
+
+    psmd = apply_selected_updates(psmd)
+
+    _rank_and_save2csv(psmd, "test_newtest", psmd)
 
 # === Log 
 
