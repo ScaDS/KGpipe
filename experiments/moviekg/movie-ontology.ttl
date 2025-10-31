@@ -590,35 +590,35 @@ this:foundingDate a owl:DatatypeProperty, rdfs:Property ;
 
 # dbo:products, wdt:P1056 
 # seed:6c02199ac74e729e98f1ae942164e8f1 a owl:DatatypeProperty ;
-this:product a owl:DatatypeProperty, rdfs:Property ;
-    owl:equivalentProperty dbo:products, wdt:P1056 ;
-    rdfs:label "product or material produced" ;
-    rdfs:comment "material or product produced by an organization, industry, facility, or process" ;
-    rdfs:domain this:Company ; # seed:13c5d2c147718594d5291c5378b10792 ;
-    rdfs:range xsd:string ;
-    skos:altLabel
-    "material produced",
-    "produces",
-    "manufactures",
-    "makes",
-    "has product",
-    "product",
-    "maker of",
-    "manufacturer of",
-    "producer of",
-    "results in",
-    "creates",
-    "output",
-    "products",
-    "work produced",
-    "commodity",
-    "they make",
-    "produced product",
-    "produced material",
-    "service provided",
-    "provides service",
-    "product or service provided",
-    "product, material, or service " .
+# this:product a owl:DatatypeProperty, rdfs:Property ;
+#     owl:equivalentProperty dbo:products, wdt:P1056 ;
+#     rdfs:label "product or material produced" ;
+#     rdfs:comment "material or product produced by an organization, industry, facility, or process" ;
+#     rdfs:domain this:Company ; # seed:13c5d2c147718594d5291c5378b10792 ;
+#     rdfs:range xsd:string ;
+#     skos:altLabel
+#     "material produced",
+#     "produces",
+#     "manufactures",
+#     "makes",
+#     "has product",
+#     "product",
+#     "maker of",
+#     "manufacturer of",
+#     "producer of",
+#     "results in",
+#     "creates",
+#     "output",
+#     "products",
+#     "work produced",
+#     "commodity",
+#     "they make",
+#     "produced product",
+#     "produced material",
+#     "service provided",
+#     "provides service",
+#     "product or service provided",
+#     "product, material, or service " .
 
 # dbo:industry, wdt:P452
 # seed:ab2f2aea8f24e9dff0ae264da6edbc8c a owl:DatatypeProperty ;
