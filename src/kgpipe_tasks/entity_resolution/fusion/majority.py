@@ -1,4 +1,4 @@
-
+# TODO simple majority fusion class
 
 def majority_fusion(values_with_scores):
     """

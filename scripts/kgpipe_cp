@@ -1,0 +1,13 @@
+#!/bin/bash
+
+pname_i=$1
+pname_o=$2
+
+cp -vr $pname_i $pname_o
+if [ -f "${pname_i}_metrics.csv" ]; then
+	cp -vr "${pname_i}_metrics.csv" "${pname_o}_metrics.csv"
+	sed -i "s@$pname_i@$pname_o@g" "${pname_o}_metrics.csv"
+fi
+
+
+

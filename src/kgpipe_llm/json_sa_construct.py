@@ -3,7 +3,7 @@ from kgpipe.common import Registry, KG, Data, DataFormat
 from kgpipe_llm.common.core import get_client_from_env
 from kgpipe_llm.common.snippets import generate_ontology_snippet
 from kgpipe_llm.common.models import OntologyMappings
-from kgpipe_tasks.common.ontology import Ontology, OntologyUtil
+from kgcore.model.ontology import Ontology, OntologyUtil
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Callable, List
 import jsonpath_ng
@@ -11,14 +11,15 @@ import json
 from pathlib import Path
 import os
 from rdflib import Graph
+
 ONTOLOGY = None
 def get_ontology() -> Ontology:
     global ONTOLOGY
     if ONTOLOGY is None:
-        ONTOLOGY_PATH = os.getenv("ONTOLOGY")
-        if ONTOLOGY_PATH is None:
-            raise ValueError("ONTOLOGY is not set")
-        ONTOLOGY = OntologyUtil.load_ontology_from_file(Path(ONTOLOGY_PATH))
+        ontology_path = os.getenv("ONTOLOGY_PATH")
+        if ontology_path is None:
+            raise ValueError("ONTOLOGY_PATH is not set")
+        ONTOLOGY = OntologyUtil.load_ontology_from_file(Path(ontology_path))
     return ONTOLOGY
 
 

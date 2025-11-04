@@ -1,5 +1,5 @@
 from kgpipe_llm.alignment.json_alignment import map_json_to_ontology, apply_jsonpath_mapping
-from kgpipe_tasks.common.ontology import OntologyUtil
+from kgcore.model.ontology import Ontology, OntologyUtil
 import pytest
 from pathlib import Path
 from kgpipe.common import Data, DataFormat

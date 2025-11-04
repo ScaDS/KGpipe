@@ -1,18 +1,17 @@
+import pytest
+import pandas as pd
+import os
+from pathlib import Path
+
 from moviekg.datasets.pipe_out import load_pipe_out
 from moviekg.evaluation.helpers import evaluate_stage, metrics_to_long_table_rows, print_long_table_rows
 from moviekg.pipelines.test_inc_ssp import pipeline_types, llm_pipeline_types
 
-import pytest
-from pathlib import Path
-import pandas as pd
-import os
-
 from moviekg.config import OUTPUT_ROOT
-# create output root/paper if not exists
 
 @pytest.mark.parametrize(
     "pipeline_name", 
-    list(pipeline_types.keys()) + list(llm_pipeline_types.keys())
+    list[str](pipeline_types.keys()) + list[str](llm_pipeline_types.keys())
 )
 def test_inc_ssp_evaluation(pipeline_name):
 
@@ -57,10 +56,3 @@ def test_concatenate_long_table_rows():
 
     metrics_df = pd.DataFrame(rows)
     metrics_df.to_csv(OUTPUT_ROOT / "all_metrics.csv", index=False)
-
-from moviekg.evaluation.helpers import replace_with_dict
-
-# def test_replace_with_dict():
-#     replace_with_dict(str(OUTPUT_ROOT / "all_metrics.csv"), {
-
-#     })

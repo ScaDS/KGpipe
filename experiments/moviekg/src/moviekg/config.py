@@ -1,9 +1,10 @@
-from kgpipe.common.discovery import discover_entry_points
-from kgpipe.generation.loaders import load_pipeline_catalog
-from pyodibel.datasets.mp_mf.multipart_multisource import load_dataset, Dataset
+import os
 from pathlib import Path
 from dotenv import load_dotenv
-import os
+
+from kgpipe.common.discovery import discover_entry_points
+from kgpipe.generation.loaders import load_pipeline_catalog
+from kgpipe.datasets.multipart_multisource import load_dataset, Dataset
 
 load_dotenv()
 discover_entry_points()
@@ -43,11 +44,11 @@ OUTPUT_ROOT = Path(OUTPUT_DIR) / DATASET_SELECT
 
 pipeline_types = {
     "rdf_a": "rdf",
-    # "rdf_b": "rdf",
+    "rdf_b": "rdf",
     "text_a": "text",
     "text_b": "text",
     "json_a": "json",
-    "json_b": "json"
+    "json_b": "json",
 }
 
 llm_pipeline_types = {
@@ -61,8 +62,3 @@ ssp = {
     "json": "json_b",
     "text": "text_a"
 }
-
-
-
-
-# load and override from env or set here

@@ -34,7 +34,7 @@ def get_average_f1_source_entity_f1(df: pd.DataFrame):
         possible_duplicates_count = details["possible_duplicates_count"]
         overlapping_entities_strict_count = details["overlapping_entities_strict_count"]
         
-        print(f"pipeline={row.pipeline}, stage={row.stage}, expected_entities_count={expected_entities_count}, found_entities_count={found_entities_count}, overlapping_entities_count={overlapping_entities_count}, possible_duplicates_count={possible_duplicates_count}, overlapping_entities_strict_count={overlapping_entities_strict_count}")
+        # print(f"pipeline={row.pipeline}, stage={row.stage}, expected_entities_count={expected_entities_count}, found_entities_count={found_entities_count}, overlapping_entities_count={overlapping_entities_count}, possible_duplicates_count={possible_duplicates_count}, overlapping_entities_strict_count={overlapping_entities_strict_count}")
         precision = overlapping_entities_strict_count / overlapping_entities_count
         precision = precision if precision <= 1.0 else 1.0
         recall = overlapping_entities_count / expected_entities_count
@@ -201,7 +201,7 @@ def aggregate_ranking_df():
     
     norm_reference_df = aggregate_reference_metrics(metric_df)
     norm_reference_df = norm_reference_df[["pipeline", "metric", "normalized"]]
-    print(norm_reference_df.to_string())
+    # print(norm_reference_df.to_string())
     agg_reference_df = mean_scores(norm_reference_df, "reference")
     
     norm_efficiency_df = aggregate_efficiency_metrics(metric_df)

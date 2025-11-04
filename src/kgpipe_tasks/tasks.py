@@ -3,13 +3,13 @@
 from kgpipe_tasks.entity_resolution import(
     paris_entity_matching,
     paris_exchange,
-    jedai_tab_matcher,
+    pyjedai_entity_matching,
+    pyjedai_entity_matching_v2
 )
 
 from kgpipe_tasks.entity_resolution.fusion import (
-    fusion_union_rdf,
-    union_matched_rdf,
-    union_matched_rdf_combined,
+    fusion_first_value,
+    select_first_value,
     aggregate_2matches,
     reduce_to_best_match_per_entity
 )
@@ -17,7 +17,7 @@ from kgpipe_tasks.entity_resolution.fusion import (
 from kgpipe_tasks.construction import (
     construct_rdf_from_json,
     construct_rdf_from_te_json,
-    construct_rdf_from_te_json_mappings_only,
+    construct_linkedrdf_from_json,
     construct_te_document_from_json
 )
 from kgpipe_tasks.text_processing import (

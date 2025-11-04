@@ -1,7 +1,7 @@
 from typing import Dict
 from pathlib import Path
 from kgpipe.common.models import KG, KgPipePlan, DataFormat
-from pyodibel.datasets.mp_mf.multipart_multisource import MatchesRow
+from kgpipe.datasets.multipart_multisource import MatchesRow
 from rdflib import Graph, URIRef
 from typing import Optional
 import json
@@ -304,6 +304,8 @@ def load_actual_matches(er_doc_path: Path | KG, threshold: float = 0.5, type_fil
     cluster = MatchCluster()
     for match in er_doc.matches:
         if match.score > threshold and (match.id_type == type_filter or type_filter == ""):
+            if match.id_1.endswith("-") or match.id_2.endswith("-"):
+                continue
             cluster.add_match(match.id_1, match.id_2)
     return cluster
 

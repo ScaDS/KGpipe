@@ -5,73 +5,11 @@ from rdflib import Graph, OWL, RDFS, RDF
 from typing import Dict, List
 from kgpipe.common.models import KgTask, Data, DataFormat
 from kgpipe_tasks.transform_interop.exchange.text_extraction import TE_Document, TE_Pair
-# from kgflex.resources.mainspec import *
-# from kgflex.framework.kgflex import *
-# import json
+
 import logging
 
 logger = logging.getLogger(__name__)
 
-# def spacy_relation_linking():
-
-#     model = SentenceTransformer('all-MiniLM-L6-v2')
-
-#     extracted_predicates = [] # ["bornOn", "bornIn", "developed"]
-
-#     with open("/data/results/foundation-eval/temporary/Angela_Merkel.txt.tsv", "r") as f:
-#         for line in f:
-#             extracted_predicates.append(line.strip().split("\t")[1])
-
-#     extracted_predicates = list(set(extracted_predicates))
-
-#     ontology_predicates_dbpedia = {}
-#     with open("/data/results/foundation-eval/temporary/ontology_props.tsv", "r") as f:
-#         for line in f:
-#             uri, predicate = line.strip().split("\t")
-#             ontology_predicates_dbpedia[predicate] = uri
-
-#     # Compute embeddings for extracted predicates
-#     extracted_embeddings = model.encode(extracted_predicates, convert_to_tensor=True)
-
-#     # Compute embeddings for ontology predicates
-#     ontology_labels = list(ontology_predicates_dbpedia.keys())
-#     ontology_embeddings = model.encode(ontology_labels, convert_to_tensor=True)
-
-#     # Compute cosine similarity
-#     cosine_scores = util.cos_sim(extracted_embeddings, ontology_embeddings)
-
-#     results = []
-
-#     # Print mapping results
-#     for idx, extracted_pred in enumerate(extracted_predicates):
-#         scores = cosine_scores[idx]
-#         best_match_idx = scores.argmax().item()
-#         best_match_label = ontology_labels[best_match_idx]
-#         best_match_uri = ontology_predicates_dbpedia[best_match_label]
-        
-#         print(f"'{extracted_pred}' matched with '{best_match_label}' ({best_match_uri}) "
-#             f"with similarity: {scores[best_match_idx]:.4f}")
-
-#         results.append({
-#             "surfaceForm": extracted_pred,
-#             "label": best_match_label,
-#             "uri": best_match_uri,
-#             "similarity": scores[best_match_idx].item()
-#         })
-    
-#     for r in results:
-#         print(r)
-
-# def test_spacy_relation_linking():
-#     spacy_relation_linking()
-
-
-# def link_relations_in_te_json(TE_JSON):
-#     with open(TE_JSON, "r") as f:
-#         data = json.load(f)
-#         te_doc = TE_Document(**data)
-
-#     extracted_relations = [ triple.predicate.surface_form for triple in te_doc.triples ]
 
 class SimpleTransformerBasedRelationLinker:
 

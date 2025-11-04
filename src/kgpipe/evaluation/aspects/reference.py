@@ -33,7 +33,7 @@ from kgpipe.evaluation.aspects.func.soft_metrics import (
 
 from kgpipe.common.registry import Registry
 
-from pyodibel.datasets.mp_mf.multipart_multisource import SourceMeta, Dataset, read_matches_csv
+from kgpipe.datasets.multipart_multisource import SourceMeta, Dataset, read_matches_csv
 
 ONTOLOGY_REFERENCE_KEY = "ontology"
 
@@ -56,6 +56,7 @@ class ReferenceConfig(MetricConfig):
     source_meta: Optional[SourceMeta] = None
     dataset: Optional[Dataset] = None
     JSON_EXPECTED_DIR: Optional[str] = None
+    JSON_EXPECTED_RELATION_FILE: Optional[str] = None
 
 #==============================================
 # Reference Metrics
@@ -208,7 +209,7 @@ class JsonEntityMatchingMetric(Metric):
         Compute the metric value for the given KG.
         """
         JSON_EXPECTED_DIR = config.JSON_EXPECTED_DIR
-        JSON_ACTUAL_FILE = get_json_mapping_prov(kg)[0]
+        JSON_ACTUAL_FILE = get_json_mapping_prov(kg, ".entity.prov")[0]
         MATCH_JSON_FILE = get_er_task_json_doc(kg)[0]
         MATCH_THRESHOLD = config.ENTITY_MATCH_THRESHOLD
         bin_class = evaluate_json_a_matching(JSON_EXPECTED_DIR, JSON_ACTUAL_FILE, MATCH_JSON_FILE, MATCH_THRESHOLD)
@@ -221,20 +222,38 @@ class JsonEntityMatchingMetric(Metric):
             aspect=self.aspect
         )
 
-# @Registry.metric()
+@Registry.metric()
 class JsonRelationMatchingMetric(Metric):
     """
     Evaluation of relation matching through JSON-to-KG mapping.
     """
     def __init__(self):
-        super().__init__("json_specific_relation_matching")
+        super().__init__(
+            name="JsonRelationMatchingMetric",
+            description="Evaluates the relation matching through JSON-to-KG mapping",
+            aspect=EvaluationAspect.SPECIFIC
+        )
 
-    def compute(self, kg: KG, **kwargs) -> MetricResult:
+    def compute(self, kg: KG, config: ReferenceConfig, **kwargs) -> MetricResult:
         """
         Compute the metric value for the given KG.
         """
+
+        from kgpipe.evaluation.metrics.json_specific import evaluate_json_a_relation_matching
         # TODO later
-        pass
+        JSON_EXPECTED_RELATION_FILE = config.JSON_EXPECTED_RELATION_FILE
+        JSON_ACTUAL_FILE = get_json_mapping_prov(kg, ".relation.prov")[0]
+        MATCH_JSON_FILE = get_er_task_json_doc(kg)[0]
+        MATCH_THRESHOLD = config.RELATION_MATCH_THRESHOLD
+        bin_class = evaluate_json_a_relation_matching(JSON_EXPECTED_RELATION_FILE, JSON_ACTUAL_FILE, MATCH_JSON_FILE, MATCH_THRESHOLD)
+
+        return MetricResult(
+            name=self.name,
+            value=bin_class.f1_score(),
+            normalized_score=bin_class.f1_score(),
+            details=bin_class.__dict__(), # type: ignore
+            aspect=self.aspect
+        )
 
 @Registry.metric()
 class JsonEntityLinkingMetric(Metric):
@@ -252,7 +271,7 @@ class JsonEntityLinkingMetric(Metric):
         Compute the metric value for the given KG.
         """
         JSON_EXPECTED_DIR = config.JSON_EXPECTED_DIR
-        JSON_ACTUAL_FILE = get_json_mapping_prov(kg)[0]
+        JSON_ACTUAL_FILE = get_json_mapping_prov(kg, ".entity.prov")[0]
         bin_class = evaluate_json_b_linking(JSON_EXPECTED_DIR, JSON_ACTUAL_FILE)
 
         return MetricResult(
@@ -619,6 +638,7 @@ class ReferenceEvaluator(AspectEvaluator):
             TE_ExpectedEntityLinkMetric(),
             TE_ExpectedRelationLinkMetric(),
             JsonEntityMatchingMetric(),
+            JsonRelationMatchingMetric(),
             JsonEntityLinkingMetric(),
             SourceEntityCoverageMetric(),
             SourceEntityCoverageMetricSoft(),

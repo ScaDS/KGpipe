@@ -15,6 +15,8 @@ from kgpipe_tasks.entity_resolution.fusion.util import load_matches_from_file
 
 logger = getLogger(__name__)
 
+SINGLE_CANDIDATE_CHECK: bool=False
+
 class TrackRecord(BaseModel):
     original_subject: str
     subject: str
@@ -119,6 +121,9 @@ def fusion_first_value(inputs: Dict[str, Data], outputs: Dict[str, Data]):
 
     entity_matching_threshold = float(os.environ.get("ENTITY_MATCHING_THRESHOLD", 0.5))
     relation_matching_threshold = float(os.environ.get("RELATION_MATCHING_THRESHOLD", 0.5))
+    print(f"[CONFIG] Fusion entity matching threshold: {entity_matching_threshold}")
+    print(f"[CONFIG] Fusion relation matching threshold: {relation_matching_threshold}")
+
     allowed_predicates = set[str]([str(p.uri) for p in ontology.properties]+[str(RDFS.label), str(RDF.type), str(SKOS.altLabel)])
     fusable_properties = set[str]([str(p.uri) for p in ontology.properties if p.max_cardinality == 1]+[str(RDFS.label), str(RDF.type)])
 
@@ -144,7 +149,7 @@ def fusion_first_value(inputs: Dict[str, Data], outputs: Dict[str, Data]):
             cluster = entity_matches.get_cluster(t_str)
             if cluster:
                 right_candidates = [c for c in cluster if not c == t_str]
-                if len(right_candidates) > 2:
+                if len(right_candidates) > 2 and SINGLE_CANDIDATE_CHECK:
                     raise ValueError(f"Multiple matches found for {t_str}")
                 else:
                     for m in right_candidates:
@@ -163,6 +168,10 @@ def fusion_first_value(inputs: Dict[str, Data], outputs: Dict[str, Data]):
             mapped = relation_matches.has_match_to_namespace(t_str, TARGET_ONTOLOGY_NAMESPACE)
             if mapped:
                 return URIRef(mapped)
+            else: # TODO this is a workaround for the base pipelines...
+                mapped = relation_matches.has_match_to_namespace(t_str, str(RDFS))
+                if mapped:
+                    return URIRef(mapped)
         return term
 
     selected: List[TrackRecord] = []

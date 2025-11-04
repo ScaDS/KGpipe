@@ -46,37 +46,6 @@ def kg_class(type: str, description: str = ""):
     return decorator
 
 
-# class Track:
-#     """
-#     Wrap a class so that each instantiation creates an instance entity in the KG.
-#     """
-#     def __init__(self, cls):
-#         self._cls = cls
-#         # Make the wrapper look like the wrapped class (nice for introspection/help)
-#         functools.update_wrapper(self, cls)
-
-#     def __call__(self, *args: Any, **kwargs: Any) -> Any:
-#         # Construct the actual instance
-#         inst = self._cls(*args, **kwargs)
-
-#         # Generate an instance id; replace this with your own scheme if desired
-#         inst_id = f"{self._cls.__name__}:{uuid4().hex[:8]}"
-
-#         # Attach the id to the instance for downstream relations (optional)
-#         setattr(inst, "_kg_id", inst_id)
-
-#         # Extract props: prefer Pydantic’s model_dump when available
-#         if isinstance(inst, BaseModel):
-#             props = inst.model_dump()
-#         else:
-#             # Fallback: best-effort on plain Python objects
-#             props = {k: v for k, v in vars(inst).items() if not k.startswith("_")}
-
-#         # Create the instance node typed by the class’ name
-#         SYS_KG.create_entity([self._cls.__name__], id=inst_id, props=props)
-
-#         return inst
-
 def Track(_cls=None, *, with_timestamp: bool = False):
     """
     Use as:
@@ -125,24 +94,3 @@ def kg_function(fn):
         )
         return result
     return wrapper
-
-
-# @Track
-# @kg_class(type="some",description="Some Class for testing")
-# class Some(BaseModel):
-#     pred1: str
-
-
-# @kg_class(type="some")
-# class Some2(BaseModel):
-#     pred2: List[str]
-
-
-# @kg_function
-# def someFunc():
-#     pass
-# if __name__ == "__main__":
-#     Some(pred1="some")
-
-#     someFunc()
-#     print(SYS_KG.asGraph().serialize(format="turtle"))

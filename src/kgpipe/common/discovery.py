@@ -64,9 +64,11 @@ def discover_kgpipe_llm() -> None:
     try:
         import kgpipe_llm
         
+        print("Successfully discovered kgpipe_llm components")
         logger.info("Successfully discovered kgpipe_llm components")
         
     except ImportError as e:
+        print(f"kgpipe_llm not available: {e}")
         logger.warning(f"kgpipe_llm not available: {e}")
     except Exception as e:
         logger.error(f"Error discovering kgpipe_llm: {e}")

@@ -1,7 +1,7 @@
 
 from kgpipe_llm.common.core import get_client_from_env
 from kgpipe_llm.common.snippets import generate_ontology_snippet_v3
-from kgpipe_tasks.common.ontology import Ontology, OntologyUtil
+from kgcore.model.ontology import Ontology, OntologyUtil
 from pydantic import BaseModel
 from typing import Optional, List, Literal as LiteralType, Callable, Dict
 import json
@@ -250,10 +250,10 @@ ONTOLOGY = None
 def get_ontology() -> Ontology:
     global ONTOLOGY
     if ONTOLOGY is None:
-        ONTOLOGY_PATH = os.getenv("ONTOLOGY")
-        if ONTOLOGY_PATH is None:
+        ontology_path = os.getenv("ONTOLOGY_PATH")
+        if ontology_path is None:
             raise ValueError("ONTOLOGY is not set")
-        ONTOLOGY = OntologyUtil.load_ontology_from_file(Path(ONTOLOGY_PATH))
+        ONTOLOGY = OntologyUtil.load_ontology_from_file(Path(ontology_path))
     return ONTOLOGY
 
 # --- Models ------------------------------------------------------------------

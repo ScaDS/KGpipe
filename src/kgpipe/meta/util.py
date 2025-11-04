@@ -281,34 +281,3 @@ def test_create_insertable_nodes_and_edges():
 
 if __name__ == "__main__":
     test_create_insertable_nodes_and_edges()
-
-   # Helper: expand a possibly-curied name using @context or fallback class_ns
-    # def _expand_type(typ: str, mapping: Mapping[str, Any] | None) -> URIRef:
-    #     if _is_abs_iri(typ):
-    #         return URIRef(typ)
-    #     # Try JSON-LD @context CURIE expansion: {"@context": {"schema": "https://schema.org/"}}
-    #     if mapping and isinstance(mapping.get("@context"), Mapping) and ":" in typ:
-    #         prefix, local = typ.split(":", 1)
-    #         base = mapping["@context"].get(prefix)
-    #         if isinstance(base, str) and _is_abs_iri(base):
-    #             return URIRef(base.rstrip("#/") + "/" + local)
-    #     # Fallback: prefix with class_ns
-    #     return URIRef(class_ns + typ)
-
-    # # --- CHANGE 2: more tolerant dict type detection, with lists and CURIEs ---
-    # def _dict_type_iri(mapping: Mapping[str, Any] | None) -> URIRef | None:
-    #     if not mapping:
-    #         return None
-    #     # Check several common keys
-    #     candidates = mapping.get("@type") or mapping.get("type") or mapping.get("rdf_type") or mapping.get("__rdf_type__")
-    #     if candidates is None:
-    #         return None
-    #     # Allow list of types; pick the first by default (or adapt to your policy)
-    #     if is_iterable(candidates):
-    #         for c in candidates:
-    #             if isinstance(c, str):
-    #                 return _expand_type(c, mapping)
-    #         return None
-    #     if isinstance(candidates, str):
-    #         return _expand_type(candidates, mapping)
-    #     return None

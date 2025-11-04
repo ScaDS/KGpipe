@@ -1,4 +1,4 @@
-from kgpipe_tasks.common import Ontology, OntologyUtil, OwlPropertyType
+from kgcore.model.ontology import Ontology, OntologyUtil, OwlPropertyType
 
 
 def generate_ontology_snippet(ontology: Ontology):

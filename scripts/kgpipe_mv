@@ -1,0 +1,8 @@
+#!/bin/bash
+
+pname_i=$1
+pname_o=$2
+
+kgpipe_cp $pname_i $pname_o
+rm -rf "$pname_i"
+rm -rf "${pname_i}_metrics.csv"

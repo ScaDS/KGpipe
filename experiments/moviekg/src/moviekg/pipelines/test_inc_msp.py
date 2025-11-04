@@ -1,10 +1,11 @@
-from moviekg.pipelines.helpers import run_helper
-from moviekg.config import ssp, OUTPUT_ROOT
-
-from itertools import permutations
 
 import pytest
+from itertools import permutations
+from _pytest.compat import NotSetType
+from typing import Sequence
 
+from moviekg.pipelines.helpers import run_helper
+from moviekg.config import ssp, OUTPUT_ROOT
 
 def idfn(param):
     # param is a tuple like ("text", "json", "rdf")
@@ -15,7 +16,7 @@ def idfn(param):
 
 @pytest.mark.parametrize(
     "source_1, source_2, source_3", 
-    permutations(list(ssp.keys()), 3),
+    permutations(list[str](ssp.keys()), 3),
     ids=idfn
 )
 def test_inc_msp_with_3_splits(source_1, source_2, source_3):

@@ -1,0 +1,23 @@
+# The rest is set by the moviekg_docker.sh script.
+
+PIPELINE_CONFIG=pipeline.conf
+
+DATASET_SELECT=small
+# DATASET_SMALL="IS SET BY THE SCRIPT"
+# DATASET_MEDIUM="IS SET BY THE SCRIPT"
+# DATASET_LARGE="IS SET BY THE SCRIPT"
+
+ONTOLOGY_PATH=/app/experiments/moviekg/movie-ontology.ttl
+# OUTPUT_DIR="IS SET BY THE SCRIPT"
+
+EMBEDDER=sentence-transformer
+EMBED_CACHE="redis://cache:6379"
+
+DBPEDIA_ANNOTATE_URL='http://dbpedia-spotlight:80/rest/annotate'
+OPENAI_TOKEN="INSERT_YOUR_OPENAI_TOKEN_HERE"
+DEFAULT_LLM_MODEL_NAME=gpt-5-mini
+
+# OPTIONAL
+OLLAMA_TOKEN="empty"
+LLM_ENDPOINT_URL=https://example.com/ollama/api/generate
+

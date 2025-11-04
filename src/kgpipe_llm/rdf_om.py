@@ -3,13 +3,13 @@ from kgpipe.common import Registry, KG, Data, DataFormat
 from kgpipe_llm.common.core import get_client_from_env
 from kgpipe_llm.common.snippets import generate_ontology_snippet
 from kgpipe_llm.common.models import OntologyMappings
-from kgpipe_tasks.common.ontology import Ontology, OntologyUtil
+from kgcore.model.ontology import Ontology, OntologyUtil
 from pydantic import BaseModel
 from typing import Optional, Dict, Callable
 import jsonpath_ng
 import json
 import os
-from rdflib import Graph, RDF
+from rdflib import Graph, RDF, URIRef
 from kgpipe_tasks.transform_interop.exchange.entity_matching import ER_Document, ER_Match
 
 
@@ -465,11 +465,14 @@ def map_er_match_relations(inputs: Dict[str, Data], outputs: Dict[str, Data]):
         matches[match.id_1] = match.id_2
         matches_inv[match.id_2] = match.id_1
 
+    from rdflib import RDFS, RDF
+    skip_filter = [str(RDFS.label), str(RDF.type)]
+
     for s, p, o in input_graph:
-        if p in matches:
-            new_graph.add((s, p, matches[p]))
-        elif p in matches_inv:
-            new_graph.add((matches_inv[p], p, o))
+        if str(p) in matches and not matches[str(p)] in skip_filter :
+            new_graph.add((s, URIRef(matches[str(p)]), o))
+        elif str(p) in matches_inv and not matches_inv[str(p)] in skip_filter :
+            new_graph.add((s, URIRef(matches_inv[str(p)]), o))
         else:
             new_graph.add((s, p, o))
 

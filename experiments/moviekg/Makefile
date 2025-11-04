@@ -1,60 +1,91 @@
-# TODO
+.PHONY:
 
-.PHONY: create-repos update-repos create-env install-deps download-data test reproduce-tests-only
+DATASET_URL := https://zenodo.org/record/17246358/files/inc_movie_kg_datasets.tar.gz?download=1
+BASE_DIR := ./data
 
-EVN_NAME := moviekg
-DATA_URL := https://cloud.scadsai.uni-leipzig.de/index.php/s/no5jySLKBRXXqx6/download
+# === Main ===
 
-create-repos:
-	@test -d git.kgflex || git clone git@github.com:scads/kgflex.git --branch paper2025 git.kgflex;
-	@test -d git.odibel || 	git clone git@github.com:scads/odibel.git --branch paper2025 git.odibel;
-	@test -d git.kgtools || git clone git@github.com:vehnem/kg-tools.git --branch paper2025 git.kgtools;
+setup_docker: download-datasets kgpipe_docker kgtools start-services
 
-update-repos:
-	cd git.kgflex && git pull origin paper2025;
-	cd git.odibel && git pull origin paper2025;
-	cd git.kgtools && git pull origin paper2025;
+run_docker_small:
+	bash ../../scripts/moviekg_docker.sh $(BASE_DIR) docker.env
 
-create-env:
-	@micromamba info --envs | grep -q "^$(ENV_NAME) " || \
-	micromamba create -n $(EVN_NAME) python=3.12 -c conda-forge;
+pipelines:
+	pytest -v src/moviekg/pipelines/ -k "not llm"
 
-install-deps:
-	cd git.kgflex && micromamba run -n $(EVN_NAME) pip install -e .; 
-	cd git.odibel && micromamba run -n $(EVN_NAME) pip install -e .; 
+pipelines-llm:
+	pytest -v src/moviekg/pipelines/ -k "llm"
 
-#install-kgtools:
-# TODO: build tools in docker
-# for now push directly to registry
-#	cd git.kgtools && bash build.sh; 
+evaluation:
+	pytest -v src/moviekg/evaluation/ -k "not llm"
 
-data/data.tar.bz2:
-	@mkdir -p data
-	@cd data && wget $(DATA_URL) -O data.tar.bz2 && tar -xjf data.tar.bz2
+paper:
+	pytest -v src/moviekg/evaluation/test_inc_msp_evaluation.py -k concat;
+	pytest -v src/moviekg/paper/test_figtab.py;
 
-download-data: data/data.tar.bz2#
+# === Docker ===
 
-test:
-	echo "Executing all tests...";
-	micromamba run -n $(EVN_NAME) pytest -v src/moviekg/;
+$(BASE_DIR)/.kgpipe-docker-built:
+	@cd ../.. && make docker_build
+	touch $@
 
-reproduce-tests-only: create-repos update-repos create-env download-data test
+kgpipe_docker: $(BASE_DIR)/.kgpipe-docker-built
+
+$(BASE_DIR)/kgtools/README.md:
+	@cd $(BASE_DIR) && git clone https://github.com/vehnem/kg-tools.git kgtools
+
+$(BASE_DIR)/kgtools/.paris-docker-built	:
+	@cd $(BASE_DIR)/kgtools/paris && make docker_build
+	touch $@
+
+$(BASE_DIR)/kgtools/.valentine-docker-built:
+	@cd $(BASE_DIR)/kgtools/valentine && make docker_build
+	touch $@
+
+$(BASE_DIR)/kgtools/.pyjedai-docker-built:
+	@cd $(BASE_DIR)/kgtools/pyjedai && make docker_build
+	touch $@
+
+$(BASE_DIR)/kgtools/.corenlp-docker-built:
+	@cd $(BASE_DIR)/kgtools/corenlp && make docker_build
+	touch $@
+
+$(BASE_DIR)/kgtools/.dbpedia-spotlight-docker-built:
+	@cd $(BASE_DIR)/kgtools/dbpedia-spotlight && make docker_build
+	touch $@
+
+$(BASE_DIR)/kgtools/.docker-built: $(BASE_DIR)/kgtools/.paris-docker-built $(BASE_DIR)/kgtools/.valentine-docker-built $(BASE_DIR)/kgtools/.pyjedai-docker-built $(BASE_DIR)/kgtools/.corenlp-docker-built $(BASE_DIR)/kgtools/.dbpedia-spotlight-docker-built
+	touch $@
+
+kgtools_clone: $(BASE_DIR)/kgtools/README.md
+
+kgtools_docker: $(BASE_DIR)/kgtools/.docker-built
+
+kgtools: kgtools_clone kgtools_docker
+
+# === Setup ===
+
+start-services:
+	@cd ../../ && docker compose up -d
 
 clean:
 	rm -rf data;
 
-# === Services ===
-
-start-services:
-# docker run -d --name spotlight -p 2222:2222 -p 8080:8080 -p 6100:6100 -p 6101:6101 -p 6102:610
-# docker run falcon
-# docker run ollama
-	echo TODO
-
 # === Dataset ===
 
-eval-dataset:
-	pytest -s -v src/moviekg/datasets/test_evaluate_film_data.py
+$(BASE_DIR)/datasets.tar.gz:
+	@mkdir -p $(BASE_DIR)
+	@cd $(BASE_DIR) && wget $(DATASET_URL) -O datasets.tar.gz
+
+$(BASE_DIR)/datasets/.extracted: $(BASE_DIR)/datasets.tar.gz
+	@mkdir -p $(BASE_DIR)/datasets
+	@cd $(BASE_DIR) && tar -xzf datasets.tar.gz
+	@touch $(BASE_DIR)/datasets/.extracted
+
+download-datasets: $(BASE_DIR)/datasets/.extracted
+
+datasets-eval:
+	pytest -v src/moviekg/datasets/test_evaluate_film_data.py
 
 # === SSPs ===
 
@@ -67,9 +98,6 @@ eval-ssp-all:
 test-ssp-classic:
 	time pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k "not llm_"
 
-#eval-ssp-classic:
-#	time pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k "not gpt"
-
 test-ssp-llm:
 	time pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k "llm_"
 
@@ -79,116 +107,62 @@ eval-ssp-llm:
 # === RDF ===
 
 test-rdf-a:
-# sudo rm -rf out/rdf_a;
 	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k rdf_a
 
 eval-rdf-a:
 	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k rdf_a
 
 test-rdf-b:
-# sudo rm -rf out/rdf_b;
 	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k rdf_b
 
 eval-rdf-b:
 	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k rdf_b
 
-
-test-rdf-b2:
-# sudo rm -rf out/rdf_b;
-	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k rdf_b2
-
-eval-rdf-b2:
-	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k rdf_b2
-
-
 test-rdf-c:
-# sudo rm -rf out/rdf_b;
 	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k rdf_llm
 
-test-rdf-llm-schema-align:
-# sudo rm -rf out/rdf_llm_schema_align;
-	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k rdf_llm_schema_align
-
-eval-rdf-llm-schema-align:
-	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k rdf_llm_schema_align
-
-test-rdf-llm-full-integration:
-# sudo rm -rf out/rdf_llm_full_integration;
-	pytest -v src/moviekg/pipelines/test_inc_ssp.py -k rdf_llm_full_integration
-
-eval-rdf-llm-full-integration:
-	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k rdf_llm_full_integration
+eval-rdf-c:
+	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k rdf_llm
 
 # === JSON ===
 
 test-json-a:
-# sudo rm -rf out/json_a;
 	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k json_a
 
 eval-json-a:
 	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k json_a
 
 test-json-b:
-# sudo rm -rf out/json_b;
-	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k json_b	
+	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k json_b
 
 eval-json-b:
 	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k json_b
 
-test-json-b2:
-# sudo rm -rf out/json_b;
-	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k json_b2
-
-test-json-llm-schema-align:
-# sudo rm -rf out/json_llm_schema_align;
+test-json-c:
 	pytest -v -s src/moviekg/pipelines/test_inc_ssp.py -k json_llm
 
-eval-json-llm-schema-align:
+eval-json-c:
 	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k json_llm
-
-test-json-llm-semi-integration:
-# sudo rm -rf out/json_llm_semi_integration;
-	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k json_llm_semi_integration
-
-eval-json-llm-semi-integration:
-	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k json_llm_semi_integration
-
-test-json-llm-full-integration:
-# sudo rm -rf out/json_llm_full_integration;
-	pytest -v src/moviekg/pipelines/test_inc_ssp.py -k json_llm_full_integration
-
-eval-json-llm-full-integration:
-	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k json_llm_full_integration
 
 # === TEXT ===
 
 test-text-a:
-# sudo rm -rf out/text_a;
 	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k text_a
 
 eval-text-a:
 	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k text_a
 
 test-text-b:
-# sudo rm -rf out/text_b;
 	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k text_b
 
 eval-text-b:
 	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k text_b
 
-test-text-llm-semi-integration:
-# sudo rm -rf out/text_llm_semi_integration;
+test-text-c:
 	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k text_llm
 
-eval-text-llm-semi-integration:
+eval-text-c:
 	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k text_llm
-
-test-text-llm-full-integration:
-# sudo rm -rf out/text_llm_full_integration;
-	pytest -s-v src/moviekg/pipelines/test_inc_ssp.py -k text_llm_full_integration
-
-eval-text-llm-full-integration:
-	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k text_llm_full_integration
 
 # === MSPs ===
 
@@ -198,11 +172,13 @@ test-msp-all:
 eval-msp-all:
 	pytest -s -v src/moviekg/evaluation/test_inc_msp_evaluation.py
 
+eval-msp-rjt:
+	pytest -s -v src/moviekg/evaluation/test_inc_msp_evaluation.py -k rdf-json-text
+
 # === Paper ===
 
 concatenate-metrics:
 	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k test_concatenate_long_table_rows
-# micromamba run -n $(EVN_NAME) pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k test_replace_with_dict
 
 paper-figtab:
 	pytest -s -v src/moviekg/paper/test_figtab.py

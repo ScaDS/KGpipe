@@ -1,8 +1,9 @@
-from kgpipe.common import Registry, DataFormat, Data
-from typing import List, Tuple, Dict, Callable
 import os
+from typing import List, Tuple, Dict, Callable
 from pathlib import Path
 from pydantic import BaseModel
+
+from kgpipe.common import Registry, DataFormat, Data
 from kgpipe_llm.common import get_config_from_env
 from kgpipe_llm.common.core import get_client_from_env
 from kgpipe_tasks.transform_interop.exchange.text_extraction import TE_Document, TE_Triple, TE_Span
@@ -14,14 +15,6 @@ class Triple(BaseModel):
 
 class Triples(BaseModel):
     triples: List[Triple]
-
-# @Registry.task(
-#     description="Extract triple pattern from text using a LLM",
-#     input_spec={"text": DataFormat.TEXT},
-#     output_spec={"triples": DataFormat.TE_JSON},
-#     category=["Text", "Triple Extract"]
-# )
-
 
 def apply_to_file_or_files_in_dir(func: Callable, input_path: Path, output_path: Path, parallel: int = 1) -> None:
     from multiprocessing import Pool

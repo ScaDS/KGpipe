@@ -5,23 +5,21 @@ stages:
 variables:
   PYTHON_VERSION: "3.12"
 
-# Build stage - Install dependencies and build the package
-build:
+build_docker:
   stage: build
-  image: ghcr.io/astral-sh/uv:debian
-  before_script:
-    - uv run python --version
-    - uv --version
+  image: docker:24.0.5
   script:
     - echo "Installing project dependencies with uv...TODO"
+    - docker build -t kgpipe .
+  rules:
+    - changes:
+        - src/**/*
+        - scripts/**/*
+        - pyproject.toml
+        - .gitlab-ci.yml
 
-  #   - uv venv
-  #   - uv pip install .
-  #   - echo "Installing development dependencies..."
-  #   - uv pip install pytest rdflib pydantic
-  #   - echo "Build completed successfully"
-  # cache:
-  #   key: "uv-kglab-cache"
-  #   paths:
-  #     - ~/.cache/uv
-
+test_docker:
+  stage: test
+  image: docker:24.0.5
+  script:
+    - docker run --rm kgpipe --help
