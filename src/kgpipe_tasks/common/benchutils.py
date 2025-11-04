@@ -259,7 +259,7 @@ def generate_match_clusters_file(uri_list_path: str, delimiter: str = '\t') -> M
         hash = hash_uri(uri)
         seed_uri = f"{hash}"
         rdf_uri = f"{hash}"
-        text_uri = f
+        text_uri = f"{hash}2"
 
         # add match to cluster
         match_cluster.add_match(seed_uri, uri)

@@ -48,4 +48,8 @@ KGpipe provides Single-Source Pipelines (SSPs) and Multi-Source Pipelines (MSPs)
 - Reference Validation – fidelity against curated gold-standard KGs
 
 ## Usage
-TODO
+
+For documentation see the [docs](docs/reproduce.md)
+
+## Experiments
+- **[moviekg](experiments/moviekg/README.md)** evalaution of a pipelines, building a Movie KG from three sources (rdf,json,text).

@@ -1,18 +1,8 @@
 version: "3.9"
 
 services:
-  dbpedia-spotlight:
-    image: local/spotlight
-    #container_name: dbpedia-spotlight.en
-    restart: unless-stopped
-    command: ["spotlight.sh", "en"]
-    volumes:
-      - spotlight-model:/opt/spotlight
-    networks:
-      - kglab
 
-
-  virtdb:
+  syskg:
     image: openlink/virtuoso-opensource-7:latest
     restart: unless-stopped
     tty: true
@@ -22,30 +12,35 @@ services:
     ports:
       - "18890:8890"
     volumes:
-      - ./virtdb:/data
+      - syskg-data:/data
     networks:
-      - kglab
+      - kgpipe
 
+  cache:
+    image: redis
+    command: ["redis-server", "--save", "60", "1", "--loglevel", "warning"]
+    ports:
+      - "16379:6379"
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - kgpipe
+
+  dbpedia-spotlight:
+    image: local/spotlight
+    restart: unless-stopped
+    command: ["spotlight.sh", "en"]
+    volumes:
+      - spotlight-model:/opt/spotlight
+    networks:
+      - kgpipe
 
 volumes:
   spotlight-model:
+  redis-data:
+  syskg-data:
 
 networks:
-  kglab:
-    name: kglab
-
-
-#      ports:
-#      - "2222:80"
-      # - "1111:1111"
-# services:
-#   kgpipe:
-#     image: kgpipe
-#     container_name: kgpipe-test
-#     working_dir: /app/experiments/moviekg
-#     command: bash -c "make test-rdf-a"
-#     volumes:
-#       - /home/marvin/project/data:/home/marvin/project/data
-#       - /var/run/docker.sock:/var/run/docker.sock
-#       - ./moviekg.env:/app/experiments/moviekg/.env
-#     restart: "no"  # Equivalent to --rm (container not restarted)
+  kgpipe:
+    name: kgpipe

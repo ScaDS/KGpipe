@@ -17,7 +17,7 @@ from kgpipe.common.models import DataFormat
 from pathlib import Path
 from typing import Optional
 from kgpipe.common.registry import Registry
-from pyodibel.common.util import hash_uri
+from kgpipe_tasks.common.benchutils import hash_uri
 
 class JsonSpecificConfig(MetricConfig):
     JSON_EXPECTED_DIR: Optional[str] = None

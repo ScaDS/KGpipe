@@ -1,18 +1,19 @@
+import pandas as pd
+import pytest
+import os
+from typing import Sequence
+from _pytest.compat import NotSetType
+from itertools import permutations
+
 from moviekg.datasets.pipe_out import load_pipe_out
 from moviekg.evaluation.helpers import evaluate_stage, metrics_to_long_table_rows
 from moviekg.pipelines.test_inc_msp import ssp, idfn
-
-import pytest
-from pathlib import Path
-from itertools import permutations
-import pandas as pd
-import os
 
 from moviekg.config import OUTPUT_ROOT
 
 @pytest.mark.parametrize(
     "source_1, source_2, source_3", 
-    permutations(list(ssp.keys()), 3),
+    permutations(list[str](ssp.keys()), 3),
     ids=idfn
 )
 def test_inc_ssp_evaluation(source_1, source_2, source_3):

@@ -1,6 +1,6 @@
 from kgpipe.common import Registry, Data, DataFormat
 from kgpipe_llm.common import LLMClient
-from kgpipe_tasks.common import OntologyUtil, Ontology
+from kgcore.model.ontology import Ontology, OntologyUtil
 from kgpipe_llm.common.models import OntologyMappings
 from kgpipe_llm.common.snippets import generate_ontology_snippet
 

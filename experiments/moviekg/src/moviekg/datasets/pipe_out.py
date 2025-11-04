@@ -2,8 +2,8 @@ from multiprocessing import Pipe
 from pathlib import Path
 from pydantic import BaseModel
 from typing import List, Optional
-import json
-from kgpipe.common.models import KgPipePlan, KgTaskReport, KgStageReport
+
+from kgpipe.common.models import KgPipePlan, KgStageReport
 
 # benchmark_name/
 # ├── results
@@ -87,12 +87,3 @@ def load_pipe_out(path: Path) -> PipeOut:
         resultKG=pipe_out_root / "result.nt",
     )
     return pipe_out
-    
-# def test_load_pipe_out():
-#     path = Path("/home/marvin/project/code/kgflex/src/kgpipe/test_data/inc/pipeline_1")
-
-#     pipe_out = load_pipe_out(path)
-#     print(pipe_out.model_dump_json(indent=2))
-
-# if __name__ == "__main__":
-#     test_load_pipe_out()

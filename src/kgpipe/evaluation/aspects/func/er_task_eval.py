@@ -1,7 +1,7 @@
 from typing import Dict
 from pathlib import Path
 from kgpipe.common.models import KG, KgPipePlan, DataFormat
-from pyodibel.datasets.mp_mf.multipart_multisource import MatchesRow
+from kgpipe.datasets.multipart_multisource import MatchesRow
 from rdflib import Graph, URIRef
 from typing import Optional
 import json

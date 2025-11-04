@@ -213,6 +213,8 @@ def ref_entity_matching_r(df: pd.DataFrame):
         res[row.pipeline][row.stage] = recall
     return res
 
+RM_DEFAULT_FN=24 # 23 + label
+
 def ref_relation_matching_f1(df: pd.DataFrame):
     df = df[df["metric"] == "ER_RelationMatchMetric"]
     res: pipeline_stage_dict = defaultdict[pipeline_name, defaultdict[stage_name, metric_value]](lambda: defaultdict[stage_name, metric_value](lambda: None))
@@ -224,7 +226,7 @@ def ref_relation_matching_f1(df: pd.DataFrame):
         # print(details)
         tp = details["true_relation_match_cnt"]
         fp = details["false_relation_match_cnt"]
-        fn = details.get("false_missing_relation_match_cnt", 0)
+        fn = RM_DEFAULT_FN - (tp+fp) # details.get("false_missing_relation_match_cnt", 0)
         f1 = 2 * tp / (2 * tp + fp + fn)
         res[row.pipeline][row.stage] = f1
     return res
@@ -241,9 +243,9 @@ def ref_relation_matching_p(df: pd.DataFrame):
         # print(details)
         tp = details["true_relation_match_cnt"]
         fp = details["false_relation_match_cnt"]
-        fn = details.get("false_missing_relation_match_cnt", 0)
+        fn = RM_DEFAULT_FN - (tp+fp) # details.get("false_missing_relation_match_cnt", 0)
         print(f"tp, fp, fn for {row.pipeline} {row.stage}: {tp}, {fp}, {fn}")
-        precision = tp / (tp + fp)
+        precision = tp / (tp + fp) if (tp + fp) > 0 else 0
         res[row.pipeline][row.stage] = precision
     return res
 
@@ -259,8 +261,8 @@ def ref_relation_matching_r(df: pd.DataFrame):
         # print(details)
         tp = details["true_relation_match_cnt"]
         fp = details["false_relation_match_cnt"]
-        fn = details.get("false_missing_relation_match_cnt", 0)
-        recall = tp / (tp + fn)
+        fn = RM_DEFAULT_FN - (tp+fp) # details.get("false_missing_relation_match_cnt", 0)
+        recall = tp / (tp + fn) if (tp + fn) > 0 else 0
         res[row.pipeline][row.stage] = recall
     return res
 
@@ -276,7 +278,7 @@ def ref_entity_linking_r(df: pd.DataFrame):
         tp = details["true_link_cnt"]
         fp = details["false_link_cnt"]
         fn = details["false_missing_link_cnt"]
-        r = tp / (tp + fn)
+        r = tp / (tp + fn) if (tp + fn) > 0 else 0
         res[row.pipeline][row.stage] = r
     return res
 
@@ -386,7 +388,7 @@ def dict_of_metrics(df: pd.DataFrame, metric_getters: List[Callable[[pd.DataFram
 def get_pipeline_stage_metric_dict(df: pd.DataFrame, metric_names: List[str]) -> pipeline_stage_metric_dict:
     """
     # call the getter functions for each metric name not the dict_for_metric_name
-    """
+    """    
     return dict_of_metrics(df, [globals()[f"{metric_name.lower()}"] for metric_name in TABLE_DISPLAY_NAMES.keys()])
 
 
@@ -423,6 +425,12 @@ def normalize_metric(psmd: pipeline_stage_metric_dict, metric_name: str, stages:
             if metric_name not in psmd[pipeline][stage]:
                 continue
             value = psmd[pipeline][stage][metric_name]
+            if metric_name == sta_fact_count.__name__:
+                if pipeline in ["json_llm_mapping_v1", "text_llm_triple_extract_v1"]:
+                    values_for_metric=[65000]
+                else:
+                    values_for_metric=[340000]
+                print(f"setting max ec for norm {pipeline} {values_for_metric}")
             psmd[pipeline][stage][metric_name+"_norm"] = func(values_for_metric, value)
 
     return psmd

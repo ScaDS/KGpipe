@@ -2,13 +2,11 @@ from kgpipe.common.models import KG
 import json
 from pathlib import Path
 import pandas as pd
-import csv  
-import pyodibel
 from rdflib import RDFS, URIRef, Graph
 from dataclasses import dataclass
 from kgpipe.util.embeddings.st_emb import get_model
 import numpy as np
-from pyodibel.datasets.mp_mf.multipart_multisource import read_entities_csv
+from kgpipe.datasets.multipart_multisource import read_entities_csv
 
 # model
 

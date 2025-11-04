@@ -1,5 +1,5 @@
 from kgpipe.common import Registry, Data, DataFormat
-from kgpipe_tasks.common.ontology import OntologyUtil
+from kgcore.model.ontology import Ontology, OntologyUtil
 import json
 from kgpipe_llm.common.api_utils import get_token_count
 from kgpipe_llm.common.core import get_client_from_env, LLMClient

@@ -5,7 +5,8 @@ import json
 from kgpipe.common.models import KG, KgPipePlan, DataFormat
 from kgpipe_tasks.transform_interop.exchange.text_extraction import TE_Document, TE_Pair
 
-from pyodibel.datasets.mp_mf.multipart_multisource import read_links_csv
+from kgpipe_tasks.common.benchutils import hash_uri
+from kgpipe.datasets.multipart_multisource import read_links_csv
 
 @dataclass
 class LinkCounts:
@@ -46,8 +47,7 @@ def get_te_doc_paths_from_plan(plan: KgPipePlan, base_dir) -> list[Path]:
         if step.output[0].format.value == DataFormat.TE_JSON.value:
             paths.append(step.output[0].path)
     return paths
-    
-from pyodibel.rdf_ops.construct import hash_uri
+
 
 def get_as_seed_uri(uri: str) -> str:
     hash = hash_uri(uri)

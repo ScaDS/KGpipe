@@ -33,7 +33,7 @@ from kgpipe.evaluation.aspects.func.soft_metrics import (
 
 from kgpipe.common.registry import Registry
 
-from pyodibel.datasets.mp_mf.multipart_multisource import SourceMeta, Dataset, read_matches_csv
+from kgpipe.datasets.multipart_multisource import SourceMeta, Dataset, read_matches_csv
 
 ONTOLOGY_REFERENCE_KEY = "ontology"
 

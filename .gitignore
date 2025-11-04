@@ -1,6 +1,9 @@
 ODIBEL/
 app.log
 out/
+.env
+*.env
+**/.env
 
 uv.lock
 .metals/

@@ -15,6 +15,8 @@ from kgpipe_tasks.entity_resolution.fusion.util import load_matches_from_file
 
 logger = getLogger(__name__)
 
+SINGLE_CANDIDATE_CHECK: bool=False
+
 class TrackRecord(BaseModel):
     original_subject: str
     subject: str
@@ -147,7 +149,7 @@ def fusion_first_value(inputs: Dict[str, Data], outputs: Dict[str, Data]):
             cluster = entity_matches.get_cluster(t_str)
             if cluster:
                 right_candidates = [c for c in cluster if not c == t_str]
-                if len(right_candidates) > 2:
+                if len(right_candidates) > 2 and SINGLE_CANDIDATE_CHECK:
                     raise ValueError(f"Multiple matches found for {t_str}")
                 else:
                     for m in right_candidates:

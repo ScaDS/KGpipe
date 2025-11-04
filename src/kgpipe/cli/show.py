@@ -4,13 +4,11 @@ Show command for KGbench CLI.
 
 This module handles showing detailed information about components.
 """
-
+import click
+import yaml
 import json
 from pathlib import Path
 from typing import Optional
-
-import click
-import yaml
 from rich.console import Console
 from rich.panel import Panel
 from rich.table import Table
@@ -21,7 +19,6 @@ from kgpipe.common.discovery import (
 
 # Initialize Rich console for pretty output
 console = Console()
-
 
 def show_pipeline_details(pipeline_file: str):
     """Show details of a pipeline file."""

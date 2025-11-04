@@ -1,0 +1,111 @@
+#!/usr/bin/env bash
+# memwrap.sh — wrap a command and log system memory/load during its runtime
+# Linux-only (uses /proc). Bash 4+.
+
+set -euo pipefail
+
+interval=1                          # seconds between samples
+outfile="mem_monitor_$(date -Iseconds).csv"
+
+usage() {
+  cat <<EOF
+Usage: $0 [-i interval_seconds] [-o output.csv] -- command [args...]
+
+Examples:
+  $0 -- sleep 10
+  $0 -i 0.5 -o run.csv -- make -j8
+
+Notes:
+  * Logs system-wide stats (not per-process) every interval until the command exits.
+  * Output columns: timestamp,epoch_s,MemTotal_kB,MemFree_kB,MemAvailable_kB,SwapTotal_kB,SwapFree_kB,SwapUsed_kB,Load1,Load5,Load15
+EOF
+}
+
+# ---- parse args ----
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -i|--interval) interval="${2:-}"; shift 2;;
+    -o|--output)   outfile="${2:-}";  shift 2;;
+    -h|--help)     usage; exit 0;;
+    --)            shift; break;;
+    *)             echo "Unknown option: $1" >&2; usage; exit 1;;
+  esac
+done
+
+if [[ $# -lt 1 ]]; then
+  echo "Error: no command provided." >&2
+  usage
+  exit 1
+fi
+
+# ---- helpers ----
+write_header() {
+  echo "timestamp,epoch_s,MemTotal_kB,MemFree_kB,MemAvailable_kB,SwapTotal_kB,SwapFree_kB,SwapUsed_kB,Load1,Load5,Load15" > "$outfile"
+}
+
+sample_once() {
+  # Read /proc/meminfo in one go for consistency
+  local meminfo; meminfo="$(</proc/meminfo)"
+  local mem_total mem_free mem_avail swap_total swap_free swap_used
+  mem_total=$(awk '/^MemTotal:/ {print $2}' <<<"$meminfo")
+  mem_free=$(awk '/^MemFree:/ {print $2}' <<<"$meminfo")
+  mem_avail=$(awk '/^MemAvailable:/ {print $2}' <<<"$meminfo")
+  swap_total=$(awk '/^SwapTotal:/ {print $2}' <<<"$meminfo")
+  swap_free=$(awk '/^SwapFree:/ {print $2}' <<<"$meminfo")
+  swap_used=$(( ${swap_total:-0} - ${swap_free:-0} ))
+
+  # Load averages
+  local load1 load5 load15
+  read -r load1 load5 load15 _ < /proc/loadavg
+
+  # Timestamp
+  local ts epoch
+  ts="$(date --iso-8601=seconds)"
+  epoch="$(date +%s)"
+
+  printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n" \
+    "$ts" "$epoch" \
+    "${mem_total:-}" "${mem_free:-}" "${mem_avail:-}" \
+    "${swap_total:-}" "${swap_free:-}" "${swap_used:-}" \
+    "$load1" "$load5" "$load15" >> "$outfile"
+}
+
+monitor_loop() {
+  local pid="$1"
+  # Take a first sample immediately, then loop until the PID exits.
+  sample_once
+  while kill -0 "$pid" 2>/dev/null; do
+    sleep "$interval"
+    sample_once
+  done
+  # Final sample right after exit (for symmetry)
+  sample_once
+}
+
+# ---- run ----
+write_header
+
+# Run the target command in background
+"$@" &
+cmd_pid=$!
+
+# Ensure we stop cleanly if user Ctrl-C's: we still wait the child & finish up
+trap 'true' INT TERM
+
+# Start monitor
+monitor_loop "$cmd_pid" &
+mon_pid=$!
+
+# Wait for the command to finish and capture its exit
+wait "$cmd_pid"
+exit_code=$?
+
+# Wait for the monitor to flush
+wait "$mon_pid" || true
+
+MAX_MEMORY=$(tail -n +2 $outfile | cut -d, -f3,5 | awk -F, '{used=$1-$2; print used}' | sort -n | tail -n1)
+
+echo "Monitoring complete. CSV saved to: $outfile"
+echo "Maximum used memory $MAX_MEMORY"
+echo "Wrapped command exited with code: $exit_code"
+exit "$exit_code"

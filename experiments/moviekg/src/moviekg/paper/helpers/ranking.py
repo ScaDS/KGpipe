@@ -1,6 +1,8 @@
 import pandas as pd
-from moviekg.config import OUTPUT_ROOT
+from collections import defaultdict
 from typing import Any, Mapping, List, Dict
+
+from moviekg.config import OUTPUT_ROOT
 from moviekg.paper.helpers.getter import (
     pipeline_stage_metric_dict, pipeline_name, metric_name, metric_value, 
     TABLE_DISPLAY_NAMES,
@@ -9,8 +11,6 @@ from moviekg.paper.helpers.getter import (
     ref_kg_p, ref_source_entity_f1, 
     sem_disjoint_domain, sem_incorrect_relation_direction, sem_incorrect_relation_range, sem_incorrect_relation_domain, sem_incorrect_datatype, sem_incorrect_datatype_format
 )
-from collections import defaultdict
-
 
 type pipeline_agg = Mapping[pipeline_name, float]
 
@@ -49,7 +49,8 @@ def _rank_and_save2csv(weights: dict, outfile_stem: str, psmd: pipeline_stage_me
     
     # psmd = normalize_metric(psmd, sta_fact_count.__name__, ["stage_3"], normalize_max_best)
     psmd = normalize_metric(psmd, sta_denisity.__name__, ["stage_3"], normalize_max_best)
-    sta_metric_names = [sta_denisity.__name__+"_norm"] # sta_fact_count.__name__+"_norm", 
+    psmd = normalize_metric(psmd, sta_fact_count.__name__, ["stage_3"], normalize_max_best)
+    sta_metric_names = [sta_denisity.__name__+"_norm", sta_fact_count.__name__+"_norm"] 
     sta_agg = agg_metrics(psmd, sta_metric_names)
 
     sem_metric_names = [
@@ -98,20 +99,21 @@ def _rank_and_save2csv(weights: dict, outfile_stem: str, psmd: pipeline_stage_me
     out = df[["pipeline", "combined"]].sort_values(by="combined", ascending=False)
     out.to_csv(OUTPUT_ROOT / f"paper/{outfile_stem}.csv", sep="\t")
 
-def _rank_and_save(weights: dict, outfile_stem: str, df: pd.DataFrame, round_digits: int = 3) -> None:
-    """
-    Compute weighted 'combined' score and save a TSV sorted by 'combined'.
-    Uses the same behavior as your original functions (round to 3, keep default index in CSV).
-    """
-    cols = ["size", "semantic", "reference", "efficiency"]
-    # Ensure we only use known columns; fill missing weights with 0.0
-    w = pd.Series(weights).reindex(cols, fill_value=0.0)
+# TODO cleanup
+# def _rank_and_save(weights: dict, outfile_stem: str, df: pd.DataFrame, round_digits: int = 3) -> None:
+#     """
+#     Compute weighted 'combined' score and save a TSV sorted by 'combined'.
+#     Uses the same behavior as your original functions (round to 3, keep default index in CSV).
+#     """
+#     cols = ["size", "semantic", "reference", "efficiency"]
+#     # Ensure we only use known columns; fill missing weights with 0.0
+#     w = pd.Series(weights).reindex(cols, fill_value=0.0)
 
-    # Compute combined score
-    df = df[["pipeline"] + cols].copy()
-    df["combined"] = (df[cols] * w).sum(axis=1).round(round_digits)
+#     # Compute combined score
+#     df = df[["pipeline"] + cols].copy()
+#     df["combined"] = (df[cols] * w).sum(axis=1).round(round_digits)
 
-    # Sort & save (keep default index=True to match original behavior)
-    out = df[["pipeline", "combined"]].sort_values(by="combined", ascending=False)
-    out.to_csv(OUTPUT_ROOT / f"paper/{outfile_stem}.csv", sep="\t")
+#     # Sort & save (keep default index=True to match original behavior)
+#     out = df[["pipeline", "combined"]].sort_values(by="combined", ascending=False)
+#     out.to_csv(OUTPUT_ROOT / f"paper/{outfile_stem}.csv", sep="\t")
 

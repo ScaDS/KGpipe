@@ -29,7 +29,9 @@ def enrich_type_information(graph: Graph, ontology: Ontology, type_property: URI
 
 @Registry.task(
     input_spec={"source": DataFormat.RDF_NTRIPLES},
-    output_spec={ "result": DataFormat.RDF_NTRIPLES}
+    output_spec={ "result": DataFormat.RDF_NTRIPLES},
+    description="Enrich type information in the source graph using the ontology",
+    category=["Reasoning", "Inference", "Type Completion"]
 )
 def type_inference_ontology_simple(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     

@@ -1,17 +1,17 @@
-
-import pytest
-from pathlib import Path
-import matplotlib.pyplot as plt
-import pandas as pd
-from collections import defaultdict
 import json
-import numpy as np
+import pandas as pd
+from pathlib import Path
+from collections import defaultdict
 
-from moviekg.pipelines.test_inc_ssp import pipeline_types, llm_pipeline_types
-from moviekg.paper.helpers.helpers import load_metrics_from_file, plot_growth, plot_class_occurence, rank_metrics, plot_class_occ_4_bar_chart
-from moviekg.paper.helpers.agggregate import agg_duration_over_stages_per_pipeline, aggregate_ranking_df
 from moviekg.config import OUTPUT_DIR, DATASET_SELECT
-from moviekg.paper.config import HEADERS, name_mapping, METRIC_NAME_MAP, SEM_METRIC_SHORT_NAMES, METRIC_NAME_INDEX_PRETTY, METRIC_NAME_MAP_PRETTY, SEM_METRIC_LONG_NAMES
+from moviekg.paper.helpers.agggregate import agg_duration_over_stages_per_pipeline
+from moviekg.paper.helpers.getter import get_pipeline_stage_metric_dict, TABLE_DISPLAY_NAMES, apply_selected_updates
+from moviekg.paper.helpers.helpers import load_metrics_from_file, plot_growth, plot_class_occ_4_bar_chart
+from moviekg.paper.helpers.ranking import _rank_and_save2csv
+from moviekg.paper.config import (
+    name_mapping, METRIC_NAME_MAP, SEM_METRIC_SHORT_NAMES, 
+    METRIC_NAME_INDEX_PRETTY, METRIC_NAME_MAP_PRETTY, SEM_METRIC_LONG_NAMES
+)
 
 
 # === Preamble ===
@@ -592,21 +592,17 @@ PRESETS = {
     },
 }
 
-from moviekg.paper.helpers.ranking import _rank_and_save, _rank_and_save2csv
-from moviekg.paper.helpers.getter import get_pipeline_stage_metric_dict, TABLE_DISPLAY_NAMES, apply_selected_updates
-
-norm_df, agg_df = aggregate_ranking_df()
-
 psmd_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
-
 psmd = get_pipeline_stage_metric_dict(psmd_df, TABLE_DISPLAY_NAMES.keys())
 psmd = apply_selected_updates(psmd)
 
-def test_rank_save_norm_df():
-    norm_df["normalized"] = norm_df["normalized"].round(2)
-    # to format pipeline, metric_name1... metric_nameN, normalized
-    wide = norm_df.pivot(index="pipeline", columns="metric", values="normalized").reset_index()
-    wide.to_csv(OUTPUT_ROOT / "paper/test_rank_norm_df.csv", sep="\t")
+# TODO cleanup
+# norm_df, agg_df = aggregate_ranking_df()
+# def test_rank_save_norm_df():
+#     norm_df["normalized"] = norm_df["normalized"].round(2)
+#     # to format pipeline, metric_name1... metric_nameN, normalized
+#     wide = norm_df.pivot(index="pipeline", columns="metric", values="normalized").reset_index()
+#     wide.to_csv(OUTPUT_ROOT / "paper/test_rank_norm_df.csv", sep="\t")
 
 # c1 size, c2 sem, c3 ref, c4 eff
 def test_rank_equal():
@@ -703,320 +699,3 @@ def test_full_ranking_table():
     result = result.set_index("rank")
 
     result.to_csv(OUTPUT_ROOT / "paper/test_tab_7_full_ranking_table.csv", sep="\t")
-
-
-def test_newtest():
-    from moviekg.paper.helpers.getter import get_pipeline_stage_metric_dict, TABLE_DISPLAY_NAMES, apply_selected_updates
-    from moviekg.paper.helpers.ranking import _rank_and_save2csv
-    metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
-    psmd = get_pipeline_stage_metric_dict(metric_df, TABLE_DISPLAY_NAMES.keys())
-
-    psmd = apply_selected_updates(psmd)
-
-    _rank_and_save2csv(psmd, "test_newtest", psmd)
-
-# === Log 
-
-# def test_tab_duration_over_stages_per_pipeline():
-#     metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
-#     metric_df = agg_duration_over_stages_per_pipeline(metric_df)
-#     print(metric_df)
-# metric_df.to_csv(OUTPUT_ROOT / "paper/test_tab_duration_over_stages_per_pipeline.csv", sep="\t")
-
-
-# def filter_msp_and_reference(metric_df):
-#     # filter for pipeline in pipeline_types
-#     # global metric_df
-#     pipline_names = metric_df["pipeline"].unique()
-#     filtered_pipeline_names = [name for name in pipline_names if len(name.split("_")) == 3 or name == "reference"]
-#     metric_df = metric_df[metric_df["pipeline"].isin(filtered_pipeline_names)]
-#     return metric_df
-
-
-# def test_f1_source_entity():
-
-#     df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
-
-#     df = df[df["metric"] == "SourceEntityPrecisionMetric"]
-
-#     for row in df.itertuples():
-#         details = json.loads(row.details)
-#         expected_entities_count = details["expected_entities_count"]
-#         found_entities_count = details["found_entities_count"]
-#         overlapping_entities_count = details["overlapping_entities_count"]
-#         possible_duplicates_count = details["possible_duplicates_count"]
-#         overlapping_entities_strict_count = details["overlapping_entities_strict_count"]
-        
-#         print(f"pipeline={row.pipeline}, stage={row.stage}, expected_entities_count={expected_entities_count}, found_entities_count={found_entities_count}, overlapping_entities_count={overlapping_entities_count}, possible_duplicates_count={possible_duplicates_count}, overlapping_entities_strict_count={overlapping_entities_strict_count}")
-#         precision = overlapping_entities_strict_count / overlapping_entities_count
-#         precision = precision if precision <= 1.0 else 1.0
-#         recall = overlapping_entities_count / expected_entities_count
-#         recall = recall if recall <= 1.0 else 1.0
-#         f1 = 2 * (precision * recall) / (precision + recall)
-#         df.loc[row.Index, "normalized"] = f1
-
-#     df = df[["pipeline", "stage", "normalized"]]
-
-#     # renmae piplines
-#     df["pipeline"] = df["pipeline"].map(map_pipeline_name)
-
-#     df.sort_values(by=["pipeline", "stage"], inplace=True)
-#     df.to_csv(OUTPUT_ROOT / "paper/test_average_f1_source_entity_f1.csv", sep="\t")
-
-
-# def test_tab_all_metrics():
-#     metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
-
-#     # replace pipeline name with name_mapping
-#     metric_df["pipeline"] = metric_df["pipeline"].map(map_pipeline_name)
-
-#     # only pipeline, stage, metric, normalized
-#     erl_df = metric_df[["pipeline", "stage", "metric", "normalized"]]
-#     erl_df["normalized"] = erl_df["normalized"].round(2)
-
-#     # print(erl_df["metric"].unique())
-
-#     erl_df["metric"] = erl_df["metric"].map(map_metric_name)
-
-#     pivot_df = erl_df.pivot_table(index=["pipeline", "stage"], 
-#                                 columns="metric", 
-#                                 values="normalized").reset_index()
-
-#     output_path = OUTPUT_ROOT / "paper/test_tab_all_metrics"
-#     pivot_df.to_csv(output_path, sep="\t")
-
-# def test_ranking():
-#     metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
-
-#     # replace pipeline name with name_mapping
-#     metric_df["pipeline"] = metric_df["pipeline"].map(map_pipeline_name)
-
-#     # TODO replace with shortnames later
-#     semantic_metrics = list(set(SEM_METRIC_SHORT_NAMES.keys()) - set(["ontology_class_coverage", "ontology_relation_coverage", "ontology_namespace_coverage"]))
-#     semantic_metrics_weights = [1 for s in semantic_metrics]
-#     normalized_semantic_metrics_weights = [w/sum(semantic_metrics_weights) for w in semantic_metrics_weights]
-
-#     ranking_df = rank_metrics(metric_df, metric_names=semantic_metrics, metric_weights=normalized_semantic_metrics_weights, agg="sum", fill_missing=0.0)
-    
-#     ranking_df.to_csv(OUTPUT_ROOT / "paper/test_ranking.csv", index=False)
-
-#     # append a line to the CSV with the used metrics
-#     with open(OUTPUT_ROOT / "paper/test_ranking.csv", "a") as f:
-#         f.write("Used metrics: " + ", ".join(semantic_metrics) + "\n")
-
-
-# def test_table_with_ssp_stats():
-#     metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
-#     # replace pipeline name with name_mapping
-#     metric_df["pipeline"] = metric_df["pipeline"].map(map_pipeline_name)
-#     # remove details colums
-#     local_metric_df = metric_df.drop(columns=["details"])
-
-#     # only stage = stage_1 and aspect = statistical
-#     stage_1_df = local_metric_df[local_metric_df["stage"] == "stage_3"]
-#     statistical_df = stage_1_df[stage_1_df["aspect"] == "statistical"]
-
-#     metrics = ["entity_count", "relation_count", "triple_count", "class_count", "duration", "loose_entity_count", "shallow_entity_count"]
-
-#     # normalize metric=duration to seconds and round to 2 decimal places
-#     statistical_df.loc[statistical_df["metric"] == "duration", "value"] = statistical_df.loc[statistical_df["metric"] == "duration", "value"].round(2)
-
-#     # only selected metrics
-#     statistical_df = statistical_df[statistical_df["metric"].isin(metrics)]
-
-#     # rename metric to short name
-#     statistical_df["metric"] = statistical_df["metric"].map(map_metric_name)
-
-#     # Assuming your dataframe is called df
-#     pivot_df = statistical_df.pivot_table(
-#         index=["pipeline", "stage"],   # rows
-#         columns="metric",              # pivoted column
-#         values="value"            # values to fill
-#     ).reset_index()
-
-#     # (Optional) Flatten the column index if needed
-#     pivot_df.columns.name = None  # remove "metric" header
-
-
-#     # save as TSV
-#     output_path = OUTPUT_ROOT / "paper/test_tab_ssp_stats"
-#     pivot_df.to_csv(output_path, sep="\t")
-
-
-# different ranking scenarios
-# Equal weights (semantic, reference, efficiency): JSON-b and RDF-a near top; text-heavy MSPs vary by order.
-# Quantity first (↑size)
-# Quality-first (↑semantic, ↑reference): RDF-a > JSON-b > RDF-b.
-# Throughput-first (↑efficiency): JSON-a and RDF-b improve rank.
-
-# \item \textbf{Equal weighting (baseline):} \\
-# $(c1, c2, c3, c4) = (0.25, 0.25, 0.25, 0.25)$
-# def test_rank_equal():
-#     """
-#     pipeline  semantic  reference  efficiency
-#     0  json_rdf_text  0.855084   0.541371    0.795746
-#     1  json_text_rdf  0.867719   0.422527    0.886575
-#     2  rdf_json_text  0.855081   0.568467    0.330697
-#     3  rdf_text_json  0.867721   0.694226    0.000000
-#     4  text_json_rdf  0.864522   0.921585    0.799708
-#     5  text_rdf_json  0.864522   0.668960    1.000000
-#     """
-#     norm_df, df = aggregate_ranking_df()
-
-#     # combine semantic, reference, and efficiency
-#     df["combined"] = df["size"] * 0.25 + df["semantic"] * 0.25 + df["reference"] * 0.25 + df["efficiency"] * 0.25
-#     df = df[["pipeline", "combined"]]
-#     # round to 2 decimal places
-#     df["combined"] = df["combined"].round(3)
-
-#     # sort by combined
-#     df = df.sort_values(by="combined", ascending=False)
-    
-#     df.to_csv(OUTPUT_ROOT / "paper/test_rank_equal.csv", sep="\t")
-
-
-# def test_rank_save_norm_df():
-    
-#     norm_df, _ = aggregate_ranking_df()
-#     # round to 2 decimal places
-#     norm_df["normalized"] = norm_df["normalized"].round(2)
-#     """
-#     0    json_rdf_text  ReferenceTripleAlignmentMetricSoftEV    0.855469
-#     1    json_rdf_text        SourceEntityCoverageMetricSoft    0.227273
-#     2    json_rdf_text                               density    0.000000
-#     3    json_rdf_text                       disjoint_domain    1.000000
-#     4    json_rdf_text                              duration    0.795746
-#     """
-#     # to format pipeline, metric_name1... metric_nameN, normalized
-
-#     wide = norm_df.pivot(index="pipeline", columns="metric", values="normalized").reset_index()
-
-#     wide.to_csv(OUTPUT_ROOT / "paper/test_rank_norm_df.csv", sep="\t")
-
-
-# # c1 stat c2 sem c3 ref c4 eff
-# # \item \textbf{Quantity-focused:} \\
-# # $(c1, c2, c3, c4) = (0.50, 0.20, 0.20, 0.10)$
-# def test_rank_quantity_focused():
-#     _, df = aggregate_ranking_df()
-#     # combine semantic, reference, and efficiency
-#     df["combined"] = df["size"] * 0.5 + df["semantic"] * 0.1 + df["reference"] * 0.1 + df["efficiency"] * 0.3
-#     df = df[["pipeline", "combined"]]
-#     # round to 2 decimal places
-#     df["combined"] = df["combined"].round(3)
-
-#     # sort by combined
-#     df = df.sort_values(by="combined", ascending=False)
-    
-#     df.to_csv(OUTPUT_ROOT / "paper/test_rank_quantity_focused.csv", sep="\t")
-
-# # \item \textbf{Quality-focused:} \\
-# # $(c1, c2, c3, c4) = (0.10, 0.40, 0.40, 0.10)$
-# def test_rank_quality_focused():
-#     _, df = aggregate_ranking_df()
-#     df["combined"] = df["size"] * 0.0 + df["semantic"] * 0.5 + df["reference"] * 0.5 + df["efficiency"] * 0.0
-#     df = df[["pipeline", "combined"]]
-#     # round to 2 decimal places
-#     df["combined"] = df["combined"].round(3)
-
-#     # sort by combined
-#     df = df.sort_values(by="combined", ascending=False)
-    
-#     df.to_csv(OUTPUT_ROOT / "paper/test_rank_quality_focused.csv", sep="\t")
-
-# # \item \textbf{Reference-alignment focused:} \\
-# # $(c1, c2, c3, c4) = (0.10, 0.20, 0.60, 0.10)$
-# def test_rank_reference_alignment_focused():
-#     _, df = aggregate_ranking_df()
-#     df["combined"] = df["size"] * 0.0 + df["semantic"] * 0.2 + df["reference"] * 0.8 + df["efficiency"] * 0.0
-#     df = df[["pipeline", "combined"]]
-#     # round to 2 decimal places
-#     df["combined"] = df["combined"].round(3)
-    
-#     # sort by combined
-#     df = df.sort_values(by="combined", ascending=False)
-    
-#     df.to_csv(OUTPUT_ROOT / "paper/test_rank_reference_alignment_focused.csv", sep="\t")
-
-# # \item \textbf{Efficiency-oriented:} \\
-# # $(c1, c2, c3, c4) = (0.20, 0.20, 0.20, 0.40)$
-# def test_rank_efficiency_oriented():
-#     _, df = aggregate_ranking_df()
-#     df["combined"] = df["size"] * 0.2 + df["semantic"] * 0.2 + df["reference"] * 0.2 + df["efficiency"] * 0.4
-#     df = df[["pipeline", "combined"]]
-#     # round to 2 decimal places
-#     df["combined"] = df["combined"].round(3)
-    
-#         # sort by combined
-#     df = df.sort_values(by="combined", ascending=False)
-    
-
-#     df.to_csv(OUTPUT_ROOT / "paper/test_rank_efficiency_oriented.csv", sep="\t")
-    
-# def test_fig_ssp_growth():
-#     metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
-#     # filter for pipeline in pipeline_types
-#     # global metric_df
-#     metric_df = metric_df[metric_df["pipeline"].isin(list(pipeline_types.keys())+list(llm_pipeline_types.keys()))]
-#     sorted_metric_df = metric_df.sort_values(by=["stage", "pipeline"])
-
-#     g = plot_growth(sorted_metric_df, metrics=["entity_count", "relation_count", "triple_count"], kind="bar")
-#     # save as png
-#     g.savefig(OUTPUT_ROOT / "paper/test_fig_ssp_growth.png")
-
-# def test_fig_msp_growth():
-#     metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
-#     # rename pipeline json_b2 to json_b
-#     metric_df["pipeline"] = metric_df["pipeline"].replace("json_b2", "json_b")
-#     # filter for pipeline in pipeline_types
-#     # global metric_df
-#     # apply filter function
-#     metric_df = filter_msp_and_reference(metric_df)
-#     # order by stage and pipeline
-#     sorted_metric_df = metric_df.sort_values(by=["stage", "pipeline"])
-#     g = plot_growth(sorted_metric_df, metrics=["entity_count", "relation_count", "triple_count"], kind="bar")
-#     # save as png
-#     g.savefig(OUTPUT_ROOT / "paper/test_fig_msp_growth.png")
-
-
-# def test_rank_quantity():
-#     _, df = aggregate_ranking_df()
-
-#     # combine semantic, reference, and efficiency
-#     df["size"] = df["size"] * 1
-#     # round to 2 decimal places
-#     df["size"] = df["size"].round(2)
-#     df = df[["pipeline", "size"]]
-
-#     # sort by combined
-#     df = df.sort_values(by="size", ascending=False)
-    
-#     df.to_csv(OUTPUT_ROOT / "paper/test_rank_quantity.csv", sep="\t")
-
-# def test_rank_quality():
-#     _, df = aggregate_ranking_df()
-
-#     # combine semantic, reference, and efficiency
-#     df["quality"] = df["semantic"] * 0.5 + df["reference"] * 0.5
-#     # round to 2 decimal places
-#     df["quality"] = df["quality"].round(2)
-#     df = df[["pipeline", "quality"]]
-
-#     # sort by combined
-#     df = df.sort_values(by="quality", ascending=False)
-    
-#     df.to_csv(OUTPUT_ROOT / "paper/test_rank_quality.csv", sep="\t")
-
-# def test_rank_efficiency():
-#     _, df = aggregate_ranking_df()
-
-#     # combine semantic, reference, and efficiency
-#     df["efficiency"] = df["efficiency"] * 1
-#     # round to 2 decimal places
-#     df["efficiency"] = df["efficiency"].round(2)
-#     df = df[["pipeline", "efficiency"]]
-
-#     # sort by combined
-#     df = df.sort_values(by="efficiency", ascending=False)
-    
-#     df.to_csv(OUTPUT_ROOT / "paper/test_rank_efficiency.csv", sep="\t")

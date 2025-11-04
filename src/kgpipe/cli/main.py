@@ -47,10 +47,9 @@ console = Console()
 @click.pass_context
 def cli(ctx: click.Context, config: Optional[str], verbose: bool, quiet: bool):
     """
-    KGbench - Knowledge Graph Benchmarking Framework
+    KGpipe - Knowledge Graph Pipeline Framework
     
-    A comprehensive framework for benchmarking knowledge graph tools
-    and creating reproducible pipelines.
+    A comprehensive framework for creating, executing, and evaluating knowledge graph pipelines.
     """
     # Ensure context object exists
     ctx.ensure_object(dict)
