@@ -2,7 +2,7 @@ from kgpipe.common.models import KG
 import json
 from pathlib import Path
 import pandas as pd
-from rdflib import RDFS, URIRef, Graph
+from rdflib import RDFS, URIRef, Graph, RDF
 from dataclasses import dataclass
 from kgpipe.util.embeddings.st_emb import get_model
 import numpy as np
@@ -240,10 +240,46 @@ def evaluate_source_entity_precision_fuzzy(kg: KG, entity_dict_path: Path) -> En
         overlapping_entities_strict_count=len(overlapping_entities_strict)
     )
 
-def evaluate_source_entity_coverage_with_paris(kg: KG, entity_dict_path: Path) -> float:
-    return 0.0
+def evaluate_source_typed_entity_coverage(kg: KG, entity_dict_path: Path) -> EntityCoverageResult:
+    """
+    checks expected & integrated source typed entity overlap using label embeddings
+    """
+    model = get_model()
+    entity_dict = load_entity_dict(entity_dict_path)
 
-# public functions for reference kg aligment
+    
+    expected_entity_label_type_pairs = []
+    for uri in entity_dict:
+        if entity_dict[uri].entity_label is not None and entity_dict[uri].entity_type is not None:
+            expected_entity_label_type_pairs.append((entity_dict[uri].entity_label, entity_dict[uri].entity_type))
+
+    found_entity_label_type_pairs = []
+    label_by_uri = {}
+    type_by_uri = {}
+
+    graph = kg.get_graph()
+    for s, p, o in graph.triples((None, RDFS.label, None)):
+        label_by_uri[str(s)] = str(o)
+    for s, p, o in graph.triples((None, RDF.type, None)):
+        type_by_uri[str(s)] = str(o)
+
+    for uri in label_by_uri:
+        if uri in type_by_uri:
+            found_entity_label_type_pairs.append((label_by_uri[uri], type_by_uri[uri]))
+
+    found_eltp = set(found_entity_label_type_pairs)
+    expected_eltp = set(expected_entity_label_type_pairs)
+    
+    tp_set = found_eltp & expected_eltp
+    fp_set = found_eltp - expected_eltp
+    fn_set = expected_eltp - found_eltp
+
+    return BinaryClassificationResult(
+        tp=len(tp_set),
+        fp=len(fp_set),
+        fn=len(fn_set),
+        tn=0
+    )
 
 def evaluate_reference_triple_alignment(kg: KG, reference_kg: KG) -> TripleAlignmentResult:
     """

@@ -403,6 +403,33 @@ class SourceEntityPrecisionMetric(Metric):
             aspect=self.aspect
         )
 
+
+@Registry.metric()
+class SourceTypedEntityCoverageMetric(Metric):
+    def __init__(self):
+        super().__init__(
+            name="SourceTypedEntityCoverageMetric",
+            description="Evaluates the coverage of the source typed entities in the KG",
+            aspect=EvaluationAspect.REFERENCE
+        )
+    def compute(self, kg: KG, config: ReferenceConfig, **kwargs) -> MetricResult:
+
+        from kgpipe.evaluation.aspects.func.integration_eval import evaluate_source_typed_entity_coverage
+        
+        verified_source_entities_path = config.VERIFIED_SOURCE_ENTITIES
+        if verified_source_entities_path is None:
+            raise ValueError("VERIFIED_SOURCE_ENTITIES is not set")
+
+        result = evaluate_source_typed_entity_coverage(kg, verified_source_entities_path)
+
+        return MetricResult(
+            name=self.name,
+            value=result.f1_score(),
+            normalized_score=result.f1_score(),
+            details=result.__dict__(),
+            aspect=self.aspect
+        )
+
 # =============================================================================
 # Reference KG Alignment
 # =============================================================================
@@ -633,19 +660,20 @@ class ReferenceEvaluator(AspectEvaluator):
     def __init__(self):
         super().__init__(EvaluationAspect.REFERENCE)
         self.metrics = [
-            ER_EntityMatchMetric(),
-            ER_RelationMatchMetric(),
-            TE_ExpectedEntityLinkMetric(),
-            TE_ExpectedRelationLinkMetric(),
-            JsonEntityMatchingMetric(),
-            JsonRelationMatchingMetric(),
-            JsonEntityLinkingMetric(),
-            SourceEntityCoverageMetric(),
-            SourceEntityCoverageMetricSoft(),
-            SourceEntityPrecisionMetric(),
-            ReferenceTripleAlignmentMetric(),
-            ReferenceTripleAlignmentMetricSoftE(),
-            ReferenceTripleAlignmentMetricSoftEV(),
+            # ER_EntityMatchMetric(),
+            # ER_RelationMatchMetric(),
+            # TE_ExpectedEntityLinkMetric(),
+            # TE_ExpectedRelationLinkMetric(),
+            # JsonEntityMatchingMetric(),
+            # JsonRelationMatchingMetric(),
+            # JsonEntityLinkingMetric(),
+            # SourceEntityCoverageMetric(),
+            # SourceEntityCoverageMetricSoft(),
+            # SourceEntityPrecisionMetric(),
+            SourceTypedEntityCoverageMetric(),
+            # ReferenceTripleAlignmentMetric(),
+            # ReferenceTripleAlignmentMetricSoftE(),
+            # ReferenceTripleAlignmentMetricSoftEV(),
             # ReferenceClassCoverageMetric()
         ]
     
