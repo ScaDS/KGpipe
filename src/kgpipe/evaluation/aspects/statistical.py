@@ -18,7 +18,7 @@ from ...common.models import KG
 from ..base import EvaluationAspect, AspectResult, AspectEvaluator, Metric, MetricResult, MetricConfig
 from .func.namespace import count_namespace_usage
 
-from kgpipe.meta.systemgraph import kg_class, kg_function
+from kgpipe.common.systemgraph import kg_class, kg_function
 
 ACCEPTED_FORMATS = ['ttl', 'rdf', 'jsonld', 'nt', 'json']
 

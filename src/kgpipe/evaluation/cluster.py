@@ -1,4 +1,4 @@
-from kgpipe.execution.config import GLOBAL_STATE
+from kgpipe.common.config import GLOBAL_STATE
 from typing import Dict, List, Set, Optional  
 import json
 import csv

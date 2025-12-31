@@ -9,7 +9,7 @@ from rdflib import Graph
 from rdflib.namespace import SKOS, RDFS
 from sentence_transformers import SentenceTransformer
 from kgpipe_tasks.text_processing.relation_match import AliasAndTransformerBasedRelationLinker
-from kgcore.model.ontology import Ontology, OntologyUtil
+from kgcore.api.ontology import Ontology, OntologyUtil
 from kgpipe.common import Registry, DataFormat, Data
 from typing import Dict
 from pathlib import Path

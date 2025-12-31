@@ -10,13 +10,16 @@ class KgPipeConfig(KGConfig):
     SYS_KG_USR: str = ""
     SYS_KG_PSW: str = ""
 
-def load_config():
+
+SOURCE_NAMESPACE: str = "http://kg.org/rdf/"
+TARGET_RESOURCE_NAMESPACE: str = "http://kg.org/resource/"
+TARGET_ONTOLOGY_NAMESPACE: str = "http://kg.org/ontology/"
+
+def load_config() -> KgPipeConfig:
     """
     Load the configuration for kgpipe.
     """
     config = ConfigLoader("kgpipe").load_config(KgPipeConfig)
     return config
 
-SOURCE_NAMESPACE = "http://kg.org/rdf/"
-TARGET_RESOURCE_NAMESPACE = "http://kg.org/resource/"
-TARGET_ONTOLOGY_NAMESPACE = "http://kg.org/ontology/"
+config = load_config()

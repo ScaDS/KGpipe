@@ -3,8 +3,15 @@
 from typing import Any, Callable
 from kgpipe.common.models import KgTask, DataFormat
 
+# TODO add also to system graph
+
+
 
 class Registry:
+    """
+    Holds functions and python objects
+    """
+
     _registry: dict[str, Any] = {}
 
     @classmethod
