@@ -2,8 +2,10 @@
  
 from typing import Any, Callable
 from kgpipe.common.models import KgTask, DataFormat
+from kgpipe.common.systemgraph import PipeKG
 
 # TODO add also to system graph
+
 
 
 
@@ -39,8 +41,16 @@ class Registry:
         def decorator(t):
             task = KgTask(t.__name__.lower(), input_spec, output_spec, t, description, category)
             cls._registry[f"task:{t.__name__.lower()}"] = task
+            PipeKG.add_task(task)
             return task
         return decorator
+
+    # @classmethod
+    # def pipeline(cls, tasks: list[KgTask], input: Data, output: Data):
+    #     pipeline = KgPipe(tasks, input, output)
+    #     cls._registry[f"pipeline:{pipeline.__name__.lower()}"] = pipeline
+    #     PipeKG.add_pipeline(pipeline)
+    #     return pipeline
 
     @classmethod
     def get(cls, kind: str, name: str):

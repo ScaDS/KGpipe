@@ -3,7 +3,7 @@ from kgpipe.common import Registry, KG, Data, DataFormat
 from kgpipe_llm.common.core import get_client_from_env
 from kgpipe_llm.common.snippets import generate_ontology_snippet
 from kgpipe_llm.common.models import OntologyMappings
-from kgcore.model.ontology import Ontology, OntologyUtil
+from kgcore.api.ontology import Ontology, OntologyUtil
 from pydantic import BaseModel
 from typing import Optional, Dict, Callable
 import jsonpath_ng
@@ -432,7 +432,7 @@ Do not include explanations or text outside the JSON.
     description="RDF Ontology Matching",
     input_spec={"input": DataFormat.RDF_NTRIPLES, "kg": DataFormat.RDF_NTRIPLES},
     output_spec={"output": DataFormat.ER_JSON},
-    category=["RDF", "Ontology Matching"]
+    category=["RDF", "Ontology Matching", "LLM"]
 )
 def llm_task_rdf_ontology_matching_v1(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     input_path = inputs["input"].path

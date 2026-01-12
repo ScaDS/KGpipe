@@ -27,7 +27,7 @@ setup_logging()
 
 from .models import (
     Data, DataFormat, KgTask, KgTaskReport, DynamicFormat, FormatRegistry,
-    DataSet, KG, Stage, Metric, EvaluationReport, KgPipe
+    DataSet, KG, Metric, EvaluationReport, KgPipe
 )
 from .registry import Registry
 from .io import get_docker_volume_bindings, remap_data_path_for_container

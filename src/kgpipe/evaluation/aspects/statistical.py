@@ -18,8 +18,6 @@ from ...common.models import KG
 from ..base import EvaluationAspect, AspectResult, AspectEvaluator, Metric, MetricResult, MetricConfig
 from .func.namespace import count_namespace_usage
 
-from kgpipe.common.systemgraph import kg_class, kg_function
-
 ACCEPTED_FORMATS = ['ttl', 'rdf', 'jsonld', 'nt', 'json']
 
 class StatisticalConfig(MetricConfig):
@@ -34,7 +32,7 @@ class StatisticalConfig(MetricConfig):
     namespace_usage: int = 10000
 
 @Registry.metric()
-@kg_class("EvalMetric")
+# @kg_class("EvalMetric")
 class EntityCountMetric(Metric):
     """Count the number of unique entities in the KG."""
     
@@ -85,7 +83,7 @@ class RelationCountMetricDetails(BaseModel):
 
 
 @Registry.metric()
-@kg_class("EvalMetric")
+# @kg_class("EvalMetric")
 class RelationCountMetric(Metric):
     """Count the number of unique relations in the KG."""
     
@@ -129,7 +127,7 @@ class RelationCountMetric(Metric):
 
 
 @Registry.metric()
-@kg_class("EvalMetric")
+# @kg_class("EvalMetric")
 class TripleCountMetric(Metric):
     """Count the total number of triples in the KG."""
     
@@ -140,7 +138,7 @@ class TripleCountMetric(Metric):
             aspect=EvaluationAspect.STATISTICAL
         )
     
-    @kg_function
+    # @kg_function
     def compute(self, kg: KG, config: StatisticalConfig, **kwargs) -> MetricResult:
         """Compute triple count from KG file."""
         try:
@@ -195,7 +193,7 @@ class TripleCountMetric(Metric):
         return count
 
 @Registry.metric()
-@kg_class("EvalMetric")
+# @kg_class("EvalMetric")
 class ClassCountMetric(Metric):
     """Count the number of unique classes in the KG."""
     
@@ -234,7 +232,7 @@ class ClassCountMetric(Metric):
             )
             
 @Registry.metric()
-@kg_class("EvalMetric")
+# @kg_class("EvalMetric")
 class ClassOccurrenceMetric(Metric):
 
     def __init__(self):
@@ -261,7 +259,7 @@ class ClassOccurrenceMetric(Metric):
         )
 
 @Registry.metric()
-@kg_class("EvalMetric")
+# @kg_class("EvalMetric")
 class RelationOccurrenceMetric(Metric):
     def __init__(self):
         super().__init__(
@@ -288,7 +286,7 @@ class RelationOccurrenceMetric(Metric):
         )
 
 @Registry.metric()
-@kg_class("EvalMetric")
+# @kg_class("EvalMetric")
 class PropertyOccurrenceMetric(Metric):
     def __init__(self):
         super().__init__(
@@ -314,7 +312,7 @@ class PropertyOccurrenceMetric(Metric):
         )
 
 @Registry.metric()
-@kg_class("EvalMetric")
+# @kg_class("EvalMetric")
 class NamespaceUsageMetric(Metric):
 
     def __init__(self):
@@ -341,7 +339,7 @@ class NamespaceUsageMetric(Metric):
             aspect=self.aspect
         )
 
-@kg_class("EvalMetric")
+# @kg_class("EvalMetric")
 class LooseEntityCountMetric(Metric):
     def __init__(self):
         super().__init__(
@@ -368,7 +366,7 @@ class LooseEntityCountMetric(Metric):
             aspect=self.aspect
         )
 
-@kg_class("EvalMetric")
+# @kg_class("EvalMetric")
 class ShallowEntityCountMetric(Metric):
     def __init__(self):
         super().__init__(

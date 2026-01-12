@@ -62,7 +62,7 @@ def discover_kgpipe_tasks() -> None:
 def discover_kgpipe_llm() -> None:
     """Discover and register components from kgpipe_llm package."""
     try:
-        import kgpipe_llm
+        import kgpipe_llm.tasks
         
         print("Successfully discovered kgpipe_llm components")
         logger.info("Successfully discovered kgpipe_llm components")

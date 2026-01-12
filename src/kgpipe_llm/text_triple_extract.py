@@ -88,7 +88,7 @@ Extract triple patterns in the form [ {{ "head": "head", "relation": "relation",
     description="Extract triple pattern from text using a LLM",
     input_spec={"input": DataFormat.TEXT},
     output_spec={"output": DataFormat.TE_JSON},
-    category=["Text", "Triple Extract"]
+    category=["Text", "Triple Extract", "LLM"]
 )
 def llm_task_text_triple_extract_v1(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     

@@ -281,3 +281,6 @@
 
 # if __name__ == "__main__":
 #     test_create_insertable_nodes_and_edges()
+
+def encode_string(s: str) -> str:
+    return s.replace(" ", "_").lower()
