@@ -77,3 +77,93 @@ class DataUtils():
     """
     Utility class for handling data formats.
     """
+
+from pathlib import Path
+from typing import Dict, List
+from kgpipe.common import Data
+from kgpipe.execution import docker_client
+
+
+def run_docker_container_task(
+    inputs: Dict[str, Data],
+    outputs: Dict[str, Data],
+    image: str,
+    command_template: List[str],
+    ensure_output_dirs: bool = True,
+    **docker_kwargs
+) -> str:
+    """
+    Generic helper function to run Docker container tasks with automatic path remapping.
+    
+    Args:
+        inputs: Dictionary mapping input names to Data objects
+        outputs: Dictionary mapping output names to Data objects
+        image: Docker image name (e.g., "kgt/paris:latest")
+        command_template: Command template as a list of strings. Use placeholders like
+            "{source}", "{kg}", "{output}" that correspond to keys in inputs/outputs.
+            These will be replaced with remapped container paths.
+        ensure_output_dirs: If True, ensure output directories exist before execution
+        **docker_kwargs: Additional arguments to pass to docker_client (e.g., environment, timeout)
+    
+    Returns:
+        Container execution result
+    
+    Example:
+        run_docker_container_task(
+            inputs={"source": source_data, "kg": kg_data},
+            outputs={"output": output_data},
+            image="kgt/paris:latest",
+            command_template=["bash", "paris.sh", "{source}", "{kg}", "{output}"]
+        )
+    """
+    # Get all data for Docker volume bindings
+    all_data = list(inputs.values()) + list(outputs.values())
+    volumes, host_to_container = get_docker_volume_bindings(all_data)
+    
+    # Remap all input paths
+    remapped_inputs = {
+        key: remap_data_path_for_container(data, host_to_container)
+        for key, data in inputs.items()
+    }
+    
+    # Remap all output paths
+    remapped_outputs = {
+        key: remap_data_path_for_container(data, host_to_container)
+        for key, data in outputs.items()
+    }
+    
+    # Ensure output directories exist
+    if ensure_output_dirs:
+        for output_data in outputs.values():
+            output_data.path.parent.mkdir(parents=True, exist_ok=True)
+    
+    # Build command by replacing placeholders
+    command = []
+    for part in command_template:
+        # Check if it's a placeholder (e.g., "{source}", "{output}")
+        if part.startswith("{") and part.endswith("}"):
+            param_name = part[1:-1]  # Remove braces
+            # Try inputs first, then outputs
+            if param_name in remapped_inputs:
+                command.append(str(remapped_inputs[param_name].path))
+            elif param_name in remapped_outputs:
+                command.append(str(remapped_outputs[param_name].path))
+            else:
+                raise ValueError(
+                    f"Placeholder '{part}' not found in inputs or outputs. "
+                    f"Available: inputs={list(inputs.keys())}, outputs={list(outputs.keys())}"
+                )
+        else:
+            # Regular command part, use as-is
+            command.append(part)
+    
+    # Create and execute Docker client
+    client = docker_client(
+        image=image,
+        command=command,
+        volumes=volumes,
+        **docker_kwargs
+    )
+    
+    result = client()
+    return result

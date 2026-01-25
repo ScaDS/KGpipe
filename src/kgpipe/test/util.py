@@ -6,7 +6,7 @@ def get_test_data_path(file_name: str, check_exists: bool = True) -> Path:
     """
     get test data path
     """
-    path = Path(__file__).parent.parent / "test_data" / file_name
+    path = Path(__file__).parent / "test_data" / file_name
     if check_exists and not path.exists():
         raise FileNotFoundError(f"Test data file not found: {path}")
     return path
@@ -22,7 +22,7 @@ def get_data(file_name: str, format: DataFormat | None = None, check_exists: boo
     """
     get data from file
     """
-    path = Path(__file__).parent.parent / "test_data" / file_name
+    path = Path(__file__).parent / "test_data" / file_name
     if check_exists and not path.exists():
         raise FileNotFoundError(f"Test data file not found: {path}")
 

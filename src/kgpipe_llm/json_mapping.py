@@ -1,7 +1,7 @@
 
 from kgpipe_llm.common.core import get_client_from_env
 from kgpipe_llm.common.snippets import generate_ontology_snippet_v3
-from kgcore.model.ontology import Ontology, OntologyUtil
+from kgcore.api.ontology import Ontology, OntologyUtil
 from pydantic import BaseModel
 from typing import Optional, List, Literal as LiteralType, Callable, Dict
 import json
@@ -461,7 +461,7 @@ Output:
     description="Map and construct RDF files from JSON files",
     input_spec={"input": DataFormat.JSON},
     output_spec={"output": DataFormat.RDF_NTRIPLES},
-    category=["RDF", "JSON Mapping"]
+    category=["RDF", "JSON Mapping", "LLM"]
 )
 def llm_task_map_and_construct(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     input_path = inputs["input"].path

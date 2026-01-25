@@ -42,8 +42,6 @@ def paris_entity_matching(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     
     # Get all data for Docker volume bindings
 
-
-    
     # Create Docker client with proper volume bindings
     client = docker_client(
         image="kgt/paris:latest",

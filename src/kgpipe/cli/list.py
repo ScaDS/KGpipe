@@ -6,6 +6,8 @@ This module handles listing available components.
 """
 
 import json
+import csv
+import sys
 import click
 from rich.console import Console
 from rich.table import Table
@@ -29,7 +31,7 @@ def fullname(o):
 def function_location(func):
     return f"{func.__module__}.{func.__qualname__}"
 
-def show_registered_tasks():
+def show_registered_tasks(format: str = "table") -> None:
     """Display registered tasks."""
     table = Table(title="Registered Tasks")
     table.add_column("Name", style="cyan")
@@ -52,7 +54,12 @@ def show_registered_tasks():
             "/".join(function_location(task.function).split(".")[:-1])
         )
     
-    console.print(table)
+    if format == "table":
+        console.print(table)
+    elif format == "csv":
+        csv.writer(sys.stdout).writerows([[task.name, task.category, task.description, task.input_spec, task.output_spec, "/".join(function_location(task.function).split(".")[:-1])] for task in tasks])
+    else:
+        raise ValueError(f"Unknown format: {format}")
     print(f"Number of tasks: {len(tasks)}")
 
 
@@ -123,8 +130,15 @@ def show_registered_evaluators():
     default="all",
     help="Type of items to list"
 )
+@click.option(
+    "--format", 
+    "-f", 
+    type=click.Choice(["table", "csv"]), 
+    default="table",
+    help="Output format"
+)
 @click.pass_context
-def list_cmd(ctx: click.Context, type: str):
+def list_cmd(ctx: click.Context, type: str, format: str = "table"):
     """
     List available components.
     
@@ -135,7 +149,7 @@ def list_cmd(ctx: click.Context, type: str):
     discover_entry_points()
     
     if type == "all" or type == "tasks":
-        show_registered_tasks()
+        show_registered_tasks(format)
         console.print()  # Add spacing
     
     if type == "all" or type == "pipelines":

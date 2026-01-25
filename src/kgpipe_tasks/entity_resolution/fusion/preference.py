@@ -9,8 +9,8 @@ from typing import Dict, List, Optional
 import json
 from kgpipe.common.registry import Registry
 import os
-from kgcore.model.ontology import OntologyUtil
-from kgpipe.execution.config import TARGET_ONTOLOGY_NAMESPACE
+from kgcore.api.ontology import OntologyUtil
+from kgpipe.common.config import TARGET_ONTOLOGY_NAMESPACE
 from kgpipe_tasks.entity_resolution.fusion.util import load_matches_from_file
 
 logger = getLogger(__name__)
