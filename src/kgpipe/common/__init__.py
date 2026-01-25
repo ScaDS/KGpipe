@@ -27,7 +27,7 @@ setup_logging()
 
 from .models import (
     Data, DataFormat, KgTask, KgTaskReport, DynamicFormat, FormatRegistry,
-    DataSet, KG, Metric, EvaluationReport, KgPipe
+    DataSet, KG, Metric, EvaluationReport, KgPipe, TaskInput, TaskOutput
 )
 from .registry import Registry
 from .io import get_docker_volume_bindings, remap_data_path_for_container
@@ -39,7 +39,7 @@ from .discovery import (
 
 __all__ = [
     "Data", "DataFormat", "KgTask", "KgTaskReport", "DynamicFormat", "FormatRegistry",
-    "DataSet", "KG", "Stage", "Metric", "EvaluationReport", "KgPipe",
+    "DataSet", "KG", "Stage", "Metric", "EvaluationReport", "KgPipe", "TaskInput", "TaskOutput",
     "Registry",
     "get_docker_volume_bindings", "remap_data_path_for_container",
     "discover_entry_points", "get_registered_tasks", "get_registered_pipelines",

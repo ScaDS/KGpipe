@@ -22,6 +22,8 @@ from .pipeline import KgPipePlan
 
 from rdflib import SKOS
 
+# TODO check if this is still needed or if we can use the KG from kgcore and only use Data and DataSet
+
 @dataclass
 class KG:
     """Represents a knowledge graph."""

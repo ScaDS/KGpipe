@@ -13,11 +13,13 @@ from .model.task import KgTask, KgTaskReport
 from .model.pipeline import KgPipe, KgPipePlan, KgPipePlanStep
 from .model.evaluation import Metric, EvaluationReport
 from .model.kg import KG
+from .model.task import TaskInput, TaskOutput
 
 __all__ = [
-    "Data", "DataFormat", "DynamicFormat", "DataSet", "FormatRegistry", "KgTask", "KgTaskReport", "KgPipe", "KgPipePlan", "KgPipePlanStep",  "Metric", "EvaluationReport", "KG"
+    "Data", "DataFormat", "DynamicFormat", "DataSet", "FormatRegistry", "KgTask", "KgTaskReport", "KgPipe", "KgPipePlan", "KgPipePlanStep",  "Metric", "EvaluationReport", "KG", "TaskInput", "TaskOutput"
 ]
 
+# TODO remove this for next release
 # @dataclass
 # class KG:
 #     """Represents a knowledge graph."""

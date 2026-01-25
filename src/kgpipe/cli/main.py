@@ -19,6 +19,7 @@ from .config import config_cmd
 from .registry import registry_cmd
 from .clean import clean_cmd
 from .task import task_cmd
+from .discover import discover_cmd
 
 # Initialize Rich console for pretty output
 console = Console()
@@ -79,6 +80,7 @@ cli.add_command(config_cmd)
 cli.add_command(registry_cmd)
 cli.add_command(clean_cmd)
 cli.add_command(task_cmd)
+cli.add_command(discover_cmd)
 
 
 if __name__ == "__main__":

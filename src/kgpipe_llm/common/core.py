@@ -159,8 +159,8 @@ class LlmAPIConfig(BaseModel):
     """Configuration for an LLM API."""
     endpoint_url: str
     model_name: str
-    ollama_token: str
-    openai_token: str
+    ollama_token: Optional[str]
+    openai_token: Optional[str]
     seed: str
     context_window: int
 
@@ -180,7 +180,11 @@ def get_config_from_env() -> LlmAPIConfig:
     LLM_SEED = os.getenv("LLM_SEED", "")
     OPT_CONTEXT_WINDOW = int(os.getenv("CONTEXT_WINDOW", 16384))
 
-    if OPT_LLM_ENDPOINT_URL is None or OPT_LLM_MODEL_NAME is None or OPT_OLLAMA_TOKEN is None or OPT_OPENAI_TOKEN is None:
+    print(f"INFO: get_config_from_env {OPT_LLM_ENDPOINT_URL} {OPT_LLM_MODEL_NAME} {OPT_OLLAMA_TOKEN} {OPT_OPENAI_TOKEN} {LLM_SEED} {OPT_CONTEXT_WINDOW}")
+
+    # TODO requires one token to be set
+    if OPT_LLM_ENDPOINT_URL is None or (OPT_LLM_MODEL_NAME is None and OPT_OLLAMA_TOKEN is None and OPT_OPENAI_TOKEN is None):
+        # raise ValueError("LLM_ENDPOINT_URL, LLM_MODEL_NAME, OLLAMA_TOKEN, and OPENAI_TOKEN must be set. Also, CONTEXT_WINDOW must be set.")
         raise ValueError("LLM_ENDPOINT_URL, LLM_MODEL_NAME, OLLAMA_TOKEN, and OPENAI_TOKEN must be set. Also, CONTEXT_WINDOW must be set.")
 
     return LlmAPIConfig(

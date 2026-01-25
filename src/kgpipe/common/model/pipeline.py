@@ -15,9 +15,11 @@ from rdflib import Graph
 from pydantic import BaseModel, field_validator
 from pydantic_core import core_schema
 
-from .data import Data, DataFormat, DataSet
+from .data import Data, DataFormat, DataSet, Format
 from .task import KgTask, KgTaskReport
 # from .kg import KG
+from kgpipe.common.annotations import kg_class
+
 
 class KgPipePlanStep(BaseModel):
     """A step in a KG pipeline plan."""
@@ -25,18 +27,19 @@ class KgPipePlanStep(BaseModel):
     input: List[Data]
     output: List[Data]
 
+kg_class()
 class KgPipePlan(BaseModel):
     """A KG pipeline plan."""
     steps: List[KgPipePlanStep]
     seed: Optional[Data] = None
     source: Optional[Data] = None
     result: Optional[Data] = None
-
-
     
     # def __str__(self) -> str:
     #     return f"KgTaskReport({self.task_name}, {self.status}, {self.duration:.2f}s)"
 
+# TODO rename to KgPipeReport
+@kg_class()
 class KgStageReport(BaseModel):
     """Report of a stage execution."""
     stage_name: str
@@ -45,7 +48,6 @@ class KgStageReport(BaseModel):
     duration: float
     status: str
     error: Optional[str] = None
-
 
 # @dataclass
 # class Stage:
@@ -73,8 +75,8 @@ class KgStageReport(BaseModel):
 #         return f"Stage({self.name}, tasks={len(self.tasks)})"
 
 
-
-
+# TODO rename to Pipeline
+@kg_class()
 @dataclass
 class KgPipe:
     """A KG pipeline using a list of tasks."""
@@ -227,3 +229,14 @@ class KgPipe:
     def __str__(self) -> str:
         return f"KgPipe(tasks={len(self.tasks)}, target={self.seed})"
 
+
+# create dummy objects
+# def dummy_function(inputs: dict[str, Data], outputs: dict[str, Data]):
+#     print(inputs)
+#     print(outputs)
+
+# dummy_pipe = KgPipe(
+#     tasks=[KgTask(name="dummy_task", input_spec={"source": DataFormat.RDF_NTRIPLES}, output_spec={"output": DataFormat.RDF_NTRIPLES}, function=dummy_function)],
+#     seed=Data(path="dummy.ttl", format=DataFormat.RDF_NTRIPLES)
+# )
+# print("loaded dummy pipe")

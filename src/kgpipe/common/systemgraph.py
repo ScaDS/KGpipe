@@ -1,6 +1,6 @@
 import functools
 from uuid import uuid4
-from typing import Any, List
+from typing import Any, List, TYPE_CHECKING
 from pydantic import BaseModel
 from datetime import datetime, timezone
 
@@ -12,9 +12,11 @@ from kgcore.backend.rdf.rdf_sparql import RDFSparqlBackend, SparqlAuth
 from kgcore.model.rdf.rdf_base import RDFBaseModel
 
 from kgpipe.common.definitions import Task, TaskResult, Pipeline, PipelineResult
-from kgpipe.common.models import KgTask
 from kgpipe.common.config import load_config
 from kgpipe.common.util import encode_string
+
+if TYPE_CHECKING:
+    from kgpipe.common.models import KgTask
 
 
 config = load_config()
@@ -42,7 +44,8 @@ SYS_KG: KnowledgeGraph = KnowledgeGraph(model=model, backend=backend)
 class PipeKG:
 
     @staticmethod
-    def add_task(task: KgTask):
+    def add_task(task: "KgTask"):
+        from kgpipe.common.models import KgTask  # Import here to avoid circular import
         types = [encode_string(c) for c in task.category]
         properties = []
         properties.append(KGProperty(key="description", value=task.description))
@@ -58,7 +61,7 @@ class PipeKG:
             })
             SYS_KG.create_relation(type="output", source=task_entity.id, target=output_entity.id)
 
-    def list_tasks(self) -> List[KgTask]:
+    def list_tasks(self) -> List["KgTask"]:
         return SYS_KG.list_entities(types=["Task"])
 
     @staticmethod
@@ -68,6 +71,7 @@ class PipeKG:
             "input": task_result.input,
             "output": task_result.output,
         })
+
 
     @staticmethod
     def add_pipeline(pipeline: Pipeline):
@@ -86,19 +90,7 @@ class PipeKG:
             "output": pipeline_result.output,
         })
 
-# def kg_class(type: str, description: str = ""):
-#     """
-#     Decorator factory: creates a decorator that registers the class
-#     as a KG entity (type/Class node) once at import time.
-#     """
-#     def decorator(cls):
-#         props = []
-#         if description:
-#             props.append(KGProperty(key="description", value=description))
-#         SYS_KG.create_entity(id=cls.__name__, types=[type], properties=None)
-#         return cls
 
-#     return decorator
 
 # def Track(_cls=None, *, with_timestamp: bool = False):
 #     """

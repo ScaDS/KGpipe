@@ -8,7 +8,15 @@ from pydantic import BaseModel
 import time
 import shutil
 
+from .configuration import Parameter, ConfigurationProfile
+from kgpipe.common.annotations import kg_class
 
+type TaskName = str
+
+type TaskInput = Dict[TaskName, Data]
+type TaskOutput = Dict[TaskName, Data]
+
+@kg_class()
 class KgTaskReport(BaseModel):
     """Report of a task execution."""
     task_name: str
@@ -27,6 +35,15 @@ class TaskStatus(Enum):
     FAILED = "failed"
     SKIPPED = "skipped"
 
+# TODO impl later for typed api
+class TaskCategory():
+    pass
+
+# TODO impl later for typed api
+class TaskCatalog():
+    pass
+
+@kg_class()
 @dataclass
 class KgTask:
     """Represents a task that can be executed in a pipeline."""
@@ -36,6 +53,7 @@ class KgTask:
     function: Callable[[Dict[str, Data], Dict[str, Data]], None]
     description: Optional[str] = None
     category: List[str] = field(default_factory=list)
+    config: Optional[ConfigurationProfile] = None
     
     def __post_init__(self):
         if not self.name:
@@ -47,7 +65,7 @@ class KgTask:
         if not callable(self.function):
             raise ValueError("Function must be callable")
 
-    def run(self, inputs: List[Data], outputs: List[Data], stable_files_override: bool = False) -> KgTaskReport:
+    def run(self, inputs: List[Data], outputs: List[Data], stable_files_override: bool = False, configProfile: Optional[str] = None) -> KgTaskReport:
         """Execute the task with given inputs and outputs."""
         start = time.time()
         try:

@@ -270,7 +270,7 @@ class Data(BaseModel):
         }
     
     def __str__(self) -> str:
-        return f"Data({self.path}, {self.format.value})"
+        return f"Data({self.path}, {self.format.value if isinstance(self.format, DynamicFormat) else self.format})"
     
     def __eq__(self, other):
         """Custom equality to handle format comparison."""
