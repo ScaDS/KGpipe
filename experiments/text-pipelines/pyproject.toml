@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kgpipe-text_pipelines"
+version = "0.1.0"
+description = "text-pipelines project for KGpipe"
+requires-python = ">=3.12"
+dependencies = [
+    "kgpipe",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
