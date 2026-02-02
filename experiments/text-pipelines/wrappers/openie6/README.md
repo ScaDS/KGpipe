@@ -9,7 +9,7 @@ docker build -t openie6 .
 docker run --rm --gpus all \
   -v /local-data/sentences.txt:/data/input.txt \
   -v /local-data/predictions.txt:/data/output.txt \
-  openie6 /data/input.txt /data/output.txt
+  openie6.sh /data/input.txt /data/output.txt
 ```
 
 
