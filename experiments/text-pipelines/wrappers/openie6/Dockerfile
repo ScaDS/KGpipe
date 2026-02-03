@@ -11,16 +11,23 @@ RUN git clone https://github.com/dair-iitd/openie6.git
 
 WORKDIR /app/openie6
 
+RUN conda create -n openie6 python=3.8 -y
+
 RUN sed -i '/^torch==/d' requirements.txt
 
 RUN sed -i '/^absl-py==/d' requirements.txt
 
-RUN pip install "pip<21" "setuptools<58" "wheel<0.38" && \
-    pip install -r requirements.txt && \
-    python -m nltk.downloader stopwords punkt
+RUN /opt/conda/envs/openie6/bin/pip install "pip<21" "setuptools<58" "wheel<0.38" "jinja2<3.1" "itsdangerous<2.0" "greenlet==1.1.3" && \
+    conda run -n openie6 pip install -r requirements.txt && \
+    conda run -n openie6 python -m nltk.downloader stopwords punkt
 
-RUN zenodo_get 4054476 && tar -xvf openie6_data.tar.gz && \
-    zenodo_get 4055395 && tar -xvf openie6_models.tar.gz
+RUN conda run -n openie6 zenodo_get 4054476 && \
+	tar -xvf openie6_data.tar.gz && \
+	rm openie6_data.tar.gz && \
+	conda run -n openie6 zenodo_get 4055395 && \
+	tar -xvf openie6_models.tar.gz && \
+	rm openie6_models.tar.gz
+
 
 COPY openie6.sh /usr/local/bin/openie6.sh
 RUN chmod +x /usr/local/bin/openie6.sh

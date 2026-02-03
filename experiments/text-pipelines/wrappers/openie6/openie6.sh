@@ -2,7 +2,7 @@
 set -e
 
 if [ "$#" -ne 2 ]; then
-  echo "Usage: openie6.sh <input.txt> <output.txt>"
+  echo "Usage: openie6.sh <input.txt> <path/to/outputfolder>"
   exit 1
 fi
 
@@ -25,7 +25,7 @@ python run.py \
   --out "$OUTPUT" \
   --rescoring \
   --task oie \
-  --gpus ${OIE_GPUS:-1} \
+  --gpus ${OIE_GPUS:-0} \
   --oie_model models/oie_model/epoch=14_eval_acc=0.551_v0.ckpt \
   --conj_model models/conj_model/epoch=28_eval_acc=0.854.ckpt \
   --rescore_model models/rescore_model \
