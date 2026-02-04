@@ -2,12 +2,12 @@
 set -e
 
 if [ "$#" -ne 2 ]; then
-  echo "Usage: graphene.sh <input.txt> <output.txt>"
+  echo "Usage: graphene.sh <input.txt> <path/to/outputfolder>"
   exit 1
 fi
 
 INPUT_FILE="$1"
-OUTPUT_FILE="$2"
+OUTPUT_FOLDER="$2"
 
 GRAPHENE_DIR="/app/Graphene"
 CONFIG_FILE="$GRAPHENE_DIR/conf/graphene.conf"
@@ -20,7 +20,10 @@ fi
 cd "$GRAPHENE_DIR/graphene-cli"
 
 mvn exec:java \
-  -Dexec.args="--operation RE --input FILE $INPUT_FILE --output FILE $OUTPUT_FILE --reformat DEFAULT --doCoreference true --isolateSentences false" \
+  -Dexec.args="--operation RE --input FILE $INPUT_FILE --output FILE output --reformat RDF --doCoreference true --isolateSentences false" \
   -Dconfig.file="$CONFIG_FILE"
 
-cat $OUTPUT_FILE
+mv output_re_coref_input.txt.txt $OUTPUT_FOLDER/
+mv output_re_coref_input.txtoutput.txt $OUTPUT_FOLDER/
+mv output_re_coref_input.txtoutputtrue.txt $OUTPUT_FOLDER/
+mv output_re_coref_input.txtoutputtruefalse.txt $OUTPUT_FOLDER/
