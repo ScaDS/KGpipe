@@ -23,7 +23,9 @@ mvn exec:java \
   -Dexec.args="--operation RE --input FILE $INPUT_FILE --output FILE output --reformat RDF --doCoreference true --isolateSentences false" \
   -Dconfig.file="$CONFIG_FILE"
 
-mv output_re_coref_input.txt.txt $OUTPUT_FOLDER/
-mv output_re_coref_input.txtoutput.txt $OUTPUT_FOLDER/
-mv output_re_coref_input.txtoutputtrue.txt $OUTPUT_FOLDER/
-mv output_re_coref_input.txtoutputtruefalse.txt $OUTPUT_FOLDER/
+filename="${INPUT_FILE##*/}"
+
+mv output_re_coref_${filename}.txt $OUTPUT_FOLDER/
+mv output_re_coref_${filename}output.txt $OUTPUT_FOLDER/
+mv output_re_coref_${filename}outputtrue.txt $OUTPUT_FOLDER/
+mv output_re_coref_${filename}outputtruefalse.txt $OUTPUT_FOLDER/
