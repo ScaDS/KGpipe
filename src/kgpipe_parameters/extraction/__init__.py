@@ -2,8 +2,8 @@
 Parameter extraction module for mining configuration parameters from various sources.
 """
 
-from .param_miner import (
-    ParameterMiner,
+from .param_miner import ParameterMiner
+from .extractors import (
     CLIExtractor,
     PythonLibExtractor,
     HTTPAPIExtractor,
@@ -60,4 +60,3 @@ __all__ = [
     "infer_parameter_type",
     "extract_constraints",
 ]
-
