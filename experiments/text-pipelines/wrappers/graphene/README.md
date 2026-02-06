@@ -8,8 +8,8 @@ docker build -t graphene .
 ```bash
 docker run --rm \
   -v sentences.txt:/data/input.txt \
-  -v outputfolder:/data/output \
-  graphene graphene.sh /data/input.txt /data/output
+  -v output.nt:/data/output.nt \
+  graphene graphene.sh /data/input.txt /data/output.nt
 ```
 
 

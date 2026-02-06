@@ -2,12 +2,12 @@
 set -e
 
 if [ "$#" -ne 2 ]; then
-  echo "Usage: graphene.sh <input.txt> <path/to/outputfolder>"
+  echo "Usage: graphene.sh <input.txt> <output.nt>"
   exit 1
 fi
 
 INPUT_FILE="$1"
-OUTPUT_FOLDER="$2"
+OUTPUT_FILE="$2"
 
 GRAPHENE_DIR="/app/Graphene"
 CONFIG_FILE="$GRAPHENE_DIR/conf/graphene.conf"
@@ -25,7 +25,4 @@ mvn exec:java \
 
 filename="${INPUT_FILE##*/}"
 
-mv output_re_coref_${filename}.txt $OUTPUT_FOLDER/
-mv output_re_coref_${filename}output.txt $OUTPUT_FOLDER/
-mv output_re_coref_${filename}outputtrue.txt $OUTPUT_FOLDER/
-mv output_re_coref_${filename}outputtruefalse.txt $OUTPUT_FOLDER/
+mv -T output_re_coref_${filename}.txt $OUTPUT_FILE
