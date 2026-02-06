@@ -9,6 +9,14 @@ description = "text-pipelines project for KGpipe"
 requires-python = ">=3.12"
 dependencies = [
     "kgpipe",
+    "numpy",
+    "scikit-learn",
+    "sentence-transformers",
+]
+
+[project.optional-dependencies]
+linker = [
+    "hdbscan",  # for cluster_method="hdbscan"
 ]
 
 [tool.setuptools.packages.find]
