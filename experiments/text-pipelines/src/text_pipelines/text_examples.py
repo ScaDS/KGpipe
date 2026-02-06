@@ -9,4 +9,11 @@ def test_pipeline_defintion():
 def test_openie6_pipe():
     from text_pipelines.text_pipes import openie6_pipe
     openie6_pipe()
-    
+
+def test_graphene_output_to_json_te():
+    from text_pipelines.text_tasks import graphene_nt_exchange
+    pass
+
+def test_graphene_pipe():
+    from text_pipelines.text_pipes import graphene_pipe
+    graphene_pipe("input.txt", "output.json")

@@ -1,4 +1,11 @@
-from kgpipe.common import TaskInput, TaskOutput, DataFormat, get_docker_volume_bindings, remap_data_path_for_container
+import json
+import os
+from typing import Dict, Any
+
+from rdflib import Graph, URIRef, Literal
+
+from kgpipe.common import TaskInput, TaskOutput, DataFormat, get_docker_volume_bindings, remap_data_path_for_container, \
+    Data
 from kgpipe.common.registry import Registry
 from kgpipe.execution import docker_client
 
@@ -36,4 +43,111 @@ def openie6_task_docker(inputs: TaskInput, outputs: TaskOutput):
     print(f"Openie6 completed: {result}")
 
 
+@Registry.task(
+    input_spec={"input": DataFormat.TEXT},
+    output_spec={"output": DataFormat.RDF_NTRIPLES},
+)
+def graphene_task_docker(inputs: TaskInput, outputs: TaskOutput):
+    """
+    Graphene information extraction task that runs in a Docker container.
+
+    Args:
+        inputs: Dictionary mapping input names to Data objects
+        outputs: Dictionary mapping output names to Data objects
+    """
+
+    all_data = list(inputs.values()) + list(outputs.values())
+    volumes, host_to_container = get_docker_volume_bindings(all_data)
+
+    source_path = remap_data_path_for_container(inputs["input"], host_to_container)
+    output_path = remap_data_path_for_container(outputs["output"], host_to_container)
+
+    outputs["output"].path.touch()
+
+    client = docker_client(
+        image="graphene:latest",
+        command=["graphene.sh",
+                 str(source_path.path),
+                 str(output_path.path)],
+        volumes=volumes,
+    )
+
+    result = client()
+    print(f"Graphene completed: {result}")
+
+
+@Registry.task(
+    input_spec={"input": DataFormat.RDF_NTRIPLES},
+    output_spec={"output": DataFormat.TE_JSON},
+    description="Convert RDF NTriples to TE JSON format",
+    category=["Interopability"]
+)
+def graphene_nt_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
+    """Convert Graphene RDF NTriples to TE JSON format."""
+    input_path = inputs["input"].path
+    output_path = outputs["output"].path
+
+    # create output folder
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    def __graphenent2tejson(rdfntdata) -> Dict[str, Any]:
+        """Convert Graphene RDF NTriples to TE Document format."""
+
+        GRAPHENE_SUBJ = URIRef("http://lambda3.org/graphene/extraction#subject")
+        GRAPHENE_PRED = URIRef("http://lambda3.org/graphene/extraction#predicate")
+        GRAPHENE_OBJ = URIRef("http://lambda3.org/graphene/extraction#object")
+
+        RDF_VALUE = URIRef("http://www.w3.org/1999/02/22-rdf-syntax-ns#value")
+
+        doc = {"triples": [], "chains": []}
+
+        g = Graph()
+        g.parse(data=rdfntdata, format="nt")
+
+        value_map = {}
+        for s, p, o in g.triples((None, RDF_VALUE, None)):
+            if isinstance(o, Literal):
+                value_map[s] = str(o)
+
+        extractions = {}
+        for s, p, o in g:
+            if str(s).startswith("_:"):
+                extractions.setdefault(s, {})[p] = o
+
+        triples = []
+        for extraction, props in extractions.items():
+            if (GRAPHENE_SUBJ in props and
+                GRAPHENE_PRED in props and
+                GRAPHENE_OBJ in props):
+                triples.append({
+                    "subject": {"surface_form": value_map.get(props[GRAPHENE_SUBJ], "")},
+                    "predicate": {"surface_form": value_map.get(props[GRAPHENE_PRED], "")},
+                    "object": {"surface_form": value_map.get(props[GRAPHENE_OBJ], "")}
+                })
+
+        doc["triples"] = triples
+        doc["chains"] = []
+        return doc
+
+    if os.path.isdir(input_path):
+        os.makedirs(output_path, exist_ok=True)
+        for file in os.listdir(input_path):
+            # Read input json
+            with open(os.path.join(input_path, file), 'r') as f:
+                data = json.load(f)
+                te_doc = __graphenent2tejson(data)
+                outfile = os.path.join(output_path, file)
+
+                with open(outfile, 'w') as of:
+                    json.dump(te_doc, of)
+                # print(f"Converted {input_path} to {outfile}")
+
+    else:
+        # Read input json
+        with open(input_path, 'r') as f:
+            data = json.load(f)
+            te_doc = __graphenent2tejson(data)
+            with open(output_path, 'w') as of:
+                json.dump(te_doc, of)
+            # print(f"Converted {input_path} to {output_path}")
 
