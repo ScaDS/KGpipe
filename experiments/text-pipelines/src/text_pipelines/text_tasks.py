@@ -2,7 +2,7 @@ import json
 import os
 from typing import Dict, Any
 
-from rdflib import Graph, URIRef, Literal
+from rdflib import Graph, URIRef, Literal, BNode
 
 from kgpipe.common import TaskInput, TaskOutput, DataFormat, get_docker_volume_bindings, remap_data_path_for_container, \
     Data
@@ -111,7 +111,7 @@ def graphene_nt_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
 
         extractions = {}
         for s, p, o in g:
-            if str(s).startswith("_:"):
+            if isinstance(s, BNode):
                 extractions.setdefault(s, {})[p] = o
 
         triples = []
@@ -132,9 +132,9 @@ def graphene_nt_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     if os.path.isdir(input_path):
         os.makedirs(output_path, exist_ok=True)
         for file in os.listdir(input_path):
-            # Read input json
+            # Read input nt file
             with open(os.path.join(input_path, file), 'r') as f:
-                data = json.load(f)
+                data = f.read()
                 te_doc = __graphenent2tejson(data)
                 outfile = os.path.join(output_path, file)
 
@@ -143,9 +143,9 @@ def graphene_nt_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
                 # print(f"Converted {input_path} to {outfile}")
 
     else:
-        # Read input json
+        # Read input nt file
         with open(input_path, 'r') as f:
-            data = json.load(f)
+            data = f.read()
             te_doc = __graphenent2tejson(data)
             with open(output_path, 'w') as of:
                 json.dump(te_doc, of)
