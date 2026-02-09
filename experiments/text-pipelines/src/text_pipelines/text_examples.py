@@ -17,3 +17,9 @@ def test_graphene_output_to_json_te():
 def test_graphene_pipe():
     from text_pipelines.text_pipes import graphene_pipe
     graphene_pipe("input.txt", "output.json")
+
+
+def test_minie_pipe():
+    from text_pipelines.text_pipes import minie_pipe
+    minie_pipe("/home/theo/Work/SCADS.AI/Projects/KGpipe/experiments/text-pipelines/wrappers/minie/input.txt",
+               "/home/theo/Work/SCADS.AI/Projects/KGpipe/experiments/text-pipelines/wrappers/minie/output.json")
