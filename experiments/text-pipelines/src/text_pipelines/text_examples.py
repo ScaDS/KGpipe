@@ -21,5 +21,8 @@ def test_graphene_pipe():
 
 def test_minie_pipe():
     from text_pipelines.text_pipes import minie_pipe
-    minie_pipe("/home/theo/Work/SCADS.AI/Projects/KGpipe/experiments/text-pipelines/wrappers/minie/input.txt",
-               "/home/theo/Work/SCADS.AI/Projects/KGpipe/experiments/text-pipelines/wrappers/minie/output.json")
+    minie_pipe("input.txt","output.json")
+
+def test_imojie_pipe():
+    from text_pipelines.text_pipes import imojie_pipe
+    imojie_pipe("input.txt","output.json")
