@@ -1,5 +1,6 @@
 import json
 import os
+import re
 from typing import Dict, Any
 
 from rdflib import Graph, URIRef, Literal, BNode
@@ -212,7 +213,74 @@ def minie_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
                 }
                 triples.append(triple)
 
-    # JSON Output
+    output_json = {
+        "triples": triples,
+        "chains": chains
+    }
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(output_json, f, indent=2)
+
+
+@Registry.task(
+    input_spec={"input": DataFormat.TEXT},
+    output_spec={"output": DataFormat.ANY},
+)
+def imojie_task_docker(inputs: TaskInput, outputs: TaskOutput):
+    """
+    Imojie information extraction task that runs in a Docker container.
+
+    Args:
+        inputs: Dictionary mapping input names to Data objects
+        outputs: Dictionary mapping output names to Data objects
+    """
+
+    all_data = list(inputs.values()) + list(outputs.values())
+    volumes, host_to_container = get_docker_volume_bindings(all_data)
+
+    source_path = remap_data_path_for_container(inputs["input"], host_to_container)
+    output_path = remap_data_path_for_container(outputs["output"], host_to_container)
+
+    outputs["output"].path.touch()
+
+    client = docker_client(
+        image="imojie:latest",
+        command=["imojie.sh",
+                 str(source_path.path),
+                 str(output_path.path)],
+        volumes=volumes,
+    )
+
+    result = client()
+    print(f"Imojie completed: {result}")
+
+
+@Registry.task(
+    input_spec={"input": DataFormat.ANY},
+    output_spec={"output": DataFormat.TE_JSON},
+    description="Convert Imojie output to TE JSON format",
+    category=["Interopability"]
+)
+def imojie_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
+    input_path = inputs["input"].path
+    output_path = outputs["output"].path
+
+    triples = []
+    chains = []
+
+    triple_pattern = re.compile(r'\(\s*(.*?)\s*;\s*(.*?)\s*;\s*(.*?)\s*\)')
+
+    with open(input_path, "r", encoding="utf-8") as f:
+        for line in f:
+            matches = triple_pattern.findall(line)
+            for subj, pred, obj in matches:
+                triple = {
+                    "subject": {"surface_form": subj.strip()},
+                    "predicate": {"surface_form": pred.strip()},
+                    "object": {"surface_form": obj.strip()}
+                }
+                triples.append(triple)
+
     output_json = {
         "triples": triples,
         "chains": chains
