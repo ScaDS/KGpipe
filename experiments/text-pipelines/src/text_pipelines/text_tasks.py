@@ -151,3 +151,72 @@ def graphene_nt_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
                 json.dump(te_doc, of)
             # print(f"Converted {input_path} to {output_path}")
 
+
+@Registry.task(
+    input_spec={"input": DataFormat.TEXT},
+    output_spec={"output": DataFormat.ANY},
+)
+def minie_task_docker(inputs: TaskInput, outputs: TaskOutput):
+    """
+    MinIE information extraction task that runs in a Docker container.
+
+    Args:
+        inputs: Dictionary mapping input names to Data objects
+        outputs: Dictionary mapping output names to Data objects
+    """
+
+    all_data = list(inputs.values()) + list(outputs.values())
+    volumes, host_to_container = get_docker_volume_bindings(all_data)
+
+    source_path = remap_data_path_for_container(inputs["input"], host_to_container)
+    output_path = remap_data_path_for_container(outputs["output"], host_to_container)
+
+    outputs["output"].path.touch()
+
+    client = docker_client(
+        image="minie:latest",
+        command=["minie.sh",
+                 str(source_path.path),
+                 str(output_path.path)],
+        volumes=volumes,
+    )
+
+    result = client()
+    print(f"MinIE completed: {result}")
+
+
+@Registry.task(
+    input_spec={"input": DataFormat.ANY},
+    output_spec={"output": DataFormat.TE_JSON},
+    description="Convert MinIE output to TE JSON format",
+    category=["Interopability"]
+)
+def minie_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
+    input_path = inputs["input"].path
+    output_path = outputs["output"].path
+
+    triples = []
+    chains = []
+
+    with open(input_path, "r", encoding="utf-8") as f:
+        lines = f.readlines()
+
+    for line in lines:
+        if line.startswith("Triple:"):
+            parts = line[len("Triple:"):].strip().split(" | ")
+            if len(parts) == 3:
+                triple = {
+                    "subject": {"surface_form": parts[0].strip()},
+                    "predicate": {"surface_form": parts[1].strip()},
+                    "object": {"surface_form": parts[2].strip()}
+                }
+                triples.append(triple)
+
+    # JSON Output
+    output_json = {
+        "triples": triples,
+        "chains": chains
+    }
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(output_json, f, indent=2)
