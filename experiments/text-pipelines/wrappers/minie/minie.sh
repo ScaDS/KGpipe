@@ -2,7 +2,7 @@
 set -e
 
 if [ "$#" -ne 2 ]; then
-  echo "Usage: minie.sh \"<sentence>\" <output_file>"
+  echo "Usage: minie.sh <input_file> <output_file>"
   exit 1
 fi
 
