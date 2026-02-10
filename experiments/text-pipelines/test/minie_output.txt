@@ -1,0 +1,8 @@
+Input sentence: This is a simple test.
+=============================
+Extractions:
+Triple: This | is | simple test
+Factuality: (+,CT)
+Attribution: NONE
+-------------------------------
+
