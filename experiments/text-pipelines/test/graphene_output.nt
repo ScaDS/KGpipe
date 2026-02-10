@@ -1,0 +1,16 @@
+
+# This is a simple test .
+
+_:f9ec7700227b4df3b5bc502240423aef <http://lambda3.org/graphene/sentence#original-text> "This is a simple test ."^^<http://www.w3.org/2001/XMLSchema#string> .
+
+_:f9ec7700227b4df3b5bc502240423aef <http://lambda3.org/graphene/sentence#has-extraction> _:d14d6c8bbac44033a8a2bc596d32875a .
+_:d14d6c8bbac44033a8a2bc596d32875a <http://lambda3.org/graphene/extraction#extraction-type> "VERB_BASED"^^<http://www.w3.org/2001/XMLSchema#string> .
+_:d14d6c8bbac44033a8a2bc596d32875a <http://lambda3.org/graphene/extraction#context-layer> "0"^^<http://www.w3.org/2001/XMLSchema#integer> .
+_:d14d6c8bbac44033a8a2bc596d32875a <http://lambda3.org/graphene/extraction#subject> <http://lambda3.org/graphene/text#This> .
+_:d14d6c8bbac44033a8a2bc596d32875a <http://lambda3.org/graphene/extraction#predicate> <http://lambda3.org/graphene/text#is> .
+_:d14d6c8bbac44033a8a2bc596d32875a <http://lambda3.org/graphene/extraction#object> <http://lambda3.org/graphene/text#a+simple+test> .
+
+
+<http://lambda3.org/graphene/text#This> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "This"^^<http://www.w3.org/2001/XMLSchema#string> .
+<http://lambda3.org/graphene/text#is> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "is"^^<http://www.w3.org/2001/XMLSchema#string> .
+<http://lambda3.org/graphene/text#a+simple+test> <http://www.w3.org/1999/02/22-rdf-syntax-ns#value> "a simple test"^^<http://www.w3.org/2001/XMLSchema#string> .
