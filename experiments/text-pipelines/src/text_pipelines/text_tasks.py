@@ -288,3 +288,76 @@ def imojie_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
 
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(output_json, f, indent=2)
+
+@Registry.task(
+    input_spec={"input": DataFormat.TEXT},
+    output_spec={"output": DataFormat.JSON},
+)
+def genie_task_docker(inputs: TaskInput, outputs: TaskOutput):
+    """
+    GenIE information extraction task that runs in a Docker container.
+
+    Args:
+        inputs: Dictionary mapping input names to Data objects
+        outputs: Dictionary mapping output names to Data objects
+    """
+
+    all_data = list(inputs.values()) + list(outputs.values())
+    volumes, host_to_container = get_docker_volume_bindings(all_data)
+
+    source_path = remap_data_path_for_container(inputs["input"], host_to_container)
+    output_path = remap_data_path_for_container(outputs["output"], host_to_container)
+
+    outputs["output"].path.touch()
+
+    client = docker_client(
+        image="genie:latest",
+        command=["genie.sh",
+                 str(source_path.path),
+                 str(output_path.path)],
+        volumes=volumes,
+    )
+
+    result = client()
+    print(f"GenIE completed: {result}")
+
+
+@Registry.task(
+    input_spec={"input": DataFormat.JSON},
+    output_spec={"output": DataFormat.TE_JSON},
+    description="Convert GenIE output to TE JSON format",
+    category=["Interopability"]
+)
+def genie_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
+    input_path = inputs["input"].path
+    output_path = outputs["output"].path
+
+    triples = []
+    chains = []
+
+    triple_pattern = re.compile(r"<sub>\s*(.*?)\s*<rel>\s*(.*?)\s*<obj>\s*(.*?)\s*<et>")
+
+    with open(input_path, "r", encoding="utf-8") as f:
+        genie_output = json.load(f)
+
+    for sentence_outputs in genie_output:
+        for beam in sentence_outputs:
+            text = beam.get("text", "")
+
+            matches = triple_pattern.findall(text)
+
+            for subj, pred, obj in matches:
+                triple = {
+                    "subject": {"surface_form": subj.strip()},
+                    "predicate": {"surface_form": pred.strip()},
+                    "object": {"surface_form": obj.strip()}
+                }
+                triples.append(triple)
+
+    output_json = {
+        "triples": triples,
+        "chains": chains
+    }
+
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(output_json, f, indent=2)
