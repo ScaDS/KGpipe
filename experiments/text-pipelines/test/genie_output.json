@@ -1,0 +1,22 @@
+[
+  [
+    {
+      "text": " <sub> England <rel> country <obj> United States <et> <sub> New York City <rel> country <obj> United States <et>",
+      "log_prob": -0.1272464543581009
+    },
+    {
+      "text": " <sub> Southampton <rel> country <obj> United Kingdom <et> <sub> England <rel> country <obj> United States <et> <sub> New York City <rel> country <obj> United States <et> <sub> United States <rel> contains administrative territorial entity <obj> England <et>",
+      "log_prob": -0.1355593055486679
+    }
+  ],
+  [
+    {
+      "text": " <sub> Compact disc <rel> followed by <obj> DVD <et>",
+      "log_prob": -0.31931981444358826
+    },
+    {
+      "text": " <sub> Compact disc <rel> followed by <obj> DVD <et> <sub> DVD <rel> followed by <obj> DVD <et>",
+      "log_prob": -0.33740684390068054
+    }
+  ]
+]

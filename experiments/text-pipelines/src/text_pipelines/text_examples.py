@@ -91,6 +91,30 @@ def test_imojie_docker_task():
 
     _delete_file(task_output_path)
 
+def test_genie_docker_task():
+    from text_pipelines.text_tasks import genie_task_docker
+
+    output_dir = tempfile.mkdtemp()
+    task_output_path = os.path.join(output_dir, "output.json")
+
+    data_source_rdf = Data(docker_task_input_path, DataFormat.TEXT)
+    data_output = Data(task_output_path, DataFormat.JSON)
+
+    report = genie_task_docker.run(
+        [data_source_rdf],
+        [data_output],
+        stable_files_override=True
+    )
+
+    assert report.status == "success"
+
+    with open(task_output_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+
+    assert len(lines) == 12
+
+    _delete_file(task_output_path)
+
 
 # Exchange Task Test
 def test_graphene_output_to_json_te():
@@ -99,7 +123,7 @@ def test_graphene_output_to_json_te():
     exchange_task_input_path = Path("experiments/text-pipelines/test/graphene_output.nt")
 
     output_dir = tempfile.mkdtemp()
-    task_output_path = os.path.join(output_dir, "output.er.json")
+    task_output_path = os.path.join(output_dir, "output.te.json")
 
     data_source_rdf = Data(exchange_task_input_path, DataFormat.RDF_NTRIPLES)
     data_output = Data(task_output_path, DataFormat.TE_JSON)
@@ -210,13 +234,48 @@ def test_imojie_exchange():
 
     _delete_file(task_output_path)
 
+def test_genie_exchange():
+    from text_pipelines.text_tasks import genie_exchange
+
+    exchange_task_input_path = Path("experiments/text-pipelines/test/genie_output.json")
+
+    output_dir = tempfile.mkdtemp()
+    task_output_path = os.path.join(output_dir, "output.te.json")
+
+    data_source_rdf = Data(exchange_task_input_path, DataFormat.JSON)
+    data_output = Data(task_output_path, DataFormat.TE_JSON)
+
+    report = genie_exchange.run(
+        [data_source_rdf],
+        [data_output],
+        stable_files_override=True
+    )
+
+    assert report.status == "success"
+
+    with open(task_output_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+    assert "triples" in data
+    assert "chains" in data
+
+    assert len(data["triples"]) == 9
+
+    triple = data["triples"][0]
+
+    assert "subject" in triple
+    assert "predicate" in triple
+    assert "object" in triple
+
+    _delete_file(task_output_path)
+
 
 # Pipe Tests
 def test_openie6_pipe():
     from text_pipelines.text_pipes import openie6_pipe
 
     output_dir = tempfile.mkdtemp()
-    output_path = os.path.join(output_dir, "output.er.json")
+    output_path = os.path.join(output_dir, "output.te.json")
 
     openie6_pipe(str(docker_task_input_path), output_path)
 
@@ -229,7 +288,7 @@ def test_graphene_pipe():
     from text_pipelines.text_pipes import graphene_pipe
 
     output_dir = tempfile.mkdtemp()
-    output_path = os.path.join(output_dir, "output.er.json")
+    output_path = os.path.join(output_dir, "output.te.json")
 
     graphene_pipe(str(docker_task_input_path), output_path)
 
@@ -242,7 +301,7 @@ def test_minie_pipe():
     from text_pipelines.text_pipes import minie_pipe
 
     output_dir = tempfile.mkdtemp()
-    output_path = os.path.join(output_dir, "output.er.json")
+    output_path = os.path.join(output_dir, "output.te.json")
 
     minie_pipe(str(docker_task_input_path), output_path)
 
@@ -255,9 +314,22 @@ def test_imojie_pipe():
     from text_pipelines.text_pipes import imojie_pipe
 
     output_dir = tempfile.mkdtemp()
-    output_path = os.path.join(output_dir, "output.er.json")
+    output_path = os.path.join(output_dir, "output.te.json")
 
     imojie_pipe(str(docker_task_input_path), output_path)
+
+    assert os.path.exists(output_path)
+    assert os.path.getsize(output_path) > 0
+
+    _delete_file(output_path)
+
+def test_genie_pipe():
+    from text_pipelines.text_pipes import genie_pipe
+
+    output_dir = tempfile.mkdtemp()
+    output_path = os.path.join(output_dir, "output.te.json")
+
+    genie_pipe(str(docker_task_input_path), output_path)
 
     assert os.path.exists(output_path)
     assert os.path.getsize(output_path) > 0
