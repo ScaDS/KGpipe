@@ -1,0 +1,68 @@
+#python run_all_pipes.py --output_dir results
+
+import argparse
+from pathlib import Path
+
+from kgpipe.common import Data, DataFormat
+
+
+def run_pipe(pipe_func, pipe_name: str, input_path: Path, base_output_dir: Path):
+
+    from text_pipelines.text_tasks import te_json_triple_exchange
+
+    pipe_output_dir = base_output_dir / pipe_name
+    pipe_output_dir.mkdir(parents=True, exist_ok=True)
+
+    te_json_path = pipe_output_dir / "output.te.json"
+    csv_path = pipe_output_dir / "output.csv"
+
+    pipe_func(str(input_path), str(te_json_path))
+
+    data_source = Data(str(te_json_path), DataFormat.TE_JSON)
+    data_output = Data(str(csv_path), DataFormat.CSV)
+
+    te_json_triple_exchange.run(
+        [data_source],
+        [data_output],
+        stable_files_override=True
+    )
+
+    print(f"{pipe_name} done! Output: {pipe_output_dir}")
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--output_dir", required=True)
+    parser.add_argument(
+        "--input",
+        default="experiments/text-pipelines/test/Titanic.txt"
+    )
+
+    args = parser.parse_args()
+
+    input_path = Path(args.input)
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    from text_pipelines.text_pipes import (
+        genie_pipe,
+        graphene_pipe,
+        imojie_pipe,
+        minie_pipe,
+        openie6_pipe,
+    )
+
+    pipes = {
+        "genie": genie_pipe,
+        "graphene": graphene_pipe,
+        "imojie": imojie_pipe,
+        "minie": minie_pipe,
+        #"openie6": openie6_pipe,
+    }
+
+    for name, pipe_func in pipes.items():
+        run_pipe(pipe_func, name, input_path, output_dir)
+
+
+if __name__ == "__main__":
+    main()
