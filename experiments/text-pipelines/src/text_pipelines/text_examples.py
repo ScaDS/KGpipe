@@ -1,3 +1,4 @@
+import csv
 import json
 import os
 import tempfile
@@ -269,6 +270,41 @@ def test_genie_exchange():
 
     _delete_file(task_output_path)
 
+
+def test_te_json_exchange():
+    from text_pipelines.text_tasks import te_json_triple_exchange
+
+    exchange_task_input_path = Path("experiments/text-pipelines/test/test.te.json")
+
+    output_dir = tempfile.mkdtemp()
+    task_output_path = os.path.join(output_dir, "output.csv")
+
+    data_source = Data(exchange_task_input_path, DataFormat.TE_JSON)
+    data_output = Data(task_output_path, DataFormat.CSV)
+
+    report = te_json_triple_exchange.run(
+        [data_source],
+        [data_output],
+        stable_files_override=True
+    )
+
+    assert report.status == "success"
+
+    with open(task_output_path, "r", encoding="utf-8") as f:
+        reader = csv.reader(f)
+        rows = list(reader)
+
+    assert rows[0] == ["subject", "predicate", "object"], "Wrong header"
+
+    assert len(rows) == 4, "Wrong number of rows"
+
+    assert rows[1] == [
+        "This",
+        "is",
+        "of the estimated 2,224 passengers aboard"
+    ], "Wrong line 1"
+
+    _delete_file(task_output_path)
 
 # Pipe Tests
 def test_openie6_pipe():

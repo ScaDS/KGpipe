@@ -1,3 +1,4 @@
+import csv
 import json
 import os
 import re
@@ -361,3 +362,40 @@ def genie_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
 
     with open(output_path, "w", encoding="utf-8") as f:
         json.dump(output_json, f, indent=2)
+
+
+@Registry.task(
+    input_spec={"input": DataFormat.TE_JSON},
+    output_spec={"output": DataFormat.CSV},
+    description="Convert TE_JSON triples to csv",
+    category=["Interopability"]
+)
+def te_json_triple_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
+    input_path = inputs["input"].path
+    output_path = outputs["output"].path
+
+    with open(input_path, "r", encoding="utf-8") as f:
+        te_json = json.load(f)
+
+    triples = te_json["triples"]
+
+    triples_sorted = sorted(
+        triples,
+        key=lambda t: (
+            t["subject"]["surface_form"].lower(),
+            t["predicate"]["surface_form"].lower(),
+            t["object"]["surface_form"].lower()
+        )
+    )
+
+    with open(output_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+
+        writer.writerow(["subject", "predicate", "object"])
+
+        for triple in triples_sorted:
+            writer.writerow([
+                triple["subject"]["surface_form"],
+                triple["predicate"]["surface_form"],
+                triple["object"]["surface_form"]
+            ])
