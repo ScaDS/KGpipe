@@ -15,10 +15,12 @@ from .extractors import (
     PythonLibExtractor,
     HTTPAPIExtractor,
     DockerExtractor,
+    ReadmeDocExtractor,
     LLMCLIExtractor,
     LLMPythonExtractor,
     LLMHTTPExtractor,
     LLMDockerExtractor,
+    LLMReadmeDocExtractor,
 )
 
 # Re-export extractors for backwards compatibility
@@ -28,10 +30,12 @@ __all__ = [
     "PythonLibExtractor",
     "HTTPAPIExtractor",
     "DockerExtractor",
+    "ReadmeDocExtractor",
     "LLMCLIExtractor",
     "LLMPythonExtractor",
     "LLMHTTPExtractor",
     "LLMDockerExtractor",
+    "LLMReadmeDocExtractor",
 ]
 
 
@@ -54,6 +58,7 @@ class ParameterMiner:
             SourceType.PYTHON_LIB: PythonLibExtractor(use_llm=False),
             SourceType.HTTP_API: HTTPAPIExtractor(use_llm=False),
             SourceType.DOCKER: DockerExtractor(use_llm=False),
+            SourceType.README: ReadmeDocExtractor(use_llm=False),
         }
     
     def extract_parameters(
@@ -133,6 +138,7 @@ class ParameterMiner:
                 SourceType.PYTHON_LIB: LLMPythonExtractor(self.llm_client),
                 SourceType.HTTP_API: LLMHTTPExtractor(self.llm_client),
                 SourceType.DOCKER: LLMDockerExtractor(self.llm_client),
+                SourceType.README: LLMReadmeDocExtractor(self.llm_client),
             }
             extractor = llm_extractors.get(source_type)
             if extractor:
@@ -165,6 +171,10 @@ class ParameterMiner:
         # Check for Docker
         if any(x in source for x in ["FROM ", "ENV ", "ARG ", "docker-compose", "services:"]):
             return SourceType.DOCKER
+        
+        # Check for README / Markdown documentation
+        if any(x in source for x in ["# ", "## ", "```", "**", "[", "](", "---"]):
+            return SourceType.README
         
         return SourceType.UNKNOWN
     

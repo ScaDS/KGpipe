@@ -13,13 +13,30 @@ from .extraction import (
     ExtractionResult,
     SourceType,
     ExtractionMethod,
+    ReadmeDocExtractor,
+    LLMReadmeDocExtractor,
+)
+
+from .clustering import (
+    ParameterClusterer,
+    ParameterVector,
+    ParameterCluster,
+    ClusteringResult,
 )
 
 __all__ = [
+    # Extraction
     "ParameterMiner",
     "RawParameter",
     "ExtractionResult",
     "SourceType",
     "ExtractionMethod",
+    "ReadmeDocExtractor",
+    "LLMReadmeDocExtractor",
+    # Clustering
+    "ParameterClusterer",
+    "ParameterVector",
+    "ParameterCluster",
+    "ClusteringResult",
 ]
 

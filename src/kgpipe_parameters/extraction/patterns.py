@@ -73,6 +73,31 @@ DOCKER_PATTERNS = {
     "port_mapping": re.compile(r"-p\s+(\d+):(\d+)"),
 }
 
+# README / documentation patterns
+README_PATTERNS = {
+    # Flags or options mentioned in code blocks or inline code: --param, -p
+    "inline_flag": re.compile(r"`(-{1,2}[a-zA-Z][a-zA-Z0-9_-]*)`"),
+    # Command-line invocations in code blocks: tool --param value
+    "code_block_flag": re.compile(r"(?:^|\s)(-{1,2}[a-zA-Z][a-zA-Z0-9_-]*)(?:\s+(\S+))?", re.MULTILINE),
+    # Environment variable references: $VAR, ${VAR}, ENV VAR, set VAR=
+    "env_reference": re.compile(r"(?:\$\{?|(?:set|export)\s+)([A-Z_][A-Z0-9_]*)(?:\}|=([^\s]+))?"),
+    # Config key-value in YAML/properties style: key: value  or  key = value
+    "config_kv": re.compile(r"^\s*([a-zA-Z_][a-zA-Z0-9_.]+)\s*[=:]\s*(.+)$", re.MULTILINE),
+    # JVM-style flags: -Xmx47000m, -XX:+UseG1GC
+    "jvm_flag": re.compile(r"(-X[a-z]+\d*[a-zA-Z]*|-XX:[+\-]?\w+(?:=\S+)?)"),
+    # Markdown table rows with parameter-like content: | param | type | description |
+    "table_param": re.compile(r"\|\s*`?([a-zA-Z_][a-zA-Z0-9_-]*)`?\s*\|([^|]*)\|([^|]*)\|"),
+    # Setting/configuration references: "set X to Y", "configure X as Y"
+    "setting_reference": re.compile(
+        r"(?:set|configure|specify|use)\s+[`\"']?([a-zA-Z_][a-zA-Z0-9_-]*)[`\"']?\s+(?:to|as|=)\s+[`\"']?([^\s,`\"']+)",
+        re.IGNORECASE,
+    ),
+    # Parameter descriptions in lists: - `param`: description  or  * param — description
+    "list_param": re.compile(r"^\s*[-*]\s+`([a-zA-Z_][a-zA-Z0-9_-]*)`[:\s]+(.+)$", re.MULTILINE),
+    # Placeholder patterns like <param>, [param], {param} in usage lines
+    "placeholder": re.compile(r"<([a-zA-Z_][a-zA-Z0-9_]*)>"),
+}
+
 # Common patterns for all sources
 COMMON_PATTERNS = {
     # Numeric constraints: min=0, max=100
@@ -103,6 +128,7 @@ def get_patterns(source_type: str) -> Dict[str, re.Pattern]:
         "python": PYTHON_PATTERNS,
         "api": API_PATTERNS,
         "docker": DOCKER_PATTERNS,
+        "readme": README_PATTERNS,
     }
     return patterns_map.get(source_type.lower(), {})
 

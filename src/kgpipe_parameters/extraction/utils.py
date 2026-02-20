@@ -78,16 +78,16 @@ def parse_default_value(value_str: Optional[str]) -> Optional[Union[str, int, fl
     
     value_str = value_str.strip().strip('"').strip("'")
     
-    # Try boolean
-    if value_str.lower() in ["true", "false", "yes", "no", "1", "0"]:
-        return value_str.lower() in ["true", "yes", "1"]
-    
-    # Try integer
+    # Try integer first (before boolean, so "0" and "1" stay numeric)
     try:
         if value_str.isdigit() or (value_str.startswith("-") and value_str[1:].isdigit()):
             return int(value_str)
     except ValueError:
         pass
+    
+    # Try boolean
+    if value_str.lower() in ["true", "false", "yes", "no"]:
+        return value_str.lower() in ["true", "yes"]
     
     # Try float
     try:

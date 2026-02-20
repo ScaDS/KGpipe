@@ -12,6 +12,7 @@ from kgpipe_parameters.extraction import (
     PythonLibExtractor,
     HTTPAPIExtractor,
     DockerExtractor,
+    ReadmeDocExtractor,
     RawParameter,
     ExtractionResult,
     SourceType,
@@ -359,6 +360,90 @@ class TestDockerExtractor:
 
 
 # =============================================================================
+# README / Documentation Extractor Tests
+# =============================================================================
+
+class TestReadmeDocExtractor:
+    """Tests for README / documentation parameter extraction."""
+    
+    def test_readme_extractor_list_params(self, readme_tool_doc):
+        """Test extraction of parameters from markdown list items."""
+        extractor = ReadmeDocExtractor()
+        result = extractor.extract(readme_tool_doc, "entity_matcher")
+        
+        assert isinstance(result, ExtractionResult)
+        assert result.source_type == SourceType.README
+        assert result.extraction_method == ExtractionMethod.REGEX
+        assert len(result.parameters) > 0
+        
+        param_names = [p.name for p in result.parameters]
+        assert "threshold" in param_names
+        assert "max_iter" in param_names
+    
+    def test_readme_extractor_table_params(self, readme_tool_doc):
+        """Test extraction of parameters from markdown tables."""
+        extractor = ReadmeDocExtractor()
+        result = extractor.extract(readme_tool_doc, "entity_matcher")
+        
+        param_names = [p.name for p in result.parameters]
+        assert "batch_size" in param_names
+        assert "num_threads" in param_names
+    
+    def test_readme_extractor_env_vars(self, readme_tool_doc):
+        """Test extraction of environment variable references."""
+        extractor = ReadmeDocExtractor()
+        result = extractor.extract(readme_tool_doc, "entity_matcher")
+        
+        param_names = [p.name for p in result.parameters]
+        assert "matcher_threshold" in param_names or "matcher_max_memory" in param_names
+    
+    def test_readme_extractor_placeholders(self, readme_tool_doc):
+        """Test extraction of placeholder parameters from usage lines."""
+        extractor = ReadmeDocExtractor()
+        result = extractor.extract(readme_tool_doc, "entity_matcher")
+        
+        param_names = [p.name for p in result.parameters]
+        # <kb1>, <kb2>, <outputFolder> from the Java usage line
+        assert "kb1" in param_names or "outputfolder" in param_names
+    
+    def test_readme_extractor_defaults(self, readme_tool_doc):
+        """Test that default values are extracted from descriptions."""
+        extractor = ReadmeDocExtractor()
+        result = extractor.extract(readme_tool_doc, "entity_matcher")
+        
+        threshold_params = [p for p in result.parameters if p.name == "threshold"]
+        if threshold_params:
+            param = threshold_params[0]
+            assert param.default_value == 0.5 or param.default_value == "0.5"
+    
+    def test_readme_extractor_descriptions(self, readme_tool_doc):
+        """Test that descriptions are extracted."""
+        extractor = ReadmeDocExtractor()
+        result = extractor.extract(readme_tool_doc, "entity_matcher")
+        
+        params_with_desc = [p for p in result.parameters if p.description]
+        assert len(params_with_desc) > 0
+    
+    def test_readme_extractor_minimal(self, readme_minimal):
+        """Test extraction from a minimal README."""
+        extractor = ReadmeDocExtractor()
+        result = extractor.extract(readme_minimal, "simple_tool")
+        
+        assert isinstance(result, ExtractionResult)
+        param_names = [p.name for p in result.parameters]
+        # Should find at least the <inputFile> and <outputFile> placeholders
+        assert "inputfile" in param_names or "outputfile" in param_names
+    
+    def test_readme_extractor_empty(self):
+        """Test handling of empty README."""
+        extractor = ReadmeDocExtractor()
+        result = extractor.extract("", "test")
+        
+        assert isinstance(result, ExtractionResult)
+        assert len(result.parameters) == 0
+
+
+# =============================================================================
 # ParameterMiner Integration Tests
 # =============================================================================
 
@@ -392,6 +477,13 @@ class TestParameterMiner:
         result = miner.extract_parameters(dockerfile_content, method=ExtractionMethod.AUTO)
         
         assert result.source_type == SourceType.DOCKER
+    
+    def test_parameter_miner_auto_detect_readme(self, readme_tool_doc):
+        """Test auto-detection of README source."""
+        miner = ParameterMiner()
+        result = miner.extract_parameters(readme_tool_doc, method=ExtractionMethod.AUTO)
+        
+        assert result.source_type == SourceType.README
     
     def test_parameter_miner_file_path(self, test_data_dir):
         """Test extraction from file path."""

@@ -94,6 +94,20 @@ def docker_compose_content():
 
 
 @pytest.fixture
+def readme_tool_doc():
+    """Fixture for a tool README with configuration parameters."""
+    path = get_test_data_path("readme/tool_readme.md")
+    return path.read_text()
+
+
+@pytest.fixture
+def readme_minimal():
+    """Fixture for a minimal README."""
+    path = get_test_data_path("readme/minimal_readme.md")
+    return path.read_text()
+
+
+@pytest.fixture
 def mock_llm_client():
     """Fixture for mocked LLM client."""
     mock_client = Mock()

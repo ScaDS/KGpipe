@@ -14,6 +14,7 @@ class SourceType(str, Enum):
     PYTHON_LIB = "python_lib"
     HTTP_API = "http_api"
     DOCKER = "docker"
+    README = "readme"
     UNKNOWN = "unknown"
 
 

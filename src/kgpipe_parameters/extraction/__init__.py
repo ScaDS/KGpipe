@@ -8,10 +8,12 @@ from .extractors import (
     PythonLibExtractor,
     HTTPAPIExtractor,
     DockerExtractor,
+    ReadmeDocExtractor,
     LLMCLIExtractor,
     LLMPythonExtractor,
     LLMHTTPExtractor,
     LLMDockerExtractor,
+    LLMReadmeDocExtractor,
 )
 from .models import (
     RawParameter,
@@ -31,6 +33,11 @@ from .utils import (
     infer_parameter_type,
     extract_constraints,
 )
+from .chunk_filter import (
+    score_chunk,
+    has_parameter_signals,
+    KEYWORD_SETS,
+)
 
 __all__ = [
     # Main class
@@ -40,10 +47,12 @@ __all__ = [
     "PythonLibExtractor",
     "HTTPAPIExtractor",
     "DockerExtractor",
+    "ReadmeDocExtractor",
     "LLMCLIExtractor",
     "LLMPythonExtractor",
     "LLMHTTPExtractor",
     "LLMDockerExtractor",
+    "LLMReadmeDocExtractor",
     # Base classes
     "BaseExtractor",
     "RegexExtractor",
@@ -59,4 +68,8 @@ __all__ = [
     "parse_default_value",
     "infer_parameter_type",
     "extract_constraints",
+    # Chunk filtering
+    "score_chunk",
+    "has_parameter_signals",
+    "KEYWORD_SETS",
 ]

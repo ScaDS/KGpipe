@@ -49,73 +49,79 @@ class PythonLibExtractor(RegexExtractor):
             errors=errors
         )
     
+    # Type hints that almost certainly indicate I/O data, not configuration.
+    _IO_TYPE_HINTS = frozenset({
+        "DataFrame", "pd.DataFrame", "pandas.DataFrame",
+        "ndarray", "np.ndarray", "numpy.ndarray",
+        "Series", "pd.Series",
+        "BaseTable", "BaseColumn",
+        "Table", "Column",
+        "Dataset",
+        "Pool", "Process",
+        "Iterator", "Generator",
+        "TextIO", "BinaryIO", "IO",
+    })
+
+    @classmethod
+    def _looks_like_io_param(cls, name: str, type_hint: Optional[str], has_default: bool) -> bool:
+        """
+        Heuristic: return True if a function parameter is likely an I/O
+        argument rather than a tunable configuration knob.
+
+        Rules:
+        - Parameters whose type hint is a known data type (DataFrame, ndarray,
+          BaseTable, etc.) are I/O.
+        - Required parameters (no default) of non-__init__ methods whose names
+          suggest data flow (source, target, input, output, data, table, path,
+          pool, etc.) are I/O.
+        """
+        if type_hint:
+            # Check the raw type and any component of a composite hint
+            for io_type in cls._IO_TYPE_HINTS:
+                if io_type in type_hint:
+                    return True
+        # Common I/O parameter name stems
+        io_name_hints = {
+            "source", "target", "input", "output", "data",
+            "table", "column", "pool", "file", "path",
+            "stream", "buffer", "reader", "writer",
+        }
+        normalized = name.lower().replace("_", "")
+        for h in io_name_hints:
+            if h in normalized:
+                # If it has a simple scalar default, it might still be config
+                if has_default:
+                    return False
+                return True
+        return False
+
     def _extract_from_ast(self, tree: ast.AST, source: str) -> List[RawParameter]:
         """Extract parameters from Python AST."""
         parameters = []
-        
+        extractor_cls = self  # reference for nested class
+
         class ParameterVisitor(ast.NodeVisitor):
             def __init__(self):
                 self.params = []
                 self.source_lines = source.split('\n')
-            
-            def visit_FunctionDef(self, node):
-                # Extract function parameters
-                for arg in node.args.args:
-                    if arg.arg == 'self':
-                        continue
-                    
-                    # Get type hint
-                    type_hint = None
-                    if arg.annotation:
-                        type_hint = ast.unparse(arg.annotation) if hasattr(ast, 'unparse') else str(arg.annotation)
-                    
-                    # Get default value
-                    default_val = None
-                    default_idx = len(node.args.args) - len(node.args.defaults)
-                    if arg in node.args.args[default_idx:]:
-                        default_node = node.args.defaults[node.args.args[default_idx:].index(arg)]
-                        if hasattr(ast, 'unparse'):
-                            default_val = ast.unparse(default_node)
-                        else:
-                            default_val = ast.literal_eval(default_node) if isinstance(default_node, (ast.Constant, ast.Str, ast.Num)) else None
-                    
-                    # Extract docstring info
-                    description = None
-                    if ast.get_docstring(node):
-                        docstring = ast.get_docstring(node)
-                        # Look for :param arg: description
-                        param_pattern = re.compile(rf":param\s+{arg.arg}:\s*(.+?)(?=\n|:param|$)", re.MULTILINE)
-                        match = param_pattern.search(docstring)
-                        if match:
-                            description = match.group(1).strip()
-                    
-                    param = RawParameter(
-                        name=normalize_parameter_name(arg.arg),
-                        native_keys=[arg.arg],
-                        description=description,
-                        type_hint=type_hint,
-                        default_value=parse_default_value(default_val) if default_val else None,
-                        required=default_val is None,
-                        source=f"{node.name}()",
-                        provenance={"function": node.name, "line": node.lineno}
-                    )
-                    self.params.append(param)
-                
-                self.generic_visit(node)
-            
+                self._current_class = None
+
             def visit_ClassDef(self, node):
-                # Extract class attributes (for dataclasses, Pydantic models, etc.)
+                prev_class = self._current_class
+                self._current_class = node.name
+
+                # Extract class-level attributes (dataclasses, Pydantic models, etc.)
                 for item in node.body:
                     if isinstance(item, ast.AnnAssign):
                         # Annotated assignment: name: type = default
                         if isinstance(item.target, ast.Name):
                             attr_name = item.target.id
-                            
+
                             # Get type hint
                             type_hint = None
                             if item.annotation:
                                 type_hint = ast.unparse(item.annotation) if hasattr(ast, 'unparse') else str(item.annotation)
-                            
+
                             # Get default value
                             default_val = None
                             if item.value:
@@ -126,7 +132,7 @@ class PythonLibExtractor(RegexExtractor):
                                         default_val = ast.literal_eval(item.value)
                                     except (ValueError, TypeError):
                                         default_val = None
-                            
+
                             param = RawParameter(
                                 name=normalize_parameter_name(attr_name),
                                 native_keys=[attr_name],
@@ -150,7 +156,7 @@ class PythonLibExtractor(RegexExtractor):
                                         default_val = ast.literal_eval(item.value)
                                     except (ValueError, TypeError):
                                         default_val = None
-                                
+
                                 param = RawParameter(
                                     name=normalize_parameter_name(attr_name),
                                     native_keys=[attr_name],
@@ -162,9 +168,95 @@ class PythonLibExtractor(RegexExtractor):
                                     provenance={"class": node.name, "line": item.lineno}
                                 )
                                 self.params.append(param)
-                
+
                 self.generic_visit(node)
-        
+                self._current_class = prev_class
+
+            def visit_FunctionDef(self, node):
+                is_init = node.name == '__init__'
+                is_method = self._current_class is not None
+                class_name = self._current_class
+                # For non-__init__ methods inside a class, only keep params
+                # that look like configuration (have defaults and don't look
+                # like I/O data arguments).
+                skip_io = is_method and not is_init
+
+                for arg in node.args.args:
+                    if arg.arg in ('self', 'cls'):
+                        continue
+
+                    # Get type hint
+                    type_hint = None
+                    if arg.annotation:
+                        type_hint = ast.unparse(arg.annotation) if hasattr(ast, 'unparse') else str(arg.annotation)
+
+                    # Get default value
+                    default_val = None
+                    default_idx = len(node.args.args) - len(node.args.defaults)
+                    if arg in node.args.args[default_idx:]:
+                        default_node = node.args.defaults[node.args.args[default_idx:].index(arg)]
+                        if hasattr(ast, 'unparse'):
+                            default_val = ast.unparse(default_node)
+                        else:
+                            default_val = ast.literal_eval(default_node) if isinstance(default_node, (ast.Constant, ast.Str, ast.Num)) else None
+
+                    has_default = default_val is not None
+
+                    # ── I/O filter for non-constructor methods ──
+                    if skip_io and extractor_cls._looks_like_io_param(arg.arg, type_hint, has_default):
+                        continue
+
+                    # For non-__init__ methods, skip required params that
+                    # have no default — they're almost always data args.
+                    if skip_io and not has_default:
+                        continue
+
+                    # Extract docstring info (Sphinx :param: and numpydoc styles)
+                    description = None
+                    if ast.get_docstring(node):
+                        docstring = ast.get_docstring(node)
+                        # Sphinx style — :param name: description
+                        sphinx_pat = re.compile(
+                            rf":param\s+{re.escape(arg.arg)}:\s*(.+?)(?=\n|:param|$)",
+                            re.MULTILINE,
+                        )
+                        m = sphinx_pat.search(docstring)
+                        if m:
+                            description = m.group(1).strip()
+                        else:
+                            # Numpydoc style —
+                            #   name : type
+                            #       Description text
+                            numpydoc_pat = re.compile(
+                                rf"^\s*{re.escape(arg.arg)}\s*(?::.*)?$\n((?:[ \t]+.+\n?)+)",
+                                re.MULTILINE,
+                            )
+                            m = numpydoc_pat.search(docstring)
+                            if m:
+                                # Merge continuation lines and strip indent
+                                desc_lines = [l.strip() for l in m.group(1).splitlines() if l.strip()]
+                                description = " ".join(desc_lines)
+
+                    func_label = f"{class_name}.{node.name}" if class_name else node.name
+                    param = RawParameter(
+                        name=normalize_parameter_name(arg.arg),
+                        native_keys=[arg.arg],
+                        description=description,
+                        type_hint=type_hint,
+                        default_value=parse_default_value(default_val) if default_val else None,
+                        required=default_val is None,
+                        source=f"{func_label}()",
+                        provenance={
+                            "function": node.name,
+                            "class": class_name,
+                            "is_constructor": is_init,
+                            "line": node.lineno,
+                        }
+                    )
+                    self.params.append(param)
+
+                self.generic_visit(node)
+
         visitor = ParameterVisitor()
         visitor.visit(tree)
         return visitor.params

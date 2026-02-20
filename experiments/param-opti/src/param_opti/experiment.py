@@ -198,9 +198,42 @@ class ParameterExtractionExperiment:
             "result": json.loads(result.model_dump_json()),
         }
     
+    def extract_from_readme(self, tool: ToolDefinition) -> Optional[Dict[str, Any]]:
+        """
+        Extract parameters from a README bundled with the tool input definition.
+        
+        Args:
+            tool: Tool definition with readme_content
+            
+        Returns:
+            Extraction result dictionary, or None if no README content
+        """
+        if not tool.readme_content:
+            return None
+        
+        logger.info(f"Extracting from bundled README for {tool.name}")
+        from kgpipe_parameters.extraction import SourceType
+        
+        result = self.miner.extract_parameters(
+            source=tool.readme_content,
+            source_type=SourceType.README,
+            tool_name=tool.name,
+        )
+        
+        return {
+            "source_type": "readme",
+            "source_file": str(tool.input_path / "readme.md"),
+            "result": json.loads(result.model_dump_json()),
+        }
+    
     def extract_from_repo(self, tool: ToolDefinition, repo_path: Path) -> List[Dict[str, Any]]:
         """
         Extract parameters from repository files.
+        
+        Scans Python, Java, .properties, .xml, Docker, and README/doc files.
+        A keyword-based chunk filter is applied first so that only files
+        containing parameter-signal keywords are sent to the extractors,
+        preventing noise from irrelevant source files.
         
         Args:
             tool: Tool definition
@@ -209,16 +242,17 @@ class ParameterExtractionExperiment:
         Returns:
             List of extraction result dictionaries
         """
+        from kgpipe_parameters.extraction import SourceType
+        from kgpipe_parameters.extraction.chunk_filter import has_parameter_signals, score_chunk
+        
         results = []
         
-        # Find Python files
-        python_files = list(repo_path.rglob("*.py"))
-        logger.info(f"Found {len(python_files)} Python files in {tool.name}")
-        
-        # Prioritize main/config/cli files
+        # ------------------------------------------------------------------
+        # Helper: prioritize files whose names suggest config / CLI / params
+        # ------------------------------------------------------------------
         priority_patterns = [
             "main", "cli", "config", "settings", "args", "params", "options",
-            "__main__", "run", "train", "evaluate"
+            "__main__", "run", "train", "evaluate", "application", "setup",
         ]
         
         def priority_score(path: Path) -> int:
@@ -228,19 +262,29 @@ class ParameterExtractionExperiment:
                     return i
             return len(priority_patterns)
         
-        python_files.sort(key=priority_score)
+        def _is_test_file(path: Path) -> bool:
+            """Return True for test / example files we want to skip."""
+            low = str(path).lower()
+            return any(s in low for s in ["test", "/example", "/demo", "/sample"])
         
-        # Extract from top Python files (limit to avoid overwhelming)
-        from kgpipe_parameters.extraction import SourceType
+        # ==================================================================
+        # 1. Python files
+        # ==================================================================
+        python_files = sorted(repo_path.rglob("*.py"), key=priority_score)
+        logger.info(f"Found {len(python_files)} Python files in {tool.name}")
         
-        for py_file in python_files[:20]:  # Process top 20 files
+        accepted_py = 0
+        for py_file in python_files:
+            if accepted_py >= 20:
+                break
             try:
                 content = py_file.read_text(errors="ignore")
-                if len(content) < 100:  # Skip very small files
+                if len(content) < 100 or _is_test_file(py_file):
                     continue
                 
-                # Skip test files
-                if "test" in str(py_file).lower():
+                # ── Keyword chunk filter ──
+                if not has_parameter_signals(content, file_path=str(py_file)):
+                    logger.debug(f"  Skipped (no param signals): {py_file.name}")
                     continue
                 
                 result = self.miner.extract_parameters(
@@ -256,10 +300,122 @@ class ParameterExtractionExperiment:
                         "result": json.loads(result.model_dump_json()),
                     })
                     logger.info(f"  Extracted {len(result.parameters)} params from {py_file.name}")
+                accepted_py += 1
             except Exception as e:
                 logger.warning(f"  Failed to process {py_file}: {e}")
         
-        # Find Dockerfiles
+        # ==================================================================
+        # 2. Java files
+        # ==================================================================
+        java_files = sorted(repo_path.rglob("*.java"), key=priority_score)
+        logger.info(f"Found {len(java_files)} Java files in {tool.name}")
+        
+        accepted_java = 0
+        for java_file in java_files:
+            if accepted_java >= 20:
+                break
+            try:
+                content = java_file.read_text(errors="ignore")
+                if len(content) < 100 or _is_test_file(java_file):
+                    continue
+                
+                # ── Keyword chunk filter ──
+                if not has_parameter_signals(content, file_path=str(java_file)):
+                    logger.debug(f"  Skipped (no param signals): {java_file.name}")
+                    continue
+                
+                # Java config files are best handled by the README extractor
+                # (it picks up flag patterns, key-value pairs, etc.)
+                result = self.miner.extract_parameters(
+                    source=content,
+                    source_type=SourceType.README,
+                    tool_name=f"{tool.name}/{java_file.name}",
+                )
+                
+                if result.parameters:
+                    results.append({
+                        "source_type": "java",
+                        "source_file": str(java_file.relative_to(repo_path)),
+                        "result": json.loads(result.model_dump_json()),
+                    })
+                    logger.info(f"  Extracted {len(result.parameters)} params from {java_file.name}")
+                accepted_java += 1
+            except Exception as e:
+                logger.warning(f"  Failed to process {java_file}: {e}")
+        
+        # ==================================================================
+        # 3. .properties files (Java native config format)
+        # ==================================================================
+        properties_files = list(repo_path.rglob("*.properties"))
+        logger.info(f"Found {len(properties_files)} .properties files in {tool.name}")
+        
+        for prop_file in properties_files[:15]:
+            try:
+                content = prop_file.read_text(errors="ignore")
+                if len(content) < 10 or _is_test_file(prop_file):
+                    continue
+                
+                # .properties files are inherently config — always relevant
+                result = self.miner.extract_parameters(
+                    source=content,
+                    source_type=SourceType.README,  # kv-pair patterns work well
+                    tool_name=f"{tool.name}/{prop_file.name}",
+                )
+                
+                if result.parameters:
+                    results.append({
+                        "source_type": "properties",
+                        "source_file": str(prop_file.relative_to(repo_path)),
+                        "result": json.loads(result.model_dump_json()),
+                    })
+                    logger.info(f"  Extracted {len(result.parameters)} params from {prop_file.name}")
+            except Exception as e:
+                logger.warning(f"  Failed to process {prop_file}: {e}")
+        
+        # ==================================================================
+        # 4. XML config files
+        # ==================================================================
+        xml_files = list(repo_path.rglob("*.xml"))
+        # Only keep files whose names suggest config, not build scripts
+        _xml_config_hints = [
+            "config", "setting", "param", "property", "application",
+            "persistence", "context", "bean",
+        ]
+        xml_files = [
+            f for f in xml_files
+            if any(h in f.stem.lower() for h in _xml_config_hints)
+            or has_parameter_signals(
+                f.read_text(errors="ignore")[:2000],
+                file_path=str(f),
+            )
+        ]
+        logger.info(f"Found {len(xml_files)} XML config files in {tool.name}")
+        
+        for xml_file in xml_files[:10]:
+            try:
+                content = xml_file.read_text(errors="ignore")
+                if len(content) < 30 or _is_test_file(xml_file):
+                    continue
+                
+                result = self.miner.extract_parameters(
+                    source=content,
+                    source_type=SourceType.README,
+                    tool_name=f"{tool.name}/{xml_file.name}",
+                )
+                
+                if result.parameters:
+                    results.append({
+                        "source_type": "xml",
+                        "source_file": str(xml_file.relative_to(repo_path)),
+                        "result": json.loads(result.model_dump_json()),
+                    })
+                    logger.info(f"  Extracted {len(result.parameters)} params from {xml_file.name}")
+            except Exception as e:
+                logger.warning(f"  Failed to process {xml_file}: {e}")
+        
+        # ==================================================================
+        # 5. Dockerfiles
+        # ==================================================================
         for dockerfile in repo_path.rglob("Dockerfile*"):
             try:
                 content = dockerfile.read_text(errors="ignore")
@@ -279,7 +435,9 @@ class ParameterExtractionExperiment:
             except Exception as e:
                 logger.warning(f"  Failed to process {dockerfile}: {e}")
         
-        # Find docker-compose files
+        # ==================================================================
+        # 6. docker-compose files
+        # ==================================================================
         for compose_file in repo_path.rglob("docker-compose*.y*ml"):
             try:
                 content = compose_file.read_text(errors="ignore")
@@ -298,6 +456,61 @@ class ParameterExtractionExperiment:
                     logger.info(f"  Extracted {len(result.parameters)} params from {compose_file.name}")
             except Exception as e:
                 logger.warning(f"  Failed to process {compose_file}: {e}")
+        
+        # ==================================================================
+        # 7. README and documentation files
+        # ==================================================================
+        readme_patterns = ["README*", "readme*", "INSTALL*", "USAGE*", "CONFIGURATION*"]
+        doc_dirs = ["doc", "docs", "documentation"]
+        
+        readme_files: List[Path] = []
+        for pattern in readme_patterns:
+            readme_files.extend(repo_path.glob(pattern))
+        # Also pick up .md files scattered in the repo root (e.g. RunPARIS.md)
+        readme_files.extend(repo_path.glob("*.md"))
+        for doc_dir_name in doc_dirs:
+            doc_dir = repo_path / doc_dir_name
+            if doc_dir.is_dir():
+                readme_files.extend(doc_dir.rglob("*.md"))
+                readme_files.extend(doc_dir.rglob("*.txt"))
+                readme_files.extend(doc_dir.rglob("*.rst"))
+        
+        # Deduplicate while preserving order
+        seen_readme: set = set()
+        unique_readmes: List[Path] = []
+        for f in readme_files:
+            if f.resolve() not in seen_readme and f.is_file():
+                seen_readme.add(f.resolve())
+                unique_readmes.append(f)
+        
+        logger.info(f"Found {len(unique_readmes)} README/doc files in {tool.name}")
+        
+        for readme_file in unique_readmes[:15]:
+            try:
+                content = readme_file.read_text(errors="ignore")
+                if len(content) < 50:
+                    continue
+                
+                # ── Keyword chunk filter for docs ──
+                if not has_parameter_signals(content, file_path=str(readme_file), threshold=1):
+                    logger.debug(f"  Skipped (no param signals): {readme_file.name}")
+                    continue
+                
+                result = self.miner.extract_parameters(
+                    source=content,
+                    source_type=SourceType.README,
+                    tool_name=f"{tool.name}/{readme_file.name}",
+                )
+                
+                if result.parameters:
+                    results.append({
+                        "source_type": "readme",
+                        "source_file": str(readme_file.relative_to(repo_path)),
+                        "result": json.loads(result.model_dump_json()),
+                    })
+                    logger.info(f"  Extracted {len(result.parameters)} params from {readme_file.name}")
+            except Exception as e:
+                logger.warning(f"  Failed to process {readme_file}: {e}")
         
         return results
     
@@ -342,10 +555,31 @@ class ParameterExtractionExperiment:
                 result.errors.append(f"CLI extraction failed: {str(e)}")
                 logger.error(f"CLI extraction failed for {tool.name}: {e}")
         
-        # Clone and extract from repository
-        if self.clone_repos and tool.has_repo():
-            repo_path = self.clone_repository(tool)
-            if repo_path:
+        # Extract from bundled README
+        if tool.readme_content:
+            try:
+                readme_result = self.extract_from_readme(tool)
+                if readme_result:
+                    params = readme_result["result"].get("parameters", [])
+                    result.sources.append(ExtractionSource(
+                        source_type="readme",
+                        file_path=readme_result["source_file"],
+                        content_preview=tool.readme_content[:200] if tool.readme_content else None,
+                        parameters_count=len(params),
+                    ))
+                    for p in params:
+                        p["_source"] = "readme"
+                        result.parameters.append(p)
+            except Exception as e:
+                result.errors.append(f"README extraction failed: {str(e)}")
+                logger.error(f"README extraction failed for {tool.name}: {e}")
+        
+        # Clone (if requested) and extract from repository
+        if tool.has_repo():
+            repo_path = self.repos_dir / tool.name
+            if self.clone_repos:
+                repo_path = self.clone_repository(tool)
+            if repo_path and repo_path.exists():
                 try:
                     repo_results = self.extract_from_repo(tool, repo_path)
                     for r in repo_results:
@@ -429,6 +663,52 @@ class ParameterExtractionExperiment:
         
         return results
     
+    def cluster_parameters(
+        self,
+        model_name: str = "all-MiniLM-L6-v2",
+        distance_threshold: float = 0.55,
+    ) -> Optional[Any]:
+        """
+        Cluster extracted parameters across all tools using sentence-transformer
+        embeddings and agglomerative clustering.
+
+        This reads the per-tool JSON files already written to ``output_dir``,
+        embeds every parameter, and groups similar ones together.
+
+        Args:
+            model_name: Sentence-transformer model identifier.
+            distance_threshold: Max cosine distance for merging (lower = tighter).
+
+        Returns:
+            A ClusteringResult, or None if no parameters were found.
+        """
+        from kgpipe_parameters.clustering import ParameterClusterer
+
+        clusterer = ParameterClusterer(
+            model_name=model_name,
+            distance_threshold=distance_threshold,
+        )
+
+        result = clusterer.cluster_from_output_dir(self.output_dir)
+
+        if result.n_clusters == 0:
+            logger.warning("Clustering produced 0 clusters")
+            return result
+
+        # Persist results
+        clusterer.save_result(result, self.output_dir / "_clusters.json")
+        clusterer.save_table(result, self.output_dir / "_parameter_table.csv")
+
+        # Log summary
+        cross_tool = result.cross_tool_clusters()
+        logger.info(
+            "Clustering: %d parameters → %d clusters (%d cross-tool)",
+            result.n_parameters,
+            result.n_clusters,
+            len(cross_tool),
+        )
+        return result
+
     def _generate_summary(self, results: Dict[str, ToolExtractionResult]) -> None:
         """Generate and save experiment summary."""
         summary = {
