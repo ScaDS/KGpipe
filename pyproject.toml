@@ -31,6 +31,7 @@ dependencies = [
     "jsonpath-ng>=1.7.0",
     "SPARQLWrapper>=2.0.0",
     "redis>=7.0.0",
+    "kgcore @ git+https://github.com/Vehnem/kgcore.git",
 ]
 
 [project.optional-dependencies]
@@ -38,7 +39,7 @@ dev = ["pytest", "pytest-mock", "pytest-cov", "ruff", "black"]
 
 [tool.setuptools.packages.find]
 where = ["src"]
-include = ["kgpipe*", "kgcore*", "kgback*"]
+include = ["kgpipe*"]
 
 [tool.setuptools.package-dir]
 "" = "src" 
