@@ -24,6 +24,8 @@ from .clustering import (
     ClusteringResult,
 )
 
+from .visualization import ParameterVisualizer
+
 __all__ = [
     # Extraction
     "ParameterMiner",
@@ -38,5 +40,7 @@ __all__ = [
     "ParameterVector",
     "ParameterCluster",
     "ClusteringResult",
+    # Visualization
+    "ParameterVisualizer",
 ]
 

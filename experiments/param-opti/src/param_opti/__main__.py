@@ -71,6 +71,11 @@ def main():
         default=0.55,
         help="Cosine distance threshold for clustering (default: 0.55, lower = tighter)"
     )
+    parser.add_argument(
+        "--visualize",
+        action="store_true",
+        help="Generate visualization plots from clustering results"
+    )
     
     args = parser.parse_args()
     
@@ -134,6 +139,18 @@ def main():
                     print(f"    [{c.cluster_id}] {c.label!r} ({c.size()} params) — tools: {tools_str}")
             print(f"\n  Results saved to: {output_dir / '_clusters.json'}")
             print(f"  Table saved to:   {output_dir / '_parameter_table.csv'}")
+    
+    # Visualization
+    if args.visualize:
+        print("\n" + "=" * 60)
+        print("Generating Visualizations")
+        print("=" * 60)
+        viz_paths = experiment.visualize_clusters()
+        if viz_paths:
+            for p in viz_paths:
+                print(f"  Saved: {p}")
+        else:
+            print("  No visualizations generated (run with --cluster first?)")
     
     return 0
 

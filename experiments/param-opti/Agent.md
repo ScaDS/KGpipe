@@ -20,10 +20,12 @@ Tack issues under spec/fix_needed.md
 - Find similar parameters between the single tools implementing a cluster strategy
   - using sentence transformer embeddings
   - prompting llms with preselected terms
+- Visualize the clusters
 
 # Success Criteria
 - simple tests for each extractors
 - a working experiment in experiments/param-opti
 - a table with configuration parameters
+- A vizualization output
 
 I want you to check missing features and just implement the next feature required now.

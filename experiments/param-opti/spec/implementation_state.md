@@ -97,8 +97,27 @@ and agglomerative clustering.
 7. Output `_clusters.json` (full cluster details) and `_parameter_table.csv`
    (flat, one row per parameter with cluster assignment).
 
+## Visualization
+
+Static plots generated from clustering results using matplotlib/seaborn.
+
+| Component                | Status | Location                                          |
+|--------------------------|--------|---------------------------------------------------|
+| ParameterVisualizer      | ✅     | `visualization/kgpipe_parameter_explorer.py`      |
+| Cluster size bar chart   | ✅     | `_viz_cluster_sizes.png`                          |
+| Tool × cluster heatmap   | ✅     | `_viz_tool_heatmap.png`                           |
+| 2-D PCA embedding scatter| ✅     | `_viz_embedding_scatter.png`                      |
+| CLI `--visualize` flag   | ✅     | `__main__.py`                                     |
+| Experiment integration   | ✅     | `experiment.py:visualize_clusters()`              |
+| Tests                    | ✅     | `tests/test_visualization.py` — 7 tests           |
+
+**Plots:**
+1. **Cluster sizes** — horizontal bar chart (top-30), cross-tool clusters highlighted.
+2. **Tool × cluster heatmap** — parameter count per tool per cross-tool cluster.
+3. **Embedding scatter** — PCA-2D projection of parameter embeddings, coloured by tool.
+
 ## Still TODO
 
-- [ ] Visualization (`visualization/kgpipe_parameter_explorer.py` is a stub)
+- [x] Visualization (`visualization/kgpipe_parameter_explorer.py`)
 - [ ] Optimization (`optimization/` is empty)
 - [ ] Embedding-based RAG for LLM prompts (later, when keyword filter plateaus)

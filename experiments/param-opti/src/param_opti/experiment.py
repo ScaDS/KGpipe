@@ -709,6 +709,27 @@ class ParameterExtractionExperiment:
         )
         return result
 
+    def visualize_clusters(self) -> list[Path]:
+        """
+        Generate visualization plots from existing clustering output.
+
+        Reads ``_clusters.json`` from the output directory and produces
+        PNG plots in the same directory.  Returns the list of generated
+        file paths.
+        """
+        clusters_json = self.output_dir / "_clusters.json"
+        if not clusters_json.exists():
+            logger.warning(
+                "No _clusters.json found in %s — run clustering first",
+                self.output_dir,
+            )
+            return []
+
+        from kgpipe_parameters.visualization import ParameterVisualizer
+
+        viz = ParameterVisualizer.from_clusters_json(clusters_json, self.output_dir)
+        return viz.generate_all()
+
     def _generate_summary(self, results: Dict[str, ToolExtractionResult]) -> None:
         """Generate and save experiment summary."""
         summary = {
