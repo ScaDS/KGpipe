@@ -13,3 +13,13 @@ docker run --rm \
 ```
 
 
+## Tool Parameters
+
+### Extraction Mode
+- `MinIE.Mode.SAFE` – conservative, high-precision extractions
+- `MinIE.Mode.DICTIONARY` – dictionary-based extraction (requires multi-word dictionaries)
+- `MinIE.Mode.AGGRESSIVE` – aggressive extraction, may produce more triples
+- `MinIE.Mode.COMPLETE` – extract all possible candidates
+
+### Multi-word Dictionary (for DICTIONARY mode)
+- `dictionaryFiles` – paths to multi-word collocation files
