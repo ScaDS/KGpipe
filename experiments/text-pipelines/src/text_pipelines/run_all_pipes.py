@@ -17,13 +17,12 @@ def run_pipe(pipe_func, pipe_name: str, input_path: Path, base_output_dir: Path)
     pipe_output_dir.mkdir(parents=True, exist_ok=True)
 
     te_json_path = pipe_output_dir / "output.te.json"
-
-    while os.path.isdir(te_json_path):
-        te_json_path = next(te_json_path.glob("*.te.json"), None)
-
     csv_path = pipe_output_dir / "output.csv"
 
     pipe_func(str(input_path), str(te_json_path))
+
+    while te_json_path.is_dir():
+        te_json_path = next(te_json_path.glob("*.te.json"), None)
 
     data_source = Data(str(te_json_path), DataFormat.TE_JSON)
     data_output = Data(str(csv_path), DataFormat.CSV)
