@@ -3,6 +3,8 @@
 import argparse
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 from kgpipe.common import Data, DataFormat
 
 
@@ -32,10 +34,10 @@ def run_pipe(pipe_func, pipe_name: str, input_path: Path, base_output_dir: Path)
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--output_dir", required=True)
+    parser.add_argument("--output_dir", default="test")
     parser.add_argument(
         "--input",
-        default="experiments/text-pipelines/test/Titanic.txt"
+        default="test/Titanic.txt"
     )
 
     args = parser.parse_args()
@@ -44,20 +46,32 @@ def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    load_dotenv()
+
     from text_pipelines.text_pipes import (
         genie_pipe,
         graphene_pipe,
         imojie_pipe,
         minie_pipe,
         openie6_pipe,
+        genie_pipe_with_linking,
+        graphene_pipe_with_linking,
+        imojie_pipe_with_linking,
+        minie_pipe_with_linking,
+        openie6_pipe_with_linking,
     )
 
     pipes = {
-        "genie": genie_pipe,
-        "graphene": graphene_pipe,
-        "imojie": imojie_pipe,
-        "minie": minie_pipe,
+        #"genie": genie_pipe,
+        #"graphene": graphene_pipe,
+        #"imojie": imojie_pipe,
+        #"minie": minie_pipe,
         #"openie6": openie6_pipe,
+        "genie_with_linking": genie_pipe,
+        "graphene_with_linking": graphene_pipe_with_linking,
+        "imojie_with_linking": imojie_pipe_with_linking,
+        "minie_with_linking": minie_pipe_with_linking,
+        "openie6_with_linking": openie6_pipe_with_linking,
     }
 
     for name, pipe_func in pipes.items():

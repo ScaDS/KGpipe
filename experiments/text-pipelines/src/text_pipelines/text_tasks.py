@@ -391,11 +391,22 @@ def te_json_triple_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     with open(output_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
 
-        writer.writerow(["subject", "predicate", "object"])
+        writer.writerow([
+            "subject", "predicate", "object",
+            "subject_link", "predicate_link", "object_link"
+        ])
 
         for triple in triples_sorted:
+
+            subject_link = triple["subject"]["links"][0]["mapping"] if triple["subject"].get("links") else ""
+            predicate_link = triple["predicate"]["links"][0]["mapping"] if triple["predicate"].get("links") else ""
+            object_link = triple["object"]["links"][0]["mapping"] if triple["object"].get("links") else ""
+
             writer.writerow([
                 triple["subject"]["surface_form"],
                 triple["predicate"]["surface_form"],
-                triple["object"]["surface_form"]
+                triple["object"]["surface_form"],
+                subject_link,
+                predicate_link,
+                object_link
             ])
