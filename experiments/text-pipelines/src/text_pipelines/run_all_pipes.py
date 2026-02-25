@@ -33,11 +33,12 @@ def run_pipe(pipe_func, pipe_name: str, input_path: Path, base_output_dir: Path)
 
 
 def main():
+    text_pipelines_folder_path = Path(__file__).parent.parent
     parser = argparse.ArgumentParser()
     parser.add_argument("--output_dir", default="test")
     parser.add_argument(
         "--input",
-        default="test/Titanic.txt"
+        default=str(text_pipelines_folder_path / "test/Titanic.txt")
     )
 
     args = parser.parse_args()
@@ -46,7 +47,7 @@ def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    load_dotenv()
+    load_dotenv(dotenv_path=text_pipelines_folder_path / ".env")
 
     from text_pipelines.text_pipes import (
         genie_pipe,
