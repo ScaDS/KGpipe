@@ -18,7 +18,7 @@ def run_pipe(pipe_func, pipe_name: str, input_path: Path, base_output_dir: Path)
 
     te_json_path = pipe_output_dir / "output.te.json"
 
-    if os.path.isdir(te_json_path):
+    while os.path.isdir(te_json_path):
         te_json_path = next(te_json_path.glob("*.te.json"), None)
 
     csv_path = pipe_output_dir / "output.csv"
