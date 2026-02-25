@@ -1,6 +1,7 @@
 #python run_all_pipes.py --output_dir results
 
 import argparse
+import os.path
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -20,6 +21,9 @@ def run_pipe(pipe_func, pipe_name: str, input_path: Path, base_output_dir: Path)
 
     pipe_func(str(input_path), str(te_json_path))
 
+    while te_json_path.is_dir():
+        te_json_path = next(te_json_path.glob("*.te.json"), None)
+
     data_source = Data(str(te_json_path), DataFormat.TE_JSON)
     data_output = Data(str(csv_path), DataFormat.CSV)
 
@@ -33,11 +37,12 @@ def run_pipe(pipe_func, pipe_name: str, input_path: Path, base_output_dir: Path)
 
 
 def main():
+    text_pipelines_folder_path = Path(__file__).parent.parent.parent
     parser = argparse.ArgumentParser()
     parser.add_argument("--output_dir", default="test")
     parser.add_argument(
         "--input",
-        default="test/Titanic.txt"
+        default=str(text_pipelines_folder_path / "test/Titanic.txt")
     )
 
     args = parser.parse_args()
@@ -46,7 +51,7 @@ def main():
     output_dir = Path(args.output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    load_dotenv()
+    load_dotenv(dotenv_path=text_pipelines_folder_path / ".env")
 
     from text_pipelines.text_pipes import (
         genie_pipe,

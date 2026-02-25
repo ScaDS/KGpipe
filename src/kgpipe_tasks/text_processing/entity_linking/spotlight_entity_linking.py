@@ -145,9 +145,6 @@ def dbpedia_spotlight_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]
     input_path = inputs["source"].path
     output_path = outputs["output"].path
 
-    # create output folder
-    os.makedirs(os.path.normpath(output_path), exist_ok=True)
-
     def __spotlightjson2tejson(data) -> Dict[str, Any]:
         """Convert Spotlight JSON to TE Document format."""
         links = []
@@ -165,6 +162,10 @@ def dbpedia_spotlight_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]
         return {"text": text, "links": links}
 
     if os.path.isdir(input_path):
+
+        # create output folder
+        os.makedirs(os.path.normpath(output_path), exist_ok=True)
+
         for file in os.listdir(input_path):
             # Read input json
             with open(os.path.join(input_path, file), 'r') as f:
@@ -181,7 +182,6 @@ def dbpedia_spotlight_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]
         with open(input_path, 'r') as f:
             data = json.load(f)
             te_doc = __spotlightjson2tejson(data)
-            outfile = os.path.join(output_path, 'output.te.json')
-            with open(outfile, 'w') as of:
+            with open(output_path, 'w') as of:
                 json.dump(te_doc, of)
                 
