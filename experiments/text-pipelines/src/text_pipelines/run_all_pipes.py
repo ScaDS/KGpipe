@@ -33,7 +33,7 @@ def run_pipe(pipe_func, pipe_name: str, input_path: Path, base_output_dir: Path)
 
 
 def main():
-    text_pipelines_folder_path = Path(__file__).parent.parent
+    text_pipelines_folder_path = Path(__file__).parent.parent.parent
     parser = argparse.ArgumentParser()
     parser.add_argument("--output_dir", default="test")
     parser.add_argument(
