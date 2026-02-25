@@ -1,6 +1,7 @@
 #python run_all_pipes.py --output_dir results
 
 import argparse
+import os.path
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -16,6 +17,10 @@ def run_pipe(pipe_func, pipe_name: str, input_path: Path, base_output_dir: Path)
     pipe_output_dir.mkdir(parents=True, exist_ok=True)
 
     te_json_path = pipe_output_dir / "output.te.json"
+
+    if os.path.isdir(te_json_path):
+        te_json_path = next(te_json_path.glob("*.te.json"), None)
+
     csv_path = pipe_output_dir / "output.csv"
 
     pipe_func(str(input_path), str(te_json_path))
