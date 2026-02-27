@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from sys import implementation
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 # from kgcore.api.kg import KnowledgeGraph, KGProperty
@@ -108,3 +109,96 @@ class PipelineResult(BaseModel):
     output: List[DataHandle]
     status: str
     duration: float
+
+# new changes #
+
+from kgcore.api.kg import KGId
+
+
+TaskEntityId = KGId
+class TaskEntity(BaseModel):
+    name: str
+    hasSubtask: List[TaskEntityId]
+
+MethodEntityId = KGId
+class MethodEntity(BaseModel):
+    name: str
+    realizesTask: List[TaskEntityId]
+    
+ToolEntityId = KGId
+class ToolEntity(BaseModel):
+    name: str
+    # supportsTasks: List[Task]
+    providesMethods: List[MethodEntityId]
+
+ParameterId = KGId
+class ParameterEntity(BaseModel):
+    name: str
+    value: Any
+    type: str
+    description: Optional[str] = None
+    default_value: Optional[Any] = None
+    required: bool = False
+    allowed_values: Optional[List[Any]] = None
+
+ParameterBindingId = KGId
+class ParameterBindingEntity(BaseModel):
+    value: Any
+    parameter: ParameterId
+
+ImplementationEntityId = KGId
+class ImplementationEntity(BaseModel):
+    name: str
+    implementsMethod: List[MethodEntityId]
+    hasParameter: List[ParameterId]
+    usesTool: List[ToolEntityId]
+
+    # interface: str # TODO: Interface    
+    # hasParameter: Parameter
+
+TaskRunEntityId = KGId
+class TaskRunEntity(BaseModel):
+    number: int
+    name: str
+    status: str
+    started_at: float
+    ended_at: float
+    input: List[DataHandle]
+    output: List[DataHandle]
+    executesTask: TaskEntityId
+    usesImplementation: ImplementationEntityId
+    hasParameterBinding: List[ParameterBindingId]
+
+# class PipelineDefinitionEntity(BaseModel):
+#     """
+#     The definition of a pipeline
+#     """
+#     placeholder: str
+#     #definesPipeline: Pipeline
+
+class PipelineRunEntity(BaseModel):
+    """
+    The result of a pipeline execution
+    """
+    name: str
+    status: str
+    started_at: float
+    ended_at: float
+    hasTaskRun: List[TaskRunEntity]
+    # usesPipelineDefinition: PipelineDefinition
+    # runsPipeline: Pipeline
+
+class MetricEntity(BaseModel):
+    pass
+
+class EvaluationRunEntity(BaseModel):
+    """
+    The result of an evaluation execution
+    """
+    name: str
+    status: str
+    started_at: float
+    ended_at: float
+    input: List[DataHandle]
+    output: List[DataHandle]
+    evaluatesEvaluation: EvaluationEntityId

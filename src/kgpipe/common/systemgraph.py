@@ -11,12 +11,12 @@ from kgcore.backend.rdf.rdf_rdflib import RDFLibBackend
 from kgcore.backend.rdf.rdf_sparql import RDFSparqlBackend, SparqlAuth
 from kgcore.model.rdf.rdf_base import RDFBaseModel
 
-from kgpipe.common.definitions import Task, TaskResult, Pipeline, PipelineResult
+from kgpipe.common.definitions import Task, TaskResult, Pipeline, PipelineResult, PipelineRunEntity, ImplementationEntity
 from kgpipe.common.config import load_config
 from kgpipe.common.util import encode_string
 
 if TYPE_CHECKING:
-    from kgpipe.common.models import KgTask
+    from kgpipe.common.models import KgTask, KgTaskReport
 
 
 config = load_config()
@@ -43,35 +43,51 @@ SYS_KG: KnowledgeGraph = KnowledgeGraph(model=model, backend=backend)
 
 class PipeKG:
 
+    # cached_implementations: Dict[str, KGEntity] = {}
+
     @staticmethod
     def add_task(task: "KgTask"):
         from kgpipe.common.models import KgTask  # Import here to avoid circular import
-        types = [encode_string(c) for c in task.category]
+        types = [config.ONTOLOGY_PREFIX+encode_string(c) for c in task.category]
         properties = []
         properties.append(KGProperty(key="description", value=task.description))
-        task_entity = SYS_KG.create_entity(id=task.name, types=types+["Task"], properties=properties)
+        task_entity = SYS_KG.create_entity(id=config.PIPEKG_PREFIX+task.name+"Impl", types=types+[config.ONTOLOGY_PREFIX+"Implementation"], properties=properties)
         for input_name, input_format in task.input_spec.items():
-            input_entity = SYS_KG.create_entity(id=task.name+"_"+input_name, types=["Data"], properties={
+            input_entity = SYS_KG.create_entity(id=config.PIPEKG_PREFIX+task.name+"Impl_"+input_name, types=[config.ONTOLOGY_PREFIX+"Data"], properties={
                 "format": input_format,
             })
             SYS_KG.create_relation(type="input", source=task_entity.id, target=input_entity.id)
         for output_name, output_format in task.output_spec.items():
-            output_entity = SYS_KG.create_entity(id=task.name+"_"+output_name, types=["Data"], properties={
+            output_entity = SYS_KG.create_entity(id=config.PIPEKG_PREFIX+task.name+"Impl_"+output_name, types=[config.ONTOLOGY_PREFIX+"Data"], properties={
                 "format": output_format,
             })
             SYS_KG.create_relation(type="output", source=task_entity.id, target=output_entity.id)
 
     def list_tasks(self) -> List["KgTask"]:
-        return SYS_KG.list_entities(types=["Task"])
+        return SYS_KG.list_entities(types=[config.ONTOLOGY_PREFIX+"Implementation"])
 
     @staticmethod
     def add_task_result(task_result: TaskResult):
-        SYS_KG.create_entity(id=new_id(),types=["TaskResult"], properties={
+        SYS_KG.create_entity(id=new_id(),types=[config.ONTOLOGY_PREFIX+"TaskRun"], properties={
+            "task": task_result.task,
             "config": task_result.config,
             "input": task_result.input,
             "output": task_result.output,
+            "status": task_result.status,
+            "duration": task_result.duration,
         })
 
+
+    @staticmethod
+    def add_task_run(task_run: "KgTaskReport"):
+        SYS_KG.create_entity(id=new_id(),types=[config.ONTOLOGY_PREFIX+"TaskReport"], properties={
+            "task": task_run.task_name,
+            "input": [data.path for data in task_run.inputs],
+            "output": [data.path for data in task_run.outputs],
+            "status": task_run.status,
+            "duration": task_run.duration,
+            "error": task_run.error,
+        })
 
     @staticmethod
     def add_pipeline(pipeline: Pipeline):
@@ -90,6 +106,41 @@ class PipeKG:
             "output": pipeline_result.output,
         })
 
+    # @staticmethod
+    # def find_implementation_by_name(name: str) -> KGEntity:
+    #     return SYS_KG.read_entity(id=config.PIPEKG_PREFIX+name, types=[config.ONTOLOGY_PREFIX+"Implementation"])[0]
+
+    @staticmethod
+    def add_implementation(implementation: ImplementationEntity):
+        SYS_KG.create_entity(id=new_id(),types=[config.ONTOLOGY_PREFIX+"Implementation"], properties={
+            "name": implementation.name,
+            "usesTool": implementation.usesTool,
+            "implementsMethod": implementation.implementsMethod,
+            "interface": implementation.interface,
+
+        })
+
+    @staticmethod
+    def add_pipeline_run(pipeline_run: PipelineRunEntity):
+        pipeline_run_entity = SYS_KG.create_entity(id=new_id(),types=[config.ONTOLOGY_PREFIX+"PipelineRun"], properties={
+            "name": pipeline_run.name,
+            "status": pipeline_run.status,
+            "started_at": pipeline_run.started_at,
+            "ended_at": pipeline_run.ended_at
+        })
+        for idx, task_run in enumerate(pipeline_run.hasTaskRun):
+            task_run_entity = SYS_KG.create_entity(id=new_id(),types=[config.ONTOLOGY_PREFIX+"TaskRun"], properties={
+                "number": idx,
+                "name": task_run.name,
+                "status": task_run.status,
+                "started_at": task_run.started_at,
+                "ended_at": task_run.ended_at,
+            })
+            SYS_KG.create_relation(type="executesTask", source=task_run_entity.id, target=task_run.executesTask)
+            SYS_KG.create_relation(type="usesImplementation", source=task_run_entity.id, target=task_run.usesImplementation)
+            SYS_KG.create_relation(type=config.ONTOLOGY_PREFIX+"hasTaskRun", source=pipeline_run_entity.id, target=task_run_entity.id)
+
+        # return pipeline_run_entity
 
 
 # def Track(_cls=None, *, with_timestamp: bool = False):

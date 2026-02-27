@@ -11,6 +11,7 @@ import json
 from uuid import uuid4
 import logging
 import shutil
+from kgcore.api.kg import KGId
 from rdflib import Graph
 from pydantic import BaseModel, field_validator
 from pydantic_core import core_schema
@@ -19,6 +20,7 @@ from .data import Data, DataFormat, DataSet, Format
 from .task import KgTask, KgTaskReport
 # from .kg import KG
 from kgpipe.common.annotations import kg_class
+from kgpipe.common.systemgraph import PipeKG
 
 
 class KgPipePlanStep(BaseModel):
@@ -84,6 +86,7 @@ class KgPipe:
     tasks: List[KgTask]
     seed: Data
     data_dir: str = ""
+    name: str = "Unknown"
     data: List[Data] = field(default_factory=list)
     plan: KgPipePlan = field(default_factory=lambda: KgPipePlan(
         steps=[],
@@ -200,7 +203,7 @@ class KgPipe:
         
         self.previous_was_skipped = True
 
-        reports = []
+        reports: List[KgTaskReport] = []
         for task_spec in self.plan.steps:
             # Find the corresponding task
             task = next((t for t in self.tasks if t.name == task_spec.task), None)
@@ -223,7 +226,45 @@ class KgPipe:
                 self.previous_was_skipped = False
 
             reports.append(report)
+
+        from kgpipe.common.definitions import PipelineRunEntity, TaskRunEntity, ImplementationEntity, TaskEntity, ImplementationEntityId, TaskEntityId
+        from kgcore.api.kg import KGId
+        from kgpipe.common.config import config
+        from kgpipe.common.definitions import DataHandle
         
+        # TODO this is a workaround for now, taskrun should be built from the task itself
+        def build_pipeline_run_entity(reports: List[KgTaskReport]) -> PipelineRunEntity:
+            
+            task_runs: List[TaskRunEntity] = []
+            for idx, report in enumerate(reports):
+
+
+                # def get_implementation_entity(report: KgTaskReport) -> ImplementationEntityId:
+                #     return PipeKG.find_implementation_by_name(report.task_name).id
+
+                task_runs.append(TaskRunEntity(
+                    number=idx,
+                    name=report.task_name,
+                    status=report.status,
+                    started_at=report.start_ts,
+                    ended_at=report.start_ts + report.duration,
+                    executesTask=TaskEntityId(config.PIPEKG_PREFIX+report.task_name),
+                    usesImplementation=ImplementationEntityId(config.PIPEKG_PREFIX+report.task_name+"Impl"),
+                    input=[DataHandle(uri=str(input_data.path), type=input_data.format) for input_data in report.inputs],
+                    output=[DataHandle(uri=str(output_data.path), type=output_data.format) for output_data in report.outputs]
+                ))
+
+            return PipelineRunEntity(
+                name=self.name,
+                status="success",
+                started_at=time.time(),
+                ended_at=time.time(),
+                hasTaskRun=task_runs
+            )
+
+        pipeline_run_entity = build_pipeline_run_entity(reports)
+        PipeKG.add_pipeline_run(pipeline_run_entity)
+
         return reports
     
     def __str__(self) -> str:

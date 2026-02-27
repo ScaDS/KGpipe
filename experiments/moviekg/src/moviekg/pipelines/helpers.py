@@ -70,7 +70,7 @@ def run_helper(
     
     tmp_dir = stage_dir / "tmp"
     tmp_dir.mkdir(parents=True, exist_ok=True)
-    pipeline = build_from_conf(pipeline_conf, target_data, tmp_dir.as_posix())
+    pipeline = build_from_conf(pipeline_name, pipeline_conf, target_data, tmp_dir.as_posix())
 
     stage_dir.mkdir(parents=True, exist_ok=True)
 

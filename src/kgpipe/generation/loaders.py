@@ -70,14 +70,14 @@ def get_test_data(file_name: str) -> Path:
     return Path(__file__).parent / "test_data" / file_name
 
 
-def ssp_pipeline(tasks: list[KgTask], target_data: Data, data_dir: str) -> KgPipe:
-    pipe = KgPipe(tasks, target_data, data_dir)
+def ssp_pipeline(name: str, tasks: list[KgTask], target_data: Data, data_dir: str) -> KgPipe:
+    pipe = KgPipe(tasks, target_data, data_dir, name=name)
     return pipe
 
 
-def build_from_conf(conf: PipelineConf, target_data: Data, data_dir: str) -> KgPipe:
+def build_from_conf(name: str, conf: PipelineConf, target_data: Data, data_dir: str) -> KgPipe:
     tasks = [Registry.get_task(task_name) for task_name in conf.tasks]
-    pipe = ssp_pipeline(tasks, target_data, data_dir)
+    pipe = ssp_pipeline(name, tasks, target_data, data_dir)
     return pipe
 
 def build_from_yaml(yaml_path: Path):
