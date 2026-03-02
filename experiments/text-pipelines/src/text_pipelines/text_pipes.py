@@ -8,6 +8,7 @@ discover
 
 from kgpipe.common import KgPipe, Data, DataFormat
 from kgpipe_tasks.text_processing import label_alias_embedding_rl, dbpedia_spotlight_ner_nel, dbpedia_spotlight_exchange
+from kgpipe_tasks.transform_interop import aggregate3_te_json
 from text_pipelines.text_tasks import openie6_task_docker, graphene_nt_exchange, graphene_task_docker, \
     minie_task_docker, minie_exchange, imojie_task_docker, imojie_exchange, genie_task_docker, genie_exchange
 
@@ -116,7 +117,7 @@ def openie6_pipe_with_linking(input_path: str, output_path: str):
     input_data = Data(path=input_path, format=DataFormat.TEXT)
     output_data = Data(path=output_path, format=DataFormat.ANY)
 
-    tasks = [openie6_task_docker, label_alias_embedding_rl, dbpedia_spotlight_ner_nel, dbpedia_spotlight_exchange]
+    tasks = [openie6_task_docker, label_alias_embedding_rl, dbpedia_spotlight_ner_nel, dbpedia_spotlight_exchange, aggregate3_te_json]
 
     pipe = KgPipe(
         tasks=tasks,
@@ -135,7 +136,7 @@ def graphene_pipe_with_linking(input_path: str, output_path: str):
     input_data = Data(path=input_path, format=DataFormat.TEXT)
     output_data = Data(path=output_path, format=DataFormat.TE_JSON)
 
-    tasks = [graphene_task_docker, graphene_nt_exchange, label_alias_embedding_rl, dbpedia_spotlight_ner_nel, dbpedia_spotlight_exchange]
+    tasks = [graphene_task_docker, graphene_nt_exchange, label_alias_embedding_rl, dbpedia_spotlight_ner_nel, dbpedia_spotlight_exchange, aggregate3_te_json]
 
     pipe = KgPipe(
         tasks=tasks,
@@ -154,7 +155,7 @@ def minie_pipe_with_linking(input_path: str, output_path: str):
     input_data = Data(path=input_path, format=DataFormat.TEXT)
     output_data = Data(path=output_path, format=DataFormat.TE_JSON)
 
-    tasks = [minie_task_docker, minie_exchange, label_alias_embedding_rl, dbpedia_spotlight_ner_nel, dbpedia_spotlight_exchange]
+    tasks = [minie_task_docker, minie_exchange, label_alias_embedding_rl, dbpedia_spotlight_ner_nel, dbpedia_spotlight_exchange, aggregate3_te_json]
 
     pipe = KgPipe(
         tasks=tasks,
@@ -173,7 +174,7 @@ def imojie_pipe_with_linking(input_path: str, output_path: str):
     input_data = Data(path=input_path, format=DataFormat.TEXT)
     output_data = Data(path=output_path, format=DataFormat.TE_JSON)
 
-    tasks = [imojie_task_docker, imojie_exchange]
+    tasks = [imojie_task_docker, imojie_exchange, label_alias_embedding_rl, dbpedia_spotlight_ner_nel, dbpedia_spotlight_exchange, aggregate3_te_json]
 
     pipe = KgPipe(
         tasks=tasks,
@@ -192,7 +193,7 @@ def genie_pipe_with_linking(input_path: str, output_path: str):
     input_data = Data(path=input_path, format=DataFormat.TEXT)
     output_data = Data(path=output_path, format=DataFormat.TE_JSON)
 
-    tasks = [genie_task_docker, genie_exchange, label_alias_embedding_rl, dbpedia_spotlight_ner_nel, dbpedia_spotlight_exchange]
+    tasks = [genie_task_docker, genie_exchange, label_alias_embedding_rl, dbpedia_spotlight_ner_nel, dbpedia_spotlight_exchange, aggregate3_te_json]
 
     pipe = KgPipe(
         tasks=tasks,
