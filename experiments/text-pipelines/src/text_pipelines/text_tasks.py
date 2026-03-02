@@ -391,21 +391,67 @@ def te_json_triple_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     with open(output_path, "w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
 
+        writer.writerow(["subject", "predicate", "object"])
+
+        for triple in triples_sorted:
+            writer.writerow([
+                triple["subject"]["surface_form"],
+                triple["predicate"]["surface_form"],
+                triple["object"]["surface_form"]
+            ])
+
+@Registry.task(
+    input_spec={"input": DataFormat.TE_JSON},
+    output_spec={"output": DataFormat.CSV},
+    description="Convert linked TE_JSON triples to csv",
+    category=["Interopability"]
+)
+def linked_te_json_triple_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
+    input_path = inputs["input"].path
+    output_path = outputs["output"].path
+
+    with open(input_path, "r", encoding="utf-8") as f:
+        te_json = json.load(f)
+
+    triples = te_json.get("triples", [])
+    global_links = te_json.get("links", [])
+
+    span_to_mapping = {
+        link["span"]: link["mapping"]
+        for link in global_links
+        if link.get("mapping")
+    }
+
+    triples_sorted = sorted(
+        triples,
+        key=lambda t: (
+            (t.get("subject", {}).get("surface_form") or "").lower(),
+            (t.get("predicate", {}).get("surface_form") or "").lower(),
+            (t.get("object", {}).get("surface_form") or "").lower(),
+        )
+    )
+
+    with open(output_path, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+
         writer.writerow([
             "subject", "predicate", "object",
             "subject_link", "predicate_link", "object_link"
         ])
 
         for triple in triples_sorted:
+            subject_sf = triple.get("subject", {}).get("surface_form", "")
+            predicate_sf = triple.get("predicate", {}).get("surface_form", "")
+            object_sf = triple.get("object", {}).get("surface_form", "")
 
-            subject_link = triple["subject"]["links"][0]["mapping"] if triple["subject"].get("links") else ""
-            predicate_link = triple["predicate"]["links"][0]["mapping"] if triple["predicate"].get("links") else ""
-            object_link = triple["object"]["links"][0]["mapping"] if triple["object"].get("links") else ""
+            subject_link = span_to_mapping.get(subject_sf, "")
+            predicate_link = span_to_mapping.get(predicate_sf, "")
+            object_link = span_to_mapping.get(object_sf, "")
 
             writer.writerow([
-                triple["subject"]["surface_form"],
-                triple["predicate"]["surface_form"],
-                triple["object"]["surface_form"],
+                subject_sf,
+                predicate_sf,
+                object_sf,
                 subject_link,
                 predicate_link,
                 object_link
