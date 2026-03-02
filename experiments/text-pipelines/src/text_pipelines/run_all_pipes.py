@@ -76,7 +76,7 @@ def main():
         "graphene_with_linking": graphene_pipe_with_linking,
         "imojie_with_linking": imojie_pipe_with_linking,
         "minie_with_linking": minie_pipe_with_linking,
-        "openie6_with_linking": openie6_pipe_with_linking,
+        #"openie6_with_linking": openie6_pipe_with_linking,
     }
 
     for name, pipe_func in pipes.items():
