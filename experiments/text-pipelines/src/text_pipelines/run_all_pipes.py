@@ -11,7 +11,7 @@ from kgpipe.common import Data, DataFormat
 
 def run_pipe(pipe_func, pipe_name: str, input_path: Path, base_output_dir: Path):
 
-    from text_pipelines.text_tasks import te_json_triple_exchange
+    from text_pipelines.text_tasks import linked_te_json_triple_exchange
 
     pipe_output_dir = base_output_dir / pipe_name
     pipe_output_dir.mkdir(parents=True, exist_ok=True)
@@ -27,7 +27,7 @@ def run_pipe(pipe_func, pipe_name: str, input_path: Path, base_output_dir: Path)
     data_source = Data(str(te_json_path), DataFormat.TE_JSON)
     data_output = Data(str(csv_path), DataFormat.CSV)
 
-    te_json_triple_exchange.run(
+    linked_te_json_triple_exchange.run(
         [data_source],
         [data_output],
         stable_files_override=True
