@@ -9,13 +9,19 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 # from kgpipe.common.systemgraph import kg_class
-
+from kgpipe.common.systemgraph import PipeKG
+import time
+import json
+import functools
+import inspect
 # from kgpipe.common.util import create_insertable_nodes_and_edges, insert_kg_obj
 from pydantic import BaseModel
 
 from kgpipe.common.models import KG
-
-
+from kgpipe.common.definitions import MetricEntity, MetricRunEntity, MetricEntityId, DataHandle
+from kgpipe.common.config import config
+from pathlib import Path
+from kgpipe.common.util import encode_string
 class EvaluationAspect(Enum):
     """The three main aspects of KG evaluation."""
     STATISTICAL = "statistical"
@@ -34,11 +40,21 @@ class EvaluationConfig:
     output_format: str = "json"
     include_details: bool = True
     generate_report: bool = True
+    metric_config_path: Optional[Path] = None
     
     def __post_init__(self):
         if self.weights and not all(0.0 <= w <= 1.0 for w in self.weights.values()):
             raise ValueError("All weights must be between 0.0 and 1.0")
 
+    # def get_aspect_config(self, aspect: EvaluationAspect) -> MetricConfig:
+    #     if aspect == EvaluationAspect.STATISTICAL:
+    #         return StatisticalConfig(name="default")
+    #     elif aspect == EvaluationAspect.SEMANTIC:
+    #         return SemanticConfig(name="default")
+    #     elif aspect == EvaluationAspect.REFERENCE:
+    #         return ReferenceConfig(name="default")
+    #     else:
+    #         raise ValueError(f"No config available for aspect: {aspect}")
 
 @dataclass
 class AspectResult:
@@ -56,21 +72,6 @@ class AspectResult:
         return f"{self.aspect.value}: {self.overall_score:.2f}"
 
 
-class AspectEvaluator(ABC):
-    """Base class for aspect-specific evaluators."""
-    
-    def __init__(self, aspect: EvaluationAspect):
-        self.aspect = aspect
-    
-    @abstractmethod
-    def evaluate(self, kg: KG, **kwargs) -> AspectResult:
-        """Evaluate the KG for this specific aspect."""
-        pass
-    
-    @abstractmethod
-    def get_available_metrics(self) -> List[str]:
-        """Get list of available metrics for this aspect."""
-        pass
 
 
 # @Track(with_timestamp=True)
@@ -83,6 +84,7 @@ class MetricResult(BaseModel):
     details: Dict[str, Any]
     aspect: EvaluationAspect
     duration: float = 0.0
+    input: str = "" # TODO
     
     def __post_init__(self):
         if not 0.0 <= self.normalized_score <= 1.0:
@@ -91,12 +93,39 @@ class MetricResult(BaseModel):
 class MetricConfig(BaseModel):
     name: str
 
-from kgpipe.common.systemgraph import SYS_KG
+class AspectEvaluator(ABC):
+    """Base class for aspect-specific evaluators."""
+    
+    def __init__(self, aspect: EvaluationAspect):
+        self.aspect = aspect
+    
+    @abstractmethod
+    def evaluate(self, kg: KG, config: Optional[MetricConfig], **kwargs) -> AspectResult:
+        """Evaluate the KG for this specific aspect."""
+        pass
+    
+    @abstractmethod
+    def get_available_metrics(self) -> List[str]:
+        """Get list of available metrics for this aspect."""
+        pass
 
-import time
-import json
-import functools
-import inspect
+
+def save_metric_run(metric: MetricResult):
+
+    metric_run_entity = MetricRunEntity(
+        status="success",
+        started_at=time.time(),
+        ended_at=time.time(),
+        computedMetric=MetricEntityId(config.PIPEKG_PREFIX+encode_string(metric.name)),
+        input=[DataHandle(uri=metric.input, type="any/text")],
+        value=metric.value, 
+        details=json.dumps(metric.details, default=str)
+    )
+    PipeKG.add_metric_run(metric_run_entity)
+
+    #     # input=metric.input,
+    #     # output=metric.output
+    # )
 
 def track_metric_compute(func):
     @functools.wraps(func)
@@ -112,36 +141,12 @@ def track_metric_compute(func):
             kg: KG = None
             config = None
 
-
-        # Record the call entity (customize fields as you like)
-        call_entity = SYS_KG.create_entity(["Compute"],{
-            "type": "MetricComputeCall",
-            "metric_class": type(self).__name__,
-            "method": func.__name__,
-            "input_kg_uri": kg.path.as_posix(),
-            "ts_start": time.time()
-        })
-
         try:
             result = func(self, *args, **kwargs)  # <-- actually call it
-            result_id = insert_kg_obj(result)
-            SYS_KG.create_relation("metric_result",call_entity.id, result_id)
-
-            # duration = time.perf_counter() - started
-
-            # SYS_KG.up(call_entity, {
-            #     "status": "ok",
-            #     "duration_seconds": duration,
-            #     "output_summary": _safe_summarize_result(result)
-            # })
+            result.input = str(kg.path)
+            save_metric_run(result)
             return result
         except Exception as e:
-            # duration = time.perf_counter() - started
-            # SYS_KG.update_entity(call_entity, {
-            #     "status": "error",
-            #     "duration_seconds": duration,
-            #     "error": repr(e)
-            # })
             raise
     return wrapper
 

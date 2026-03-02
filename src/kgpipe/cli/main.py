@@ -20,7 +20,7 @@ from .registry import registry_cmd
 from .clean import clean_cmd
 from .task import task_cmd
 from .discover import discover_cmd
-
+from .rank import rank_cmd
 # Initialize Rich console for pretty output
 console = Console()
 
@@ -81,7 +81,7 @@ cli.add_command(registry_cmd)
 cli.add_command(clean_cmd)
 cli.add_command(task_cmd)
 cli.add_command(discover_cmd)
-
+cli.add_command(rank_cmd)
 
 if __name__ == "__main__":
     cli() 

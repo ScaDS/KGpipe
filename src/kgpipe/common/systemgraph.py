@@ -11,7 +11,7 @@ from kgcore.backend.rdf.rdf_rdflib import RDFLibBackend
 from kgcore.backend.rdf.rdf_sparql import RDFSparqlBackend, SparqlAuth
 from kgcore.model.rdf.rdf_base import RDFBaseModel
 
-from kgpipe.common.definitions import Task, TaskResult, Pipeline, PipelineResult, PipelineRunEntity, ImplementationEntity
+from kgpipe.common.definitions import Task, TaskResult, Pipeline, PipelineResult, PipelineRunEntity, ImplementationEntity, MetricEntity, MetricRunEntity
 from kgpipe.common.config import load_config
 from kgpipe.common.util import encode_string
 
@@ -27,7 +27,7 @@ model = RDFBaseModel()
 
 try:
     if scheme == "sparql":
-        print(f"Using SPARQL backend for system graph: {f"http://{rest}"}")
+        print(f"Using SPARQL backend for system graph: {f"http://{rest}"} with http://kg.org/systemgraph")
         backend = RDFSparqlBackend(
             endpoint=f"http://{rest}", 
             update_endpoint=f"http://{rest}",
@@ -105,6 +105,28 @@ class PipeKG:
             "input": pipeline_result.input,
             "output": pipeline_result.output,
         })
+
+    @staticmethod
+    def add_metric(metric: MetricEntity):
+        SYS_KG.create_entity(id=config.PIPEKG_PREFIX+encode_string(metric.name),types=[config.ONTOLOGY_PREFIX+"Metric"], properties={
+            config.ONTOLOGY_PREFIX+"name": metric.name,
+            config.ONTOLOGY_PREFIX+"description": metric.description,
+            config.ONTOLOGY_PREFIX+"type": metric.type,
+            # "input": metric.input,
+            # "output": metric.output,
+        })
+
+    @staticmethod
+    def add_metric_run(metric_run: MetricRunEntity):
+        metric_run_entity = SYS_KG.create_entity(id=new_id(),types=[config.ONTOLOGY_PREFIX+"MetricRun"], properties={
+            config.ONTOLOGY_PREFIX+"status": metric_run.status,
+            config.ONTOLOGY_PREFIX+"started_at": metric_run.started_at,
+            config.ONTOLOGY_PREFIX+"ended_at": metric_run.ended_at,
+            config.ONTOLOGY_PREFIX+"value": metric_run.value,
+            config.ONTOLOGY_PREFIX+"details": metric_run.details,
+            config.ONTOLOGY_PREFIX+"input": metric_run.input[0].uri,
+        })
+        SYS_KG.create_relation(type=config.ONTOLOGY_PREFIX+"computedMetric", source=metric_run_entity.id, target=metric_run.computedMetric)
 
     # @staticmethod
     # def find_implementation_by_name(name: str) -> KGEntity:

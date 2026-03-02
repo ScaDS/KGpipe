@@ -251,7 +251,8 @@ class KgPipe:
                     executesTask=TaskEntityId(config.PIPEKG_PREFIX+report.task_name),
                     usesImplementation=ImplementationEntityId(config.PIPEKG_PREFIX+report.task_name+"Impl"),
                     input=[DataHandle(uri=str(input_data.path), type=input_data.format) for input_data in report.inputs],
-                    output=[DataHandle(uri=str(output_data.path), type=output_data.format) for output_data in report.outputs]
+                    output=[DataHandle(uri=str(output_data.path), type=output_data.format) for output_data in report.outputs],
+                    hasParameterBinding=[]
                 ))
 
             return PipelineRunEntity(

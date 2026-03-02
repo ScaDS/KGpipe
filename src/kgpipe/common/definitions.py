@@ -188,17 +188,20 @@ class PipelineRunEntity(BaseModel):
     # usesPipelineDefinition: PipelineDefinition
     # runsPipeline: Pipeline
 
+MetricEntityId = KGId
 class MetricEntity(BaseModel):
-    pass
-
-class EvaluationRunEntity(BaseModel):
-    """
-    The result of an evaluation execution
-    """
     name: str
+    description: Optional[str] = None
+    type: str
+    # output: List[schema_format]
+    # hasParameter: List[ParameterId]
+
+MetricRunEntityId = KGId
+class MetricRunEntity(BaseModel):
     status: str
     started_at: float
     ended_at: float
+    computedMetric: MetricEntityId
     input: List[DataHandle]
-    output: List[DataHandle]
-    evaluatesEvaluation: EvaluationEntityId
+    value: float
+    details: str

@@ -3,6 +3,7 @@
 from typing import Any, Callable
 from kgpipe.common.models import KgTask, DataFormat
 from kgpipe.common.systemgraph import PipeKG
+from kgpipe.common.definitions import MetricEntity
 
 # TODO add also to system graph
 
@@ -27,6 +28,12 @@ class Registry:
     def metric(cls):
         def decorator(t):
             cls._registry[f"metric:{t.__name__.lower()}"] = t
+            obj = t()
+            name = getattr(obj, 'name', None)
+            description = getattr(obj, 'description', None)
+            type = getattr(obj, 'aspect', None)
+            metric = MetricEntity(name=name, description=description, type=type.value if type else None)
+            PipeKG.add_metric(metric)
             return t
         return decorator
 
