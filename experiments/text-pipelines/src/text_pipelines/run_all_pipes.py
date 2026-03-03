@@ -7,9 +7,11 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 from kgpipe.common import Data, DataFormat
+from kgpipe_tasks.text_processing import corenlp_openie_extraction
 
+from text_pipelines import text_pipes
 
-def run_pipe(pipe_func, pipe_name: str, input_path: Path, base_output_dir: Path):
+def run_pipe(pipe_tasks, pipe_name: str, input_path: Path, base_output_dir: Path):
 
     from text_pipelines.text_tasks import linked_te_json_triple_exchange
 
@@ -19,7 +21,7 @@ def run_pipe(pipe_func, pipe_name: str, input_path: Path, base_output_dir: Path)
     te_json_path = pipe_output_dir / "output.te.json"
     csv_path = pipe_output_dir / "output.csv"
 
-    pipe_func(str(input_path), str(te_json_path))
+    text_pipes.run_pipe(str(input_path), str(te_json_path), pipe_tasks)
 
     while te_json_path.is_dir():
         te_json_path = next(te_json_path.glob("*.te.json"), None)
@@ -53,18 +55,11 @@ def main():
 
     load_dotenv(dotenv_path=text_pipelines_folder_path / ".env")
 
-    from text_pipelines.text_pipes import (
-        genie_pipe,
-        graphene_pipe,
-        imojie_pipe,
-        minie_pipe,
-        openie6_pipe,
-        genie_pipe_with_linking,
-        graphene_pipe_with_linking,
-        imojie_pipe_with_linking,
-        minie_pipe_with_linking,
-        openie6_pipe_with_linking,
-    )
+    from text_pipelines.text_tasks import imojie_task_docker, imojie_exchange, minie_task_docker, minie_exchange, \
+        graphene_task_docker, graphene_nt_exchange, genie_task_docker, genie_exchange
+    from kgpipe_tasks.text_processing import label_alias_embedding_rl, dbpedia_spotlight_ner_nel, \
+        dbpedia_spotlight_exchange, corenlp_exchange
+    from kgpipe_tasks.transform_interop import aggregate3_te_json
 
     pipes = {
         #"genie": genie_pipe,
@@ -72,15 +67,56 @@ def main():
         #"imojie": imojie_pipe,
         #"minie": minie_pipe,
         #"openie6": openie6_pipe,
-        "genie_with_linking": genie_pipe_with_linking,
-        "graphene_with_linking": graphene_pipe_with_linking,
-        "imojie_with_linking": imojie_pipe_with_linking,
-        "minie_with_linking": minie_pipe_with_linking,
-        #"openie6_with_linking": openie6_pipe_with_linking,
+        "corenlp_with_linking": [
+            corenlp_openie_extraction,
+            corenlp_exchange,
+            label_alias_embedding_rl,
+            dbpedia_spotlight_ner_nel,
+            dbpedia_spotlight_exchange,
+            aggregate3_te_json
+            ],
+        "genie_with_linking": [
+            genie_task_docker,
+            genie_exchange,
+            label_alias_embedding_rl,
+            dbpedia_spotlight_ner_nel,
+            dbpedia_spotlight_exchange,
+            aggregate3_te_json
+            ],
+        "graphene_with_linking": [
+            graphene_task_docker,
+            graphene_nt_exchange,
+            label_alias_embedding_rl,
+            dbpedia_spotlight_ner_nel,
+             dbpedia_spotlight_exchange,
+            aggregate3_te_json],
+        "imojie_with_linking": [
+            imojie_task_docker,
+            imojie_exchange,
+            label_alias_embedding_rl,
+            dbpedia_spotlight_ner_nel,
+            dbpedia_spotlight_exchange,
+            aggregate3_te_json
+        ],
+        "minie_with_linking": [
+            minie_task_docker,
+            minie_exchange,
+            label_alias_embedding_rl,
+            dbpedia_spotlight_ner_nel,
+            dbpedia_spotlight_exchange,
+            aggregate3_te_json
+        ],
+        #"openie6_with_linking": [
+        #    openie6_task_docker,
+        #    label_alias_embedding_rl,
+        #    dbpedia_spotlight_ner_nel,
+        #    dbpedia_spotlight_exchange,
+        #    aggregate3_te_json
+        #],
     }
 
-    for name, pipe_func in pipes.items():
-        run_pipe(pipe_func, name, input_path, output_dir)
+    for name, pipe_tasks in pipes.items():
+        run_pipe(pipe_tasks, name, input_path, output_dir)
 
 
 if __name__ == "__main__":
