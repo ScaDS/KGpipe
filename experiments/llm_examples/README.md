@@ -6,6 +6,15 @@ A collection of tasks for data integration into Knowledge Graph using Large Lang
 - OntoAligner Framework https://github.com/sciknoworg/OntoAligner
 - LLM-KGBench Framework https://github.com/AKSW/LLM-KG-Bench
 
+
+## Pipeline Layout
+
+```mermaid
+graph TD
+    A[Input Data] --> B[LLM Task]
+    B --> C[Output Data]
+```
+
 ## List of included Tasks
 
 
@@ -24,5 +33,13 @@ linking_embedd | |
 type_extraction | |
 text_extraction_direct | |
 text_extraction_target | |
+clean_concistency_type | |
 fusion... | ? | ? 
 </div>
+
+## Metrics
+
+Selection of tested Metrics:
+
+- Quality: Acc, Cov, Cons, +Robustness
+- Resource: Costs, Runtime
