@@ -307,13 +307,15 @@ def test_te_json_exchange():
     _delete_file(task_output_path)
 
 # Pipe Tests
+from text_pipelines.text_pipes import run_pipe
+
 def test_openie6_pipe():
-    from text_pipelines.text_pipes import openie6_pipe
+    from text_pipelines.text_tasks import openie6_task_docker
 
     output_dir = tempfile.mkdtemp()
     output_path = os.path.join(output_dir, "output.te.json")
 
-    openie6_pipe(str(docker_task_input_path), output_path)
+    run_pipe(str(docker_task_input_path), output_path, [openie6_task_docker])
 
     assert os.path.exists(output_path)
     assert os.path.getsize(output_path) > 0
@@ -321,12 +323,12 @@ def test_openie6_pipe():
     _delete_file(output_path)
 
 def test_graphene_pipe():
-    from text_pipelines.text_pipes import graphene_pipe
+    from text_pipelines.text_tasks import graphene_task_docker, graphene_nt_exchange
 
     output_dir = tempfile.mkdtemp()
     output_path = os.path.join(output_dir, "output.te.json")
 
-    graphene_pipe(str(docker_task_input_path), output_path)
+    run_pipe(str(docker_task_input_path), output_path, [graphene_task_docker, graphene_nt_exchange])
 
     assert os.path.exists(output_path)
     assert os.path.getsize(output_path) > 0
@@ -334,12 +336,12 @@ def test_graphene_pipe():
     _delete_file(output_path)
 
 def test_minie_pipe():
-    from text_pipelines.text_pipes import minie_pipe
+    from text_pipelines.text_tasks import minie_task_docker, minie_exchange
 
     output_dir = tempfile.mkdtemp()
     output_path = os.path.join(output_dir, "output.te.json")
 
-    minie_pipe(str(docker_task_input_path), output_path)
+    run_pipe(str(docker_task_input_path), output_path, [minie_task_docker, minie_exchange])
 
     assert os.path.exists(output_path)
     assert os.path.getsize(output_path) > 0
@@ -347,12 +349,12 @@ def test_minie_pipe():
     _delete_file(output_path)
 
 def test_imojie_pipe():
-    from text_pipelines.text_pipes import imojie_pipe
+    from text_pipelines.text_tasks import imojie_task_docker, imojie_exchange
 
     output_dir = tempfile.mkdtemp()
     output_path = os.path.join(output_dir, "output.te.json")
 
-    imojie_pipe(str(docker_task_input_path), output_path)
+    run_pipe(str(docker_task_input_path), output_path, [imojie_task_docker, imojie_exchange])
 
     assert os.path.exists(output_path)
     assert os.path.getsize(output_path) > 0
@@ -360,12 +362,12 @@ def test_imojie_pipe():
     _delete_file(output_path)
 
 def test_genie_pipe():
-    from text_pipelines.text_pipes import genie_pipe
+    from text_pipelines.text_tasks import genie_task_docker, genie_exchange
 
     output_dir = tempfile.mkdtemp()
     output_path = os.path.join(output_dir, "output.te.json")
 
-    genie_pipe(str(docker_task_input_path), output_path)
+    run_pipe(str(docker_task_input_path), output_path, [genie_task_docker, genie_exchange])
 
     assert os.path.exists(output_path)
     assert os.path.getsize(output_path) > 0
