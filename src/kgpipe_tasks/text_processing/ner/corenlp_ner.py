@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Dict, Any
 
 from kgpipe.common.models import KgTask, Data, DataFormat
-from kgpipe.common.io import get_docker_volume_bindings, remap_data_paths_for_container
+from kgpipe.common.io import get_docker_volume_bindings, remap_data_path_for_container
 from kgpipe.execution import docker_client
 
 
@@ -25,8 +25,9 @@ def corenlp_kbp_extraction(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     volumes, host_to_container = get_docker_volume_bindings(all_data)
     
     # Remap paths for container
-    input_path = remap_data_paths_for_container([input_data], host_to_container)[0]
-    output_path = remap_data_paths_for_container([output_data], host_to_container)[0]
+
+    input_path = remap_data_path_for_container(input_data, host_to_container)[0]
+    output_path = remap_data_path_for_container(output_data, host_to_container)[0]
     
     # Create command
     command = CORENLP_ENTRYPOINT + [
