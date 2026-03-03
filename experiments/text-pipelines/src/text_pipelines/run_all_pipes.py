@@ -72,7 +72,7 @@ def main():
         #"imojie": imojie_pipe,
         #"minie": minie_pipe,
         #"openie6": openie6_pipe,
-        "genie_with_linking": genie_pipe,
+        "genie_with_linking": genie_pipe_with_linking,
         "graphene_with_linking": graphene_pipe_with_linking,
         "imojie_with_linking": imojie_pipe_with_linking,
         "minie_with_linking": minie_pipe_with_linking,
