@@ -699,3 +699,20 @@ def test_full_ranking_table():
     result = result.set_index("rank")
 
     result.to_csv(OUTPUT_ROOT / "paper/test_tab_7_full_ranking_table.csv", sep="\t")
+
+def test_new_ranking_table():
+    """
+    """
+    from moviekg.paper.helpers.ranking import _rank_and_save3csv
+    df =_rank_and_save3csv(PRESETS["equal"], "test_rank_equal", psmd)
+    df["pipeline"] = df["pipeline"].map(PIPLEINE_NAME_MAP)
+    df.to_csv(OUTPUT_ROOT / "paper/test_tab_8_new_ranking_table.csv", sep="\t")
+    # metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
+    # metric_df["pipeline"] = metric_df["pipeline"].map(map_pipeline_name_pretty)
+    # # metric_df = metric_df[metric_df["stage"] == "stage_3"]
+    # # metric_df = metric_df[metric_df["metric"].isin(TABLE_DISPLAY_NAMES.keys())]
+    # # metric_df = metric_df[metric_df["pipeline"] != "reference"]
+    # # metric_df = metric_df.reset_index(drop=True)
+    # # metric_df = metric_df.pivot(index="pipeline", columns="metric", values="normalized")
+    # # metric_df = metric_df.reset_index()
+    # metric_df.to_csv(OUTPUT_ROOT / "paper/test_tab_8_new_ranking_table.csv", sep="\t")
