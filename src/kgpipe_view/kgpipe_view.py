@@ -5,6 +5,7 @@ from pathlib import Path
 
 import streamlit as st
 import streamlit.components.v1 as components
+from streamlit_elements import elements, dashboard, mui
 
 from meta_kg_query import query_task_hierarchy, query_tasks_implementations, query_pipeline_hierarchy, query_evaluation_hierarchy, query_kg_data
 from owl_to_mermaid import convert_and_write_mermaid, get_available_layers
@@ -123,6 +124,16 @@ with pipelines_tab:
                 st.info("No `kgp:Pipeline` subclass hierarchy returned by the endpoint.")
             else:
                 st.dataframe(pipeline_hierarchy_df, use_container_width=True)
+
+    with elements("dashboard"):
+        layout = [
+            dashboard.Item("item1", 0, 0, 2, 2),
+            dashboard.Item("item2", 2, 0, 2, 2)
+        ]
+        
+        with dashboard.Grid(layout):
+            mui.Paper("Draggable Panel 1", key="item1")
+            mui.Paper("Draggable Panel 2", key="item2")
 
 with evaluations_tab:
     st.subheader("Evaluations")
