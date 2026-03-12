@@ -1,4 +1,5 @@
 import functools
+import ast
 from uuid import uuid4
 from typing import Any, List, TYPE_CHECKING
 from pydantic import BaseModel
@@ -70,8 +71,83 @@ class PipeKG:
             })
             SYS_KG.create_relation(type="output", source=task_entity.id, target=output_entity.id)
 
-    def list_tasks(self) -> List["KgTask"]:
-        return SYS_KG.list_entities(types=[config.ONTOLOGY_PREFIX+"Implementation"])
+    @staticmethod
+    def _prop_value(properties: List[KGProperty], *keys: str) -> Any:
+        """Find a property value by exact key or key suffix."""
+        for prop in properties:
+            if prop.key in keys:
+                return prop.value
+        for prop in properties:
+            for key in keys:
+                if prop.key.endswith(key):
+                    return prop.value
+        return None
+
+    @staticmethod
+    def _to_list(value: Any) -> List[str]:
+        """Normalize KG property values to list[str]."""
+        if value is None:
+            return []
+        if isinstance(value, list):
+            return [str(v) for v in value]
+        if isinstance(value, tuple):
+            return [str(v) for v in value]
+        if isinstance(value, str):
+            text = value.strip()
+            if not text:
+                return []
+            # Stored literals may contain Python-list string repr.
+            if text.startswith("[") and text.endswith("]"):
+                try:
+                    parsed = ast.literal_eval(text)
+                except (ValueError, SyntaxError):
+                    return [text]
+                if isinstance(parsed, list):
+                    return [str(v) for v in parsed]
+            return [text]
+        return [str(value)]
+
+    def list_taskImplementations(self) -> List[ImplementationEntity]:
+        entities = SYS_KG.find_entities(types=[config.ONTOLOGY_PREFIX + "Implementation"])
+        implementations: List[ImplementationEntity] = []
+
+        for entity in entities:
+            name_value = self._prop_value(entity.properties, "name", config.ONTOLOGY_PREFIX + "name")
+            if not name_value:
+                # Fallback: derive a readable name from implementation IRI.
+                name_value = str(entity.id).rstrip("/").split("/")[-1]
+
+            implements_method_value = self._prop_value(
+                entity.properties,
+                "implementsMethod",
+                config.ONTOLOGY_PREFIX + "implementsMethod",
+            )
+            uses_tool_value = self._prop_value(
+                entity.properties,
+                "usesTool",
+                config.ONTOLOGY_PREFIX + "usesTool",
+            )
+            has_parameter_value = self._prop_value(
+                entity.properties,
+                "hasParameter",
+                config.ONTOLOGY_PREFIX + "hasParameter",
+            )
+
+            implementations.append(
+                ImplementationEntity(
+                    name=str(name_value),
+                    implementsMethod=self._to_list(implements_method_value),
+                    hasParameter=self._to_list(has_parameter_value),
+                    usesTool=self._to_list(uses_tool_value),
+                )
+            )
+
+        return implementations
+
+    def list_tasks(self) -> List[ImplementationEntity]:
+        """Backward-compatible alias used by existing UI code."""
+        return self.list_taskImplementations()
+
 
     # @staticmethod
     # def add_task_result(task_result: TaskResult):

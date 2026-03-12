@@ -168,7 +168,7 @@ class Metric(ABC):
         self.metricConfig = metricConfig
     
     @abstractmethod
-    def compute(self, kg, **kwargs) -> MetricResult:
+    def compute(self, kg, **kwargs) -> MetricResult | List[MetricResult]:
         """Compute the metric value for the given KG."""
         pass
     

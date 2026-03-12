@@ -144,6 +144,51 @@ WHERE {
 }
 """
 
+TASK_IO_SPECS_QUERY = """
+PREFIX kgp: <http://github.com/ScaDS/kgpipe/ontology/>
+
+SELECT DISTINCT ?implementation ?ioType ?format
+WHERE {
+  ?implementation a kgp:Implementation .
+  ?implementation ?ioPredicate ?dataNode .
+  ?dataNode ?formatPredicate ?format .
+  FILTER(isIRI(?implementation))
+  FILTER(isIRI(?dataNode))
+  FILTER(
+    STRENDS(STR(?ioPredicate), "input")
+    || STRENDS(STR(?ioPredicate), "output")
+  )
+  FILTER(STRENDS(STR(?formatPredicate), "format"))
+  BIND(
+    IF(STRENDS(STR(?ioPredicate), "input"), "input", "output")
+    AS ?ioType
+  )
+}
+ORDER BY ?implementation ?ioType ?format
+"""
+
+TASK_IO_SPECS_FALLBACK_QUERY = """
+SELECT DISTINCT ?implementation ?ioType ?format
+WHERE {
+  ?implementation a ?implementationType .
+  FILTER(STRENDS(STR(?implementationType), "Implementation"))
+  ?implementation ?ioPredicate ?dataNode .
+  ?dataNode ?formatPredicate ?format .
+  FILTER(isIRI(?implementation))
+  FILTER(isIRI(?dataNode))
+  FILTER(
+    STRENDS(STR(?ioPredicate), "input")
+    || STRENDS(STR(?ioPredicate), "output")
+  )
+  FILTER(STRENDS(STR(?formatPredicate), "format"))
+  BIND(
+    IF(STRENDS(STR(?ioPredicate), "input"), "input", "output")
+    AS ?ioType
+  )
+}
+ORDER BY ?implementation ?ioType ?format
+"""
+
 
 def _run_select(endpoint_url: str, query: str) -> list[dict[str, Any]]:
     from SPARQLWrapper import JSON, SPARQLWrapper
@@ -211,6 +256,18 @@ def _to_kg_data_rows(bindings: list[dict[str, Any]]) -> list[dict[str, str]]:
         )
     return rows
 
+def _to_task_io_rows(bindings: list[dict[str, Any]]) -> list[dict[str, str]]:
+    rows: list[dict[str, str]] = []
+    for binding in bindings:
+        rows.append(
+            {
+                "implementation": _cell(binding, "implementation"),
+                "io_type": _cell(binding, "ioType"),
+                "format": _cell(binding, "format"),
+            }
+        )
+    return rows
+
 
 def query_tasks_implementations(endpoint_url: str) -> pd.DataFrame:
     bindings = _run_select(endpoint_url, PRIMARY_QUERY)
@@ -242,4 +299,11 @@ def query_evaluation_hierarchy(endpoint_url: str) -> pd.DataFrame:
 def query_kg_data(endpoint_url: str) -> pd.DataFrame:
     bindings = _run_select(endpoint_url, KG_DATA_QUERY)
     rows = _to_kg_data_rows(bindings)
+    return pd.DataFrame(rows)
+
+def query_task_io_specs(endpoint_url: str) -> pd.DataFrame:
+    bindings = _run_select(endpoint_url, TASK_IO_SPECS_QUERY)
+    if not bindings:
+        bindings = _run_select(endpoint_url, TASK_IO_SPECS_FALLBACK_QUERY)
+    rows = _to_task_io_rows(bindings)
     return pd.DataFrame(rows)

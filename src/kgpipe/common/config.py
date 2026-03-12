@@ -6,9 +6,9 @@ class KgPipeConfig(KGConfig):
     """
     The configuration for kgpipe.
     """
-    SYS_KG_URL: str = "sparql://localhost:8890/sparql-auth" #"memory://"
-    SYS_KG_USR: str = "dba"
-    SYS_KG_PSW: str = "mysecret"
+    SYS_KG_URL: str = "memory://"
+    SYS_KG_USR: str = ""
+    SYS_KG_PSW: str = ""
     ONTOLOGY_PREFIX: str = "http://github.com/ScaDS/kgpipe/ontology/"
     PIPEKG_PREFIX: str = "http://github.com/ScaDS/kgpipe/resource/"
 
