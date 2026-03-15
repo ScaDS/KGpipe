@@ -8,7 +8,7 @@ from moviekg.paper.helpers.getter import (
     TABLE_DISPLAY_NAMES,
     normalize_metric, normalize_min_best, normalize_max_best,
     sta_fact_count, sta_denisity, sta_duration, #memory_peak is not considered
-    ref_kg_p, ref_source_entity_f1, 
+    ref_kg_p, ref_kg_r, ref_source_entity_f1, ref_source_entity_r, ref_source_entity_p,
     sem_disjoint_domain, sem_incorrect_relation_direction, sem_incorrect_relation_range, sem_incorrect_relation_domain, sem_incorrect_datatype, sem_incorrect_datatype_format
 )
 
@@ -99,11 +99,11 @@ def _rank_and_save2csv(weights: dict, outfile_stem: str, psmd: pipeline_stage_me
     out = df[["pipeline", "combined"]].sort_values(by="combined", ascending=False)
     out.to_csv(OUTPUT_ROOT / f"paper/{outfile_stem}.csv", sep="\t")
 
-def _rank_and_save3csv(weights: dict, outfile_stem: str, psmd: pipeline_stage_metric_dict, round_digits: int = 3) -> pd.DataFrame:
+def _rank_and_save3csv(outfile_stem: str, psmd: pipeline_stage_metric_dict, round_digits: int = 3) -> pd.DataFrame:
     
     # psmd = normalize_metric(psmd, sta_fact_count.__name__, ["stage_3"], normalize_max_best)
-    psmd = normalize_metric(psmd, sta_denisity.__name__, ["stage_3"], normalize_max_best)
-    psmd = normalize_metric(psmd, sta_fact_count.__name__, ["stage_3"], normalize_max_best)
+    # psmd = normalize_metric(psmd, sta_denisity.__name__, ["stage_3"], normalize_max_best)
+    # psmd = normalize_metric(psmd, sta_fact_count.__name__, ["stage_3"], normalize_max_best)
     # sta_metric_names = [sta_denisity.__name__+"_norm", sta_fact_count.__name__+"_norm"] 
     # sta_agg = agg_metrics(psmd, sta_metric_names)
 
@@ -113,10 +113,10 @@ def _rank_and_save3csv(weights: dict, outfile_stem: str, psmd: pipeline_stage_me
         sem_incorrect_datatype.__name__, sem_incorrect_datatype_format.__name__]
     sem_agg = agg_metrics(psmd, sem_metric_names)
     
-    acc_metric_names = [ref_kg_p.__name__]
+    acc_metric_names = [ref_kg_p.__name__] # only final stage (3)
     acc_agg = agg_metrics(psmd, acc_metric_names)
 
-    cov_metric_names = [ref_source_entity_f1.__name__+"_avg"]
+    cov_metric_names = [ref_source_typed_entity_r.__name__+"_avg"] # avg of all stages
     cov_agg = agg_metrics(psmd, cov_metric_names)
 
     # psmd = normalize_metric(psmd, sta_duration.__name__+"_sum", ["stage_3"], normalize_min_best)

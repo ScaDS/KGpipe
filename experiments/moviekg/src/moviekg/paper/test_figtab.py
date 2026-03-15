@@ -456,11 +456,11 @@ def test_table_6():
     metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
     metric_df["pipeline"] = metric_df["pipeline"].map(map_pipeline_name_pretty)
     from moviekg.paper.helpers.getter import (
-        get_pipeline_stage_metric_dict, ref_kg_f1, ref_kg_p, ref_kg_r, ref_source_entity_f1, ref_source_entity_p, ref_source_entity_r
+        get_pipeline_stage_metric_dict, ref_kg_f1, ref_kg_p, ref_kg_r, ref_source_entity_f1, ref_source_entity_p, ref_source_entity_r, ref_source_typed_entity_r, ref_source_typed_entity_p
     )
 
     metrics = [
-        ref_kg_f1.__name__, ref_kg_p.__name__, ref_kg_r.__name__, ref_source_entity_f1.__name__, ref_source_entity_p.__name__, ref_source_entity_r.__name__
+        ref_kg_f1.__name__, ref_kg_p.__name__, ref_kg_r.__name__, ref_source_entity_f1.__name__, ref_source_entity_p.__name__, ref_source_entity_r.__name__, ref_source_typed_entity_r.__name__, ref_source_typed_entity_p.__name__
     ]
 
     psmd = get_pipeline_stage_metric_dict(metric_df, metrics)
@@ -469,7 +469,7 @@ def test_table_6():
 
     rows = []
 
-    round_to = 2
+    round_to = 3
 
     for pipeline, stage_dict in psmd.items():
         if pipeline in ["reference", "seed"]:
@@ -478,18 +478,22 @@ def test_table_6():
         kg_r = [0, 0, 0]
         se_p = [0, 0, 0]
         se_r = [0, 0, 0]
-
+        ste_p = [0, 0, 0]
+        ste_r = [0, 0, 0]
 
         for stage, metric_dict in stage_dict.items():
             kg_p[int(stage.split("_")[1]) - 1] = round(metric_dict.get(ref_kg_p.__name__, -1), round_to)
             kg_r[int(stage.split("_")[1]) - 1] = round(metric_dict.get(ref_kg_r.__name__, -1), round_to)
             se_p[int(stage.split("_")[1]) - 1] = round(metric_dict.get(ref_source_entity_p.__name__, -1), round_to)
             se_r[int(stage.split("_")[1]) - 1] = round(metric_dict.get(ref_source_entity_r.__name__, -1), round_to)
+            ste_p[int(stage.split("_")[1]) - 1] = round(metric_dict.get(ref_source_typed_entity_p.__name__, -1), round_to)
+            ste_r[int(stage.split("_")[1]) - 1] = round(metric_dict.get(ref_source_typed_entity_r.__name__, -1), round_to)
         
         rows.append({
             "pipeline": pipeline, 
             "kg_p@1": kg_p[0], "kg_r@1": kg_r[0], "kg_p@2": kg_p[1], "kg_r@2": kg_r[1], "kg_p@3": kg_p[2], "kg_r@3": kg_r[2],
-            "se_p@1": se_p[0], "se_r@1": se_r[0], "se_p@2": se_p[1], "se_r@2": se_r[1], "se_p@3": se_p[2], "se_r@3": se_r[2]})
+            "se_p@1": se_p[0], "se_r@1": se_r[0], "se_p@2": se_p[1], "se_r@2": se_r[1], "se_p@3": se_p[2], "se_r@3": se_r[2],
+            "ste_p@1": ste_p[0], "ste_r@1": ste_r[0], "ste_p@2": ste_p[1], "ste_r@2": ste_r[1], "ste_p@3": ste_p[2], "ste_r@3": ste_r[2]})
 
     df = pd.DataFrame(rows)
     output_path = OUTPUT_ROOT / "paper/test_tab_6_reference_alignment.csv"
@@ -704,7 +708,7 @@ def test_new_ranking_table():
     """
     """
     from moviekg.paper.helpers.ranking import _rank_and_save3csv
-    df =_rank_and_save3csv(PRESETS["equal"], "test_rank_equal", psmd)
+    df =_rank_and_save3csv("test_rank_new", psmd)
     df["pipeline"] = df["pipeline"].map(PIPLEINE_NAME_MAP)
     df.to_csv(OUTPUT_ROOT / "paper/test_tab_8_new_ranking_table.csv", sep="\t")
     # metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
