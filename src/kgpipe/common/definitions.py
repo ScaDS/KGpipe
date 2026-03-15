@@ -8,6 +8,29 @@ from kgcore.api.kg import KGId
 
 type schema_format = str
 
+# Vocabulary #
+
+from rdflib.namespace import DefinedNamespace, Namespace
+
+class KGPIPE_NS(DefinedNamespace):
+    _fail = True
+    _NS = Namespace("http://github.com/ScaDS/kgpipe/")
+    Task = _NS["Task"]
+    TaskRun = _NS["TaskRun"]
+    Method = _NS["Method"]
+    Tool = _NS["Tool"]
+    Implementation = _NS["Implementation"]
+    Parameter = _NS["Parameter"]
+    ParameterBinding = _NS["ParameterBinding"]
+    Pipeline = _NS["Pipeline"]
+    PipelineRun = _NS["PipelineRun"]
+    Artifact = _NS["Artifact"]
+    ArtifactType = _NS["ArtifactType"]
+    Schema = _NS["Schema"]
+    Metric = _NS["Metric"]
+    MetricRun = _NS["MetricRun"]
+
+
 # Data #
 
 class DataHandle(BaseModel):
