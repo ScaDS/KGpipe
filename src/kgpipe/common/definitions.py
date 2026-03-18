@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from sys import implementation
 from pydantic import BaseModel
-from typing import Optional, List, Dict, Any
+from typing import Mapping, Optional, List, Dict, Any
 from kgcore.api.kg import KGId
+
+from kgpipe.common.model.data import DataFormat
 
 # Types #
 
@@ -163,7 +165,10 @@ class ParameterBindingEntity(BaseModel):
 
 ImplementationEntityId = KGId
 class ImplementationEntity(BaseModel):
+    uri: Optional[str] = None
     name: str
+    input_spec: List[str]
+    output_spec: List[str]
     implementsMethod: List[MethodEntityId]
     hasParameter: List[ParameterId]
     usesTool: List[ToolEntityId]

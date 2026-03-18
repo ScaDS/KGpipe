@@ -40,7 +40,7 @@ try:
         raise ValueError(f"Unsupported schema: {scheme}")
 except Exception as e:
     print(f"Error creating system graph: {e}")
-    print(f"Using RDFLib backend for system graph: {f"http://{rest}"}")
+    print(f"Using RDFLib memory backend for system graph")
 
 SYS_KG: KnowledgeGraph = KnowledgeGraph(model=model, backend=backend)
 
@@ -133,9 +133,21 @@ class PipeKG:
                 config.ONTOLOGY_PREFIX + "hasParameter",
             )
 
+            input_entities = SYS_KG.get_neighbors(entity.id, predicate="input")
+            output_entities = SYS_KG.get_neighbors(entity.id, predicate="output")
+
+            def get_property_values(properties: list[KGProperty], key: str) -> list[str]:
+                return [prop.value for prop in properties if prop.key.endswith(key)]
+
+            input_spec = [get_property_values(input_entity.properties, "format")[0] for input_entity in input_entities]
+            output_spec = [get_property_values(output_entity.properties, "format")[0] for output_entity in output_entities]
+
             implementations.append(
                 ImplementationEntity(
+                    uri=str(entity.id),
                     name=str(name_value),
+                    input_spec=input_spec,
+                    output_spec=output_spec,
                     implementsMethod=self._to_list(implements_method_value),
                     hasParameter=self._to_list(has_parameter_value),
                     usesTool=self._to_list(uses_tool_value),
@@ -245,6 +257,13 @@ class PipeKG:
             SYS_KG.create_relation(type=config.ONTOLOGY_PREFIX+"hasTaskRun", source=pipeline_run_entity.id, target=task_run_entity.id)
 
         # return pipeline_run_entity
+
+    @staticmethod
+    def sparql_construct(query: str):
+        backend : RDFSparqlBackend = SYS_KG.backend
+        result = backend.query_sparql(query)
+        return result
+
 
 class MapperUtil():
     """

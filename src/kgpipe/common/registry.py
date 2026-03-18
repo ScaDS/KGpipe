@@ -4,6 +4,7 @@ from typing import Any, Callable
 from kgpipe.common.models import KgTask, DataFormat
 from kgpipe.common.systemgraph import PipeKG
 from kgpipe.common.definitions import MetricEntity
+from kgpipe.common.model.configuration import ConfigurationDefinition
 
 # TODO add also to system graph
 
@@ -43,7 +44,8 @@ class Registry:
         input_spec: dict[str, DataFormat], 
         output_spec: dict[str, DataFormat], 
         description: str | None = None, 
-        category: list[str] = []
+        category: list[str] = [],
+        config_spec: ConfigurationDefinition | None = None
         ) -> Callable[[Callable], KgTask]:
         def decorator(t):
             task = KgTask(t.__name__.lower(), input_spec, output_spec, t, description, category)

@@ -8,7 +8,7 @@ from pydantic import BaseModel
 import time
 import shutil
 from kgpipe.common.model.default_catalog import TaskCategory
-from .configuration import Parameter, ConfigurationProfile
+from .configuration import Parameter, ConfigurationDefinition
 from kgpipe.common.annotations import kg_class
 
 type TaskName = str
@@ -51,7 +51,7 @@ class KgTask:
     function: Callable[[Dict[str, Data], Dict[str, Data]], None]
     description: Optional[str] = None
     category: List[TaskCategory] = field(default_factory=list)
-    config: Optional[ConfigurationProfile] = None
+    config_spec: Optional[ConfigurationDefinition] = None
     
     def __post_init__(self):
         if not self.name:
