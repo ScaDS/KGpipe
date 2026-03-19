@@ -168,7 +168,8 @@ def ref_source_typed_entity_p(df: pd.DataFrame):
     res: pipeline_stage_dict = defaultdict[pipeline_name, defaultdict[stage_name, metric_value]](lambda: defaultdict[stage_name, metric_value](lambda: None))
     for row in df.itertuples():
         details = json.loads(row.details)
-        precision = details["precision"]
+        # print(details)
+        precision = details.get("fn", -1)
         res[row.pipeline][row.stage] = precision
     return res
 
@@ -177,7 +178,7 @@ def ref_source_typed_entity_r(df: pd.DataFrame):
     res: pipeline_stage_dict = defaultdict[pipeline_name, defaultdict[stage_name, metric_value]](lambda: defaultdict[stage_name, metric_value](lambda: None))
     for row in df.itertuples():
         details = json.loads(row.details)
-        recall = details["recall"]
+        recall = details.get("recall", -1)
         res[row.pipeline][row.stage] = recall
     return res
 
