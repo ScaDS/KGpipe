@@ -167,9 +167,6 @@ def get_relation_matches(er_doc: ER_Document, threshold: float, match_cluster: O
 
 def get_matches_to_seed(er_doc: ER_Document, list_of_matches: list[MatchesRow], threshold):
 
-    print("list of matches", len(list_of_matches))
-    print("threshold", threshold)
-
     true_entity_match_cnt = 0 #tp
     false_entity_match_cnt = 0 #fp
     false_missing_entity_match_cnt = 0 #fn
@@ -198,32 +195,21 @@ def get_matches_to_seed(er_doc: ER_Document, list_of_matches: list[MatchesRow], 
         # get the seed and source ids
         seed_id = None
         source_id = None
-        if id1.startswith("http://kg.org/resource"):
+        if id1.startswith("http://kg.org/resource"): # TODO make configurable
             source_id = id2
             seed_id = id1
         if id2.startswith("http://kg.org/resource"):
             source_id = id1
             seed_id = id2
-
-        checker = False
-        if seed_id == "http://kg.org/resource/b25598f9c0fce28a7700869fcb55d706":
-            checker = True
-
    
         if seed_id is not None and source_id is not None:
             saw_seed_ids.add(seed_id)
             if is_match(source_id, seed_id, gt_cluster, False):
                 true_entity_match_cnt += 1
-                if checker:
-                    print("true match", seed_id, source_id)
             else:
                 false_entity_match_cnt += 1
-                if checker:
-                    print("false match", seed_id, source_id)
         else:
             # can not be checked, skip
-            if checker:
-                print("skip", seed_id, source_id)
             continue
 
     missing_seed_ids = gt_seed_ids - saw_seed_ids
@@ -388,10 +374,10 @@ def evaluate_entity_matching(er_doc_path_or_kg: Path | KG,
     denom = 2 * tp + fp + fn
     f1_score = (2 * tp / denom) if denom > 0 else 0.0
 
-    print("f1_score", f1_score)
-    print("tp", tp)
-    print("fp", fp)
-    print("fn", fn)
+    # print("f1_score", f1_score)
+    # print("tp", tp)
+    # print("fp", fp)
+    # print("fn", fn)
 
     return f1_score, f1_score, {"true_seed_match_cnt": tp, "false_seed_match_cnt": fp, "false_missing_seed_match_cnt": fn}
 
@@ -407,6 +393,9 @@ def evaluate_relation_matching(er_doc_path: Path | KG, gt_match_path: Path, thre
     tp = match_counts.true_relation_match_cnt
     fp = match_counts.false_relation_match_cnt
     fn = match_counts.false_missing_relation_match_cnt
+
+    if fn < 0:
+        fn = 0
     
     f1_score = 2 * tp / (2 * tp + fp + fn) if tp > 0 else 0
     

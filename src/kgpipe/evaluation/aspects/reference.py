@@ -112,12 +112,12 @@ class ER_RelationMatchMetric(Metric):
         print(f"[CONFIG] Relation matching threshold: {config.RELATION_MATCH_THRESHOLD}")
 
         # TODO change to verfied entities level
-        dataset = config.dataset
-        if dataset is None:
-            raise ValueError("Dataset is not set")
-        gt_match_path = dataset.root / "split_match_entities.csv"
+        # dataset = config.dataset
+        # if dataset is None:
+        #     raise ValueError("Dataset is not set")
+        # gt_match_path = dataset.root / "split_match_entities.csv"
         
-        value, normalized_score, details = evaluate_relation_matching(kg, gt_match_path, config.RELATION_MATCH_THRESHOLD)
+        value, normalized_score, details = evaluate_relation_matching(kg, config.GT_MATCHES, config.RELATION_MATCH_THRESHOLD)
 
         return MetricResult(
             name=self.name,
