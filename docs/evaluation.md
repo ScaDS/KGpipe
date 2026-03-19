@@ -122,3 +122,60 @@ Reports can be serialized to JSON for storage and later analysis:
 ```python
 report.to_json("evaluation_results.json")
 ```
+
+# Hierarchy
+
+```
+QualityEvaluationOntology
+
+QualityDimension
+ ├─ Accuracy
+ ├─ Coverage
+ ├─ Consistency
+ └─ Uniqueness
+
+Metric
+ ├─ BaseMetric
+ │   ├─ Precision
+ │   └─ Recall
+ ├─ CompositeMetric
+ │   └─ F1Score
+ └─ AggregatedMetric
+     ├─ MacroAverage
+     └─ MicroAverage
+
+QualityIssue
+ ├─ DuplicateEntities (false positives for EM)
+ ├─ DisjointDomainIssue
+ └─ MissingEntities (false positives for OM, or true positives for EM)
+
+EvaluationArtifact
+ ├─ ReferenceDataset
+ └─ QualityRulePattern
+```
+
+Example Instance: Entity Matching
+
+```
+ReferenceDataset
+       │
+       ▼
+Precision / Recall
+       │
+       ▼
+F1Score
+       │
+       ▼
+Evaluation of Matching Quality
+       │
+False Negatives
+       │
+       ▼
+DuplicateEntities
+       │
+       ▼
+RedundancyIssue
+       │
+       ▼
+Violates Uniqueness Dimension
+```
