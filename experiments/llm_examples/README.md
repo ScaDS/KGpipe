@@ -37,9 +37,16 @@ clean_concistency_type | |
 fusion... | ? | ? 
 </div>
 
-## Metrics
+## Setup
 
 Selection of tested Metrics:
 
 - Quality: Acc, Cov, Cons, +Robustness
 - Resource: Costs, Runtime
+
+Selection of LLMs
+
+- gpt-mini
+- gpt-nano
+- llama-70B
+- 405B
