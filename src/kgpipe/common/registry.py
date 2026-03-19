@@ -48,7 +48,7 @@ class Registry:
         config_spec: ConfigurationDefinition | None = None
         ) -> Callable[[Callable], KgTask]:
         def decorator(t):
-            task = KgTask(t.__name__.lower(), input_spec, output_spec, t, description, category)
+            task = KgTask(t.__name__.lower(), input_spec, output_spec, t, description, category, config_spec)
             cls._registry[f"task:{t.__name__.lower()}"] = task
             PipeKG.add_task(task)
             return task

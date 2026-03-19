@@ -72,3 +72,10 @@ class ConfigurationProfile(BaseModel):
     definition: ConfigurationDefinition
     description: Optional[str] = None   
     bindings: List[ParameterBinding] = field(default_factory=list)
+
+class ConfigurationMapping(BaseModel):
+    """
+    Mapping of a configuration profile to a task implementation
+    """
+    for_task_spec: ConfigurationDefinition
+    to_global_spec: ConfigurationDefinition
