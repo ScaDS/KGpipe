@@ -12,6 +12,27 @@ from kgpipe.common.registry import Registry
 from kgpipe.execution import docker_client
 
 
+def process_io(input_path, output_path, process_file_fn, extension):
+    if os.path.isdir(input_path):
+        os.makedirs(output_path, exist_ok=True)
+
+        for filename in os.listdir(input_path):
+            input_file = os.path.join(input_path, filename)
+
+            if not os.path.isfile(input_file):
+                continue
+
+            output_file = os.path.join(
+                output_path,
+                os.path.splitext(filename)[0] + extension
+            )
+
+            process_file_fn(input_file, output_file)
+
+    else:
+        process_file_fn(input_path, output_path)
+
+
 @Registry.task(
     input_spec={"input": DataFormat.TEXT},
     output_spec={"output": DataFormat.TEXT},
@@ -30,8 +51,6 @@ def openie6_task_docker(inputs: TaskInput, outputs: TaskOutput):
 
     source_path = remap_data_path_for_container(inputs["input"], host_to_container)
     output_path = remap_data_path_for_container(outputs["output"], host_to_container)
-
-    outputs["output"].path.touch()
 
     client = docker_client(
         image="openie6:latest",
@@ -63,8 +82,6 @@ def graphene_task_docker(inputs: TaskInput, outputs: TaskOutput):
 
     source_path = remap_data_path_for_container(inputs["input"], host_to_container)
     output_path = remap_data_path_for_container(outputs["output"], host_to_container)
-
-    outputs["output"].path.touch()
 
     client = docker_client(
         image="graphene:latest",
@@ -138,8 +155,10 @@ def graphene_nt_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
             with open(os.path.join(input_path, file), 'r') as f:
                 data = f.read()
                 te_doc = __graphenent2tejson(data)
-                outfile = os.path.join(output_path, file)
-
+                outfile = os.path.join(
+                    output_path,
+                    os.path.splitext(file)[0] + ".te.json"
+                )
                 with open(outfile, 'w') as of:
                     json.dump(te_doc, of)
                 # print(f"Converted {input_path} to {outfile}")
@@ -173,8 +192,6 @@ def minie_task_docker(inputs: TaskInput, outputs: TaskOutput):
     source_path = remap_data_path_for_container(inputs["input"], host_to_container)
     output_path = remap_data_path_for_container(outputs["output"], host_to_container)
 
-    outputs["output"].path.touch()
-
     client = docker_client(
         image="minie:latest",
         command=["minie.sh",
@@ -197,30 +214,32 @@ def minie_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     input_path = inputs["input"].path
     output_path = outputs["output"].path
 
-    triples = []
-    chains = []
+    def exchange_file(input_file, output_file):
+        triples = []
+        chains = []
 
-    with open(input_path, "r", encoding="utf-8") as f:
-        lines = f.readlines()
+        with open(input_file, "r", encoding="utf-8") as f:
+            for line in f:
+                if not line.startswith("Triple:"):
+                    continue
 
-    for line in lines:
-        if line.startswith("Triple:"):
-            parts = line[len("Triple:"):].strip().split(" | ")
-            if len(parts) == 3:
-                triple = {
-                    "subject": {"surface_form": parts[0].strip()},
-                    "predicate": {"surface_form": parts[1].strip()},
-                    "object": {"surface_form": parts[2].strip()}
-                }
-                triples.append(triple)
+                parts = [p.strip() for p in line[len("Triple:"):].split("|")]
 
-    output_json = {
-        "triples": triples,
-        "chains": chains
-    }
+                if len(parts) != 3:
+                    continue
 
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(output_json, f, indent=2)
+                subject, predicate, object_ = parts
+
+                triples.append({
+                    "subject": {"surface_form": subject},
+                    "predicate": {"surface_form": predicate},
+                    "object": {"surface_form": object_}
+                })
+
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump({"triples": triples, "chains": chains}, f, indent=2)
+
+    process_io(input_path, output_path, exchange_file, ".te.json")
 
 
 @Registry.task(
@@ -241,8 +260,6 @@ def imojie_task_docker(inputs: TaskInput, outputs: TaskOutput):
 
     source_path = remap_data_path_for_container(inputs["input"], host_to_container)
     output_path = remap_data_path_for_container(outputs["output"], host_to_container)
-
-    outputs["output"].path.touch()
 
     client = docker_client(
         image="imojie:latest",
@@ -266,29 +283,32 @@ def imojie_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     input_path = inputs["input"].path
     output_path = outputs["output"].path
 
-    triples = []
-    chains = []
+    triple_pattern = re.compile(
+        r'\(\s*([^;]+?)\s*;\s*([^;]+?)\s*;\s*([^;]+?)\s*\)'
+    )
 
-    triple_pattern = re.compile(r'\(\s*(.*?)\s*;\s*(.*?)\s*;\s*(.*?)\s*\)')
+    def make_triple(subj, pred, obj):
+        return {
+            "subject": {"surface_form": subj.strip()},
+            "predicate": {"surface_form": pred.strip()},
+            "object": {"surface_form": obj.strip()}
+        }
 
-    with open(input_path, "r", encoding="utf-8") as f:
-        for line in f:
-            matches = triple_pattern.findall(line)
-            for subj, pred, obj in matches:
-                triple = {
-                    "subject": {"surface_form": subj.strip()},
-                    "predicate": {"surface_form": pred.strip()},
-                    "object": {"surface_form": obj.strip()}
-                }
-                triples.append(triple)
+    def exchange_file(input_file, output_file):
+        triples = []
+        chains = []
 
-    output_json = {
-        "triples": triples,
-        "chains": chains
-    }
+        with open(input_file, "r", encoding="utf-8") as f:
+            for line in f:
+                matches = triple_pattern.findall(line)
 
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(output_json, f, indent=2)
+                for subj, pred, obj in matches:
+                    triples.append(make_triple(subj, pred, obj))
+
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump({"triples": triples, "chains": chains}, f, indent=2)
+
+    process_io(input_path, output_path, exchange_file, ".te.json")
 
 @Registry.task(
     input_spec={"input": DataFormat.TEXT},
@@ -308,8 +328,6 @@ def genie_task_docker(inputs: TaskInput, outputs: TaskOutput):
 
     source_path = remap_data_path_for_container(inputs["input"], host_to_container)
     output_path = remap_data_path_for_container(outputs["output"], host_to_container)
-
-    outputs["output"].path.touch()
 
     client = docker_client(
         image="genie:latest",
@@ -333,36 +351,33 @@ def genie_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     input_path = inputs["input"].path
     output_path = outputs["output"].path
 
-    triples = []
-    chains = []
+    triple_pattern = re.compile(
+        r"<sub>\s*(.*?)\s*<rel>\s*(.*?)\s*<obj>\s*(.*?)\s*<et>"
+    )
 
-    triple_pattern = re.compile(r"<sub>\s*(.*?)\s*<rel>\s*(.*?)\s*<obj>\s*(.*?)\s*<et>")
+    def exchange_file(input_file, output_file):
+        triples = []
+        chains = []
 
-    with open(input_path, "r", encoding="utf-8") as f:
-        genie_output = json.load(f)
+        with open(input_file, "r", encoding="utf-8") as f:
+            genie_output = json.load(f)
 
-    for sentence_outputs in genie_output:
-        for beam in sentence_outputs:
-            text = beam.get("text", "")
+        for sentence in genie_output:
+            for beam in sentence:
+                text = beam.get("text", "")
+                matches = triple_pattern.findall(text)
 
-            matches = triple_pattern.findall(text)
+                for subj, pred, obj in matches:
+                    triples.append({
+                        "subject": {"surface_form": subj.strip()},
+                        "predicate": {"surface_form": pred.strip()},
+                        "object": {"surface_form": obj.strip()}
+                    })
 
-            for subj, pred, obj in matches:
-                triple = {
-                    "subject": {"surface_form": subj.strip()},
-                    "predicate": {"surface_form": pred.strip()},
-                    "object": {"surface_form": obj.strip()}
-                }
-                triples.append(triple)
+        with open(output_file, "w", encoding="utf-8") as f:
+            json.dump({"triples": triples, "chains": chains}, f, indent=2)
 
-    output_json = {
-        "triples": triples,
-        "chains": chains
-    }
-
-    with open(output_path, "w", encoding="utf-8") as f:
-        json.dump(output_json, f, indent=2)
-
+    process_io(input_path, output_path, exchange_file, ".te.json")
 
 @Registry.task(
     input_spec={"input": DataFormat.TE_JSON},
@@ -374,31 +389,40 @@ def te_json_triple_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     input_path = inputs["input"].path
     output_path = outputs["output"].path
 
-    with open(input_path, "r", encoding="utf-8") as f:
-        te_json = json.load(f)
-
-    triples = te_json["triples"]
-
-    triples_sorted = sorted(
-        triples,
-        key=lambda t: (
-            t["subject"]["surface_form"].lower(),
-            t["predicate"]["surface_form"].lower(),
-            t["object"]["surface_form"].lower()
+    def sort_key(t):
+        return (
+            t.get("subject", {}).get("surface_form", "").lower(),
+            t.get("predicate", {}).get("surface_form", "").lower(),
+            t.get("object", {}).get("surface_form", "").lower(),
         )
-    )
 
-    with open(output_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
+    def extract_row(triple):
+        subject = triple.get("subject", {}).get("surface_form", "").strip()
+        predicate = triple.get("predicate", {}).get("surface_form", "").strip()
+        object_ = triple.get("object", {}).get("surface_form", "").strip()
 
-        writer.writerow(["subject", "predicate", "object"])
+        if not (subject and predicate and object_):
+            return None
 
-        for triple in triples_sorted:
-            writer.writerow([
-                triple["subject"]["surface_form"],
-                triple["predicate"]["surface_form"],
-                triple["object"]["surface_form"]
-            ])
+        return [subject, predicate, object_]
+
+    def exchange_file(input_file, output_file):
+        with open(input_file, "r", encoding="utf-8") as f:
+            te_json = json.load(f)
+
+        triples = te_json.get("triples", [])
+        triples_sorted = sorted(triples, key=sort_key)
+
+        with open(output_file, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(["subject", "predicate", "object"])
+
+            for triple in triples_sorted:
+                row = extract_row(triple)
+                if row:
+                    writer.writerow(row)
+
+    process_io(input_path, output_path, exchange_file, ".csv")
 
 @Registry.task(
     input_spec={"input": DataFormat.TE_JSON},
@@ -410,49 +434,55 @@ def linked_te_json_triple_exchange(inputs: Dict[str, Data], outputs: Dict[str, D
     input_path = inputs["input"].path
     output_path = outputs["output"].path
 
-    with open(input_path, "r", encoding="utf-8") as f:
-        te_json = json.load(f)
+    def get_sf(triple, key):
+        return triple.get(key, {}).get("surface_form", "").strip()
 
-    triples = te_json.get("triples", [])
-    global_links = te_json.get("links", [])
-
-    span_to_mapping = {
-        link["span"]: link["mapping"]
-        for link in global_links
-        if link.get("mapping")
-    }
-
-    triples_sorted = sorted(
-        triples,
-        key=lambda t: (
-            (t.get("subject", {}).get("surface_form") or "").lower(),
-            (t.get("predicate", {}).get("surface_form") or "").lower(),
-            (t.get("object", {}).get("surface_form") or "").lower(),
+    def sort_key(t):
+        return (
+            get_sf(t, "subject").lower(),
+            get_sf(t, "predicate").lower(),
+            get_sf(t, "object").lower(),
         )
-    )
 
-    with open(output_path, "w", newline="", encoding="utf-8") as f:
-        writer = csv.writer(f)
+    def exchange_file(input_file, output_file):
+        with open(input_file, "r", encoding="utf-8") as f:
+            te_json = json.load(f)
 
-        writer.writerow([
-            "subject", "predicate", "object",
-            "subject_link", "predicate_link", "object_link"
-        ])
+        triples = te_json.get("triples", [])
+        global_links = te_json.get("links", [])
 
-        for triple in triples_sorted:
-            subject_sf = triple.get("subject", {}).get("surface_form", "")
-            predicate_sf = triple.get("predicate", {}).get("surface_form", "")
-            object_sf = triple.get("object", {}).get("surface_form", "")
+        span_to_mapping = {
+            link.get("span"): link.get("mapping")
+            for link in global_links
+            if link.get("span") and link.get("mapping")
+        }
 
-            subject_link = span_to_mapping.get(subject_sf, "")
-            predicate_link = span_to_mapping.get(predicate_sf, "")
-            object_link = span_to_mapping.get(object_sf, "")
+        triples_sorted = sorted(triples, key=sort_key)
+
+        with open(output_file, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
 
             writer.writerow([
-                subject_sf,
-                predicate_sf,
-                object_sf,
-                subject_link,
-                predicate_link,
-                object_link
+                "subject", "predicate", "object",
+                "subject_link", "predicate_link", "object_link"
             ])
+
+            for triple in triples_sorted:
+                subject_sf = get_sf(triple, "subject")
+                predicate_sf = get_sf(triple, "predicate")
+                object_sf = get_sf(triple, "object")
+
+                # skip kaputte triples
+                if not (subject_sf and predicate_sf and object_sf):
+                    continue
+
+                writer.writerow([
+                    subject_sf,
+                    predicate_sf,
+                    object_sf,
+                    span_to_mapping.get(subject_sf, ""),
+                    span_to_mapping.get(predicate_sf, ""),
+                    span_to_mapping.get(object_sf, "")
+                ])
+
+    process_io(input_path, output_path, exchange_file, ".csv")
