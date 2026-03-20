@@ -2,18 +2,38 @@
 set -e
 
 if [ "$#" -ne 2 ]; then
-  echo "Usage: imojie.sh <input.txt> <output_file>"
+  echo "Usage:"
+  echo "  imojie.sh <input.txt> <output_file>"
+  echo "  imojie.sh <input_folder> <output_folder>"
   exit 1
 fi
 
 INPUT="$1"
 OUTPUT="$2"
 
-if [ ! -f "$INPUT" ]; then
-  echo "Input file not found: $INPUT"
-  exit 1
-fi
-
 cd /app/imojie
 
-python standalone.py --inp $INPUT --out $OUTPUT
+if [ -f "$INPUT" ]; then
+  if [ -d "$OUTPUT" ]; then
+    echo "Error: Output must be a file when input is a file"
+    exit 1
+  fi
+
+  python standalone.py --inp "$INPUT" --out "$OUTPUT"
+  exit 0
+fi
+
+if [ -d "$INPUT" ]; then
+  mkdir -p "$OUTPUT"
+
+  for file in "$INPUT"/*; do
+    if [ -f "$file" ]; then
+      filename="${file##*/}"
+      python standalone.py --inp "$file" --out "$OUTPUT/$filename"
+    fi
+  done
+  exit 0
+fi
+
+echo "Error: Input must be a file or directory"
+exit 1
