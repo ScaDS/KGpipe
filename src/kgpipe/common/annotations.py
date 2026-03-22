@@ -11,7 +11,7 @@ def kg_class(description: str = ""):
     as a KG entity (type/Class node) once at import time.
     """
     def decorator(cls):
-        print("kg_class decorator called for class: ", cls.__name__)
+        # print("kg_class decorator called for class: ", cls.__name__)
         # add owl class
         props = []
         if description:

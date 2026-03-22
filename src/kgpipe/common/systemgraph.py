@@ -13,7 +13,8 @@ from kgcore.backend.rdf.rdf_sparql import RDFSparqlBackend, SparqlAuth
 from kgcore.model.rdf.rdf_base import RDFBaseModel
 
 from kgpipe.common.definitions import (
-    TaskEntity, TaskRunEntity, PipelineEntity, PipelineRunEntity, ImplementationEntity, MetricEntity, MetricRunEntity
+    TaskEntity, TaskRunEntity, PipelineEntity, PipelineRunEntity, ImplementationEntity, MetricEntity, MetricRunEntity,
+    MethodEntity, ToolEntity,
 )
 from kgpipe.common.config import load_config
 from kgpipe.common.util import encode_string
@@ -51,7 +52,7 @@ class PipeKG:
     It is used to store the entities and relations of the KGpipe framework.
     """
 
-    # cached_implementations: Dict[str, KGEntity] = {}
+    ### Core Layer Entities ###
 
     @staticmethod
     def add_task(task: "KgTask"):
@@ -70,43 +71,8 @@ class PipeKG:
                 "format": output_format,
             })
             SYS_KG.create_relation(type="output", source=task_entity.id, target=output_entity.id)
-
+    
     @staticmethod
-    def _prop_value(properties: List[KGProperty], *keys: str) -> Any:
-        """Find a property value by exact key or key suffix."""
-        for prop in properties:
-            if prop.key in keys:
-                return prop.value
-        for prop in properties:
-            for key in keys:
-                if prop.key.endswith(key):
-                    return prop.value
-        return None
-
-    @staticmethod
-    def _to_list(value: Any) -> List[str]:
-        """Normalize KG property values to list[str]."""
-        if value is None:
-            return []
-        if isinstance(value, list):
-            return [str(v) for v in value]
-        if isinstance(value, tuple):
-            return [str(v) for v in value]
-        if isinstance(value, str):
-            text = value.strip()
-            if not text:
-                return []
-            # Stored literals may contain Python-list string repr.
-            if text.startswith("[") and text.endswith("]"):
-                try:
-                    parsed = ast.literal_eval(text)
-                except (ValueError, SyntaxError):
-                    return [text]
-                if isinstance(parsed, list):
-                    return [str(v) for v in parsed]
-            return [text]
-        return [str(value)]
-
     def list_taskImplementations(self) -> List[ImplementationEntity]:
         entities = SYS_KG.find_entities(types=[config.ONTOLOGY_PREFIX + "Implementation"])
         implementations: List[ImplementationEntity] = []
@@ -156,32 +122,44 @@ class PipeKG:
 
         return implementations
 
-    def list_tasks(self) -> List[ImplementationEntity]:
-        """Backward-compatible alias used by existing UI code."""
-        return self.list_taskImplementations()
+    @staticmethod
+    def add_method(method: MethodEntity): pass
 
+    @staticmethod
+    def find_method(name: str) -> MethodEntity: pass
 
-    # @staticmethod
-    # def add_task_result(task_result: TaskResult):
-    #     SYS_KG.create_entity(id=new_id(),types=[config.ONTOLOGY_PREFIX+"TaskRun"], properties={
-    #         "task": task_result.task,
-    #         "config": task_result.config,
-    #         "input": task_result.input,
-    #         "output": task_result.output,
-    #         "status": task_result.status,
-    #         "duration": task_result.duration,
-    #     })
+    @staticmethod
+    def add_tool(tool: ToolEntity): pass
+    
+    @staticmethod
+    def find_tool(name: str) -> ToolEntity: pass
+    
+    @staticmethod
+    def find_implementation(): pass
 
-    # @staticmethod
-    # def add_task_run(task_run: "KgTaskReport"):
-    #     SYS_KG.create_entity(id=new_id(),types=[config.ONTOLOGY_PREFIX+"TaskReport"], properties={
-    #         "task": task_run.task_name,
-    #         "input": [data.path for data in task_run.inputs],
-    #         "output": [data.path for data in task_run.outputs],
-    #         "status": task_run.status,
-    #         "duration": task_run.duration,
-    #         "error": task_run.error,
-    #     })
+    @staticmethod
+    def add_implementation(implementation: ImplementationEntity):
+        SYS_KG.create_entity(id=new_id(),types=[config.ONTOLOGY_PREFIX+"Implementation"], properties={
+            "name": implementation.name,
+            "usesTool": implementation.usesTool,
+            "implementsMethod": implementation.implementsMethod,
+            "interface": implementation.interface,
+
+        })
+
+    @staticmethod
+    def find_implementation(name: str) -> KGEntity:
+        return SYS_KG.read_entity(id=config.PIPEKG_PREFIX+name, types=[config.ONTOLOGY_PREFIX+"Implementation"])[0]
+
+    ### Data Layer Entities ###
+    def add_data_artifact(): pass
+    def add_data_artifact_type(): pass
+    def add_data_artifact_spec(): pass
+    def find_data_artifact(): pass
+    def find_data_artifact_type(): pass
+    def find_data_artifact_spec(): pass
+
+    ### Pipeline Layer Entities ###
 
     @staticmethod
     def add_pipeline(pipeline: PipelineEntity):
@@ -191,14 +169,13 @@ class PipeKG:
             "output": pipeline.output,
         })
 
-    # @staticmethod
-    # def add_pipeline_result(pipeline_result: PipelineResult):
-    #     SYS_KG.create_entity(id=new_id(),types=["PipelineResult"], properties={
-    #         "task_results": pipeline_result.task_results,
-    #         "eval_results": pipeline_result.eval_results,
-    #         "input": pipeline_result.input,
-    #         "output": pipeline_result.output,
-    #     })
+    def find_pipeline(): pass
+    def add_pipeline_step(): pass
+    def find_pipeline_step(): pass
+    def add_pipeline_definition(): pass
+    def find_pipeline_definition(): pass
+
+    ### Evaluation Layer Entities ###
 
     @staticmethod
     def add_metric(metric: MetricEntity):
@@ -211,30 +188,28 @@ class PipeKG:
         })
 
     @staticmethod
-    def add_metric_run(metric_run: MetricRunEntity):
-        metric_run_entity = SYS_KG.create_entity(id=new_id(),types=[config.ONTOLOGY_PREFIX+"MetricRun"], properties={
-            config.ONTOLOGY_PREFIX+"status": metric_run.status,
-            config.ONTOLOGY_PREFIX+"started_at": metric_run.started_at,
-            config.ONTOLOGY_PREFIX+"ended_at": metric_run.ended_at,
-            config.ONTOLOGY_PREFIX+"value": metric_run.value,
-            config.ONTOLOGY_PREFIX+"details": metric_run.details,
-            config.ONTOLOGY_PREFIX+"input": metric_run.input[0].uri,
-        })
-        SYS_KG.create_relation(type=config.ONTOLOGY_PREFIX+"computedMetric", source=metric_run_entity.id, target=metric_run.computedMetric)
+    def find_metric(metric_name: str) -> MetricEntity:
+        pass
 
-    # @staticmethod
-    # def find_implementation_by_name(name: str) -> KGEntity:
-    #     return SYS_KG.read_entity(id=config.PIPEKG_PREFIX+name, types=[config.ONTOLOGY_PREFIX+"Implementation"])[0]
+    ### Run Layer Entities ###
+    # def add_task_run(): pass
+    # def find_task_run(): pass
+    # def add_pipeline_run(): pass
+    # def find_pipeline_run(): pass
+    # def add_metric_run(): pass
+    # def find_metric_run(): pass
 
     @staticmethod
-    def add_implementation(implementation: ImplementationEntity):
-        SYS_KG.create_entity(id=new_id(),types=[config.ONTOLOGY_PREFIX+"Implementation"], properties={
-            "name": implementation.name,
-            "usesTool": implementation.usesTool,
-            "implementsMethod": implementation.implementsMethod,
-            "interface": implementation.interface,
-
-        })
+    def add_task_run(task_run: TaskRunEntity):
+        # SYS_KG.create_entity(id=new_id(),types=[config.ONTOLOGY_PREFIX+"TaskReport"], properties={
+        #     "task": task_run.task_name,
+        #     "input": [data.path for data in task_run.inputs],
+        #     "output": [data.path for data in task_run.outputs],
+        #     "status": task_run.status,
+        #     "duration": task_run.duration,
+        #     "error": task_run.error,
+        # })
+        pass
 
     @staticmethod
     def add_pipeline_run(pipeline_run: PipelineRunEntity):
@@ -258,27 +233,76 @@ class PipeKG:
 
         # return pipeline_run_entity
 
+    # @staticmethod
+    # def add_pipeline_result(pipeline_result: PipelineResult):
+    #     SYS_KG.create_entity(id=new_id(),types=["PipelineResult"], properties={
+    #         "task_results": pipeline_result.task_results,
+    #         "eval_results": pipeline_result.eval_results,
+    #         "input": pipeline_result.input,
+    #         "output": pipeline_result.output,
+    #     })
+
+    @staticmethod
+    def add_metric_run(metric_run: MetricRunEntity):
+        metric_run_entity = SYS_KG.create_entity(id=new_id(),types=[config.ONTOLOGY_PREFIX+"MetricRun"], properties={
+            config.ONTOLOGY_PREFIX+"status": metric_run.status,
+            config.ONTOLOGY_PREFIX+"started_at": metric_run.started_at,
+            config.ONTOLOGY_PREFIX+"ended_at": metric_run.ended_at,
+            config.ONTOLOGY_PREFIX+"value": metric_run.value,
+            config.ONTOLOGY_PREFIX+"details": metric_run.details,
+            config.ONTOLOGY_PREFIX+"input": metric_run.input[0].uri,
+        })
+        SYS_KG.create_relation(type=config.ONTOLOGY_PREFIX+"computedMetric", source=metric_run_entity.id, target=metric_run.computedMetric)
+
+    ### Parameter Layer Entities ###
+    # def add_parameter(): pass
+    # def find_parameter(): pass
+    # def add_parameter_binding(): pass
+    # def find_parameter_binding(): pass
+
+    ### Utility Functions ###
+
     @staticmethod
     def sparql_construct(query: str):
         backend : RDFSparqlBackend = SYS_KG.backend
         result = backend.query_sparql(query)
         return result
 
-
-class MapperUtil():
-    """
-    Intermediate class to map the core classes to the definitions to the system graph.
-    Will be replaced in the future
-    """
+    @staticmethod
+    def _prop_value(properties: List[KGProperty], *keys: str) -> Any:
+        """Find a property value by exact key or key suffix."""
+        for prop in properties:
+            if prop.key in keys:
+                return prop.value
+        for prop in properties:
+            for key in keys:
+                if prop.key.endswith(key):
+                    return prop.value
+        return None
 
     @staticmethod
-    def map_task(task: "KgTask") -> TaskEntity:
-        return TaskEntity(
-            name=task.name,
-            input=task.input,
-            output=task.output,
-        )
-
+    def _to_list(value: Any) -> List[str]:
+        """Normalize KG property values to list[str]."""
+        if value is None:
+            return []
+        if isinstance(value, list):
+            return [str(v) for v in value]
+        if isinstance(value, tuple):
+            return [str(v) for v in value]
+        if isinstance(value, str):
+            text = value.strip()
+            if not text:
+                return []
+            # Stored literals may contain Python-list string repr.
+            if text.startswith("[") and text.endswith("]"):
+                try:
+                    parsed = ast.literal_eval(text)
+                except (ValueError, SyntaxError):
+                    return [text]
+                if isinstance(parsed, list):
+                    return [str(v) for v in parsed]
+            return [text]
+        return [str(value)]
 
 # def Track(_cls=None, *, with_timestamp: bool = False):
 #     """
