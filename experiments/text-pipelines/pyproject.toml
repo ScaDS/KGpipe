@@ -6,12 +6,17 @@ build-backend = "setuptools.build_meta"
 name = "kgpipe-text_pipelines"
 version = "0.1.0"
 description = "text-pipelines project for KGpipe"
-requires-python = ">=3.12"
+requires-python = ">=3.8"
 dependencies = [
-    "kgpipe",
     "numpy",
     "scikit-learn",
     "sentence-transformers",
+    "torch",
+    "transformers",
+    "spacy",
+    "en_core_web_sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.6.0/en_core_web_sm-3.6.0-py3-none-any.whl",
+    "alignscore @ git+ssh://git@github.com/yuh-zha/AlignScore.git",
+    "tiktoken"
 ]
 
 [project.optional-dependencies]
