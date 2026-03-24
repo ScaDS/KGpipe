@@ -24,6 +24,7 @@ fi
 
 if [ -d "$INPUT" ]; then
   mkdir -p "$OUTPUT"
+  chmod 777 "$OUTPUT"
 
   for file in "$INPUT"/*; do
     if [ -f "$file" ]; then
