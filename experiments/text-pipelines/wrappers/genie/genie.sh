@@ -31,6 +31,7 @@ if [ -d "$INPUT" ]; then
     exit 1
   fi
   mkdir -p "$OUTPUT"
+  chmod 777 "$OUTPUT"
 
   echo "Processing folder..."
 

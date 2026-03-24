@@ -144,7 +144,7 @@ def run_dataset():
 
     from text_pipelines.text_tasks import imojie_task_docker, imojie_exchange, minie_task_docker, minie_exchange, \
         graphene_task_docker, graphene_nt_exchange, genie_task_docker, genie_exchange
-    from kgpipe_tasks.text_processing import label_alias_embedding_rl, dbpedia_spotlight_ner_nel, \
+    from kgpipe_tasks.text_processing import corenlp_openie_extraction, label_alias_embedding_rl, dbpedia_spotlight_ner_nel, \
         dbpedia_spotlight_exchange, corenlp_exchange
     from kgpipe_tasks.transform_interop import aggregate3_te_json
 
@@ -154,14 +154,14 @@ def run_dataset():
         #"imojie": imojie_pipe,
         #"minie": minie_pipe,
         #"openie6": openie6_pipe,
-        #"corenlp_with_linking": [
-        #    corenlp_openie_extraction,
-        #    corenlp_exchange,
-        #    label_alias_embedding_rl,
-        #    dbpedia_spotlight_ner_nel,
-        #    dbpedia_spotlight_exchange,
-        #    aggregate3_te_json
-        #    ],
+        "corenlp_with_linking": [
+            corenlp_openie_extraction,
+            corenlp_exchange,
+            label_alias_embedding_rl,
+            dbpedia_spotlight_ner_nel,
+            dbpedia_spotlight_exchange,
+            aggregate3_te_json
+            ],
         "genie_with_linking": [
             genie_task_docker,
             genie_exchange,
