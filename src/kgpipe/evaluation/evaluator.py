@@ -9,10 +9,25 @@ from typing import Dict, List, Optional, Any
 from pathlib import Path
 
 from ..common.models import KG, Data
-from .base import EvaluationAspect, AspectResult, EvaluationConfig
+from .base import EvaluationAspect, AspectResult, EvaluationConfig, AspectEvaluator
 from .metrics import MetricResult
 from .reports import EvaluationReport
+from .aspects.statistical import StatisticalConfig
+from .aspects.semantic import SemanticConfig
+from .aspects.reference import ReferenceConfig
+from .base import MetricConfig
+from .util import read_metric_config_yaml
+from typing import Type
 
+def get_aspect_config_type(aspect: EvaluationAspect) -> Type[MetricConfig]:
+    if aspect == EvaluationAspect.STATISTICAL:
+        return StatisticalConfig
+    elif aspect == EvaluationAspect.SEMANTIC:
+        return SemanticConfig
+    elif aspect == EvaluationAspect.REFERENCE:
+        return ReferenceConfig
+    else:
+        raise ValueError(f"No config available for aspect: {aspect}")
 
 class Evaluator:
     """Main evaluator that orchestrates evaluation across all aspects."""
@@ -38,13 +53,13 @@ class Evaluator:
         
         return evaluators
     
-    def evaluate(self, kg: KG, references: Dict[str, Data] = {}) -> EvaluationReport:
+    def evaluate(self, kg: KG, config: Optional[EvaluationConfig]) -> EvaluationReport:
         """Evaluate the KG across all configured aspects."""
         if not kg.exists():
             raise FileNotFoundError(f"KG file not found: {kg.path}")
         
-        if references is {}:
-            raise ValueError("References are required for reference-based evaluation")
+        # if references is {}:
+        #     raise ValueError("References are required for reference-based evaluation")
         
         aspect_results = []
         all_metrics = []
@@ -52,16 +67,19 @@ class Evaluator:
         # Evaluate each aspect
         for aspect in self.config.aspects:
             if aspect in self.aspect_evaluators:
-                evaluator = self.aspect_evaluators[aspect]
+                evaluator: AspectEvaluator = self.aspect_evaluators[aspect]
                 
                 # Prepare kwargs for aspect evaluation
                 kwargs = {}
-                if aspect == EvaluationAspect.REFERENCE:
-                    kwargs['references'] = references
                 
                 if self.config.metrics:
                     kwargs['metrics'] = self.config.metrics
-                
+
+                config_type = get_aspect_config_type(aspect)
+
+                # TODO if metric empty for aspect, use default config
+                kwargs['config'] = read_metric_config_yaml(self.config.metric_config_path, config_type)
+
                 try:
                     aspect_result = evaluator.evaluate(kg, **kwargs)
                     aspect_results.append(aspect_result)
@@ -76,7 +94,7 @@ class Evaluator:
         # Create evaluation report
         report = EvaluationReport(
             kg=kg,
-            references=references,
+            references={},
             aspect_results=aspect_results,
             overall_score=overall_score,
             config=self.config

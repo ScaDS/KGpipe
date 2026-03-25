@@ -1,0 +1,14 @@
+FROM python:3.9
+
+ARG BUILD_VERSION=latest
+ARG THRESHOLD=0.5
+
+ENV THRESHOLD=${THRESHOLD}
+ENV OUTPUT_DIR=/output
+ENV MAX_RESULTS=100
+ENV VERBOSE=false
+
+WORKDIR /app
+COPY . .
+CMD ["python", "app.py"]
+

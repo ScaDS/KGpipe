@@ -9,6 +9,8 @@ class KgPipeConfig(KGConfig):
     SYS_KG_URL: str = "memory://"
     SYS_KG_USR: str = ""
     SYS_KG_PSW: str = ""
+    ONTOLOGY_PREFIX: str = "http://github.com/ScaDS/kgpipe/ontology/"
+    PIPEKG_PREFIX: str = "http://github.com/ScaDS/kgpipe/resource/"
 
 
 SOURCE_NAMESPACE: str = "http://kg.org/rdf/"

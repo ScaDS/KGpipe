@@ -1,12 +1,16 @@
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Type
 import json
 import re
+from enum import Enum
+
+import yaml
 
 from kgpipe.common import KG
 from kgpipe.common.models import Data, KgPipePlan, DataFormat
 from kgpipe.evaluation.aspects import reference
 from kgpipe.evaluation.aspects.reference import Reference
+from kgpipe.evaluation.base import MetricConfig
 
 
 def resolve_relative_path(path: str, base_path: Path) -> Path:
@@ -111,4 +115,43 @@ class StageResultManager():
          json_data =  json.load(f)
          return KgPipePlan(**json_data)
 
+def get_metric_config_template(metricConfig: MetricConfig) -> str:
+   """
+   for a metricconfig which is a pydantic model, return a yaml that displays the model fields and their default values
+   """
+   model = metricConfig if isinstance(metricConfig, type) else metricConfig.__class__
+   fields = model.model_fields
 
+   template: Dict[str, object] = {}
+   for field_name, field_info in fields.items():
+      if field_info.is_required():
+         value = None
+      elif field_info.default_factory is not None:
+         value = field_info.default_factory()
+      else:
+         value = field_info.default
+
+      if isinstance(value, Path):
+         value = value.as_posix()
+      elif isinstance(value, Enum):
+         value = value.value
+
+      template[field_name] = value
+
+   return yaml.safe_dump(template, sort_keys=False)
+
+def read_metric_config_yaml(file: str, config_type: Type[MetricConfig]) -> MetricConfig:
+   """
+   reads the config file and parses it into the given config type
+   """
+   with open(file, "r") as f:
+      yaml_data = yaml.safe_load(f)
+
+   if yaml_data is None:
+      yaml_data = {}
+
+   if not isinstance(yaml_data, dict):
+      raise ValueError(f"Metric config YAML must be a mapping/object, got {type(yaml_data).__name__}")
+
+   return config_type.model_validate(yaml_data)
+   

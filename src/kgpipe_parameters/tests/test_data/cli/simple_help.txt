@@ -1,0 +1,8 @@
+Usage: matcher [OPTIONS]
+
+  --threshold VALUE    Matching threshold (0.0-1.0) [default: 0.5]
+  --input FILE         Input file path (required)
+  --output FILE        Output file path
+  --max-results INT    Maximum number of results [default: 100]
+  --verbose            Enable verbose output
+

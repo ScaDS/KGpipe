@@ -7,8 +7,8 @@ from .data import Data, Format, DataFormat
 from pydantic import BaseModel
 import time
 import shutil
-
-from .configuration import Parameter, ConfigurationProfile
+from kgpipe.common.model.default_catalog import TaskCategory
+from .configuration import Parameter, ConfigurationDefinition
 from kgpipe.common.annotations import kg_class
 
 type TaskName = str
@@ -35,13 +35,11 @@ class TaskStatus(Enum):
     FAILED = "failed"
     SKIPPED = "skipped"
 
-# TODO impl later for typed api
-class TaskCategory():
-    pass
 
-# TODO impl later for typed api
-class TaskCatalog():
-    pass
+
+# # TODO impl later for typed api
+# class TaskCatalog():
+#     pass
 
 @kg_class()
 @dataclass
@@ -52,8 +50,8 @@ class KgTask:
     output_spec: Mapping[str, Format]
     function: Callable[[Dict[str, Data], Dict[str, Data]], None]
     description: Optional[str] = None
-    category: List[str] = field(default_factory=list)
-    config: Optional[ConfigurationProfile] = None
+    category: List[TaskCategory] = field(default_factory=list)
+    config_spec: Optional[ConfigurationDefinition] = None
     
     def __post_init__(self):
         if not self.name:

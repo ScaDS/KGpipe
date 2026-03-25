@@ -17,6 +17,8 @@ from rdflib import Graph
 from pydantic import BaseModel, field_validator
 from pydantic_core import core_schema
 
+from kgpipe.common.model.kg import KG
+
 class Metric(ABC):
     """Abstract base class for evaluation metrics."""
     

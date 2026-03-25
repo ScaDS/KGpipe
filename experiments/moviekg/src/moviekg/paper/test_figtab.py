@@ -456,11 +456,11 @@ def test_table_6():
     metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
     metric_df["pipeline"] = metric_df["pipeline"].map(map_pipeline_name_pretty)
     from moviekg.paper.helpers.getter import (
-        get_pipeline_stage_metric_dict, ref_kg_f1, ref_kg_p, ref_kg_r, ref_source_entity_f1, ref_source_entity_p, ref_source_entity_r
+        get_pipeline_stage_metric_dict, ref_kg_f1, ref_kg_p, ref_kg_r, ref_source_entity_f1, ref_source_entity_p, ref_source_entity_r, ref_source_typed_entity_r, ref_source_typed_entity_p
     )
 
     metrics = [
-        ref_kg_f1.__name__, ref_kg_p.__name__, ref_kg_r.__name__, ref_source_entity_f1.__name__, ref_source_entity_p.__name__, ref_source_entity_r.__name__
+        ref_kg_f1.__name__, ref_kg_p.__name__, ref_kg_r.__name__, ref_source_entity_f1.__name__, ref_source_entity_p.__name__, ref_source_entity_r.__name__, ref_source_typed_entity_r.__name__, ref_source_typed_entity_p.__name__
     ]
 
     psmd = get_pipeline_stage_metric_dict(metric_df, metrics)
@@ -469,7 +469,7 @@ def test_table_6():
 
     rows = []
 
-    round_to = 2
+    round_to = 3
 
     for pipeline, stage_dict in psmd.items():
         if pipeline in ["reference", "seed"]:
@@ -478,18 +478,22 @@ def test_table_6():
         kg_r = [0, 0, 0]
         se_p = [0, 0, 0]
         se_r = [0, 0, 0]
-
+        ste_p = [0, 0, 0]
+        ste_r = [0, 0, 0]
 
         for stage, metric_dict in stage_dict.items():
             kg_p[int(stage.split("_")[1]) - 1] = round(metric_dict.get(ref_kg_p.__name__, -1), round_to)
             kg_r[int(stage.split("_")[1]) - 1] = round(metric_dict.get(ref_kg_r.__name__, -1), round_to)
             se_p[int(stage.split("_")[1]) - 1] = round(metric_dict.get(ref_source_entity_p.__name__, -1), round_to)
             se_r[int(stage.split("_")[1]) - 1] = round(metric_dict.get(ref_source_entity_r.__name__, -1), round_to)
+            ste_p[int(stage.split("_")[1]) - 1] = round(metric_dict.get(ref_source_typed_entity_p.__name__, -1), round_to)
+            ste_r[int(stage.split("_")[1]) - 1] = round(metric_dict.get(ref_source_typed_entity_r.__name__, -1), round_to)
         
         rows.append({
             "pipeline": pipeline, 
             "kg_p@1": kg_p[0], "kg_r@1": kg_r[0], "kg_p@2": kg_p[1], "kg_r@2": kg_r[1], "kg_p@3": kg_p[2], "kg_r@3": kg_r[2],
-            "se_p@1": se_p[0], "se_r@1": se_r[0], "se_p@2": se_p[1], "se_r@2": se_r[1], "se_p@3": se_p[2], "se_r@3": se_r[2]})
+            "se_p@1": se_p[0], "se_r@1": se_r[0], "se_p@2": se_p[1], "se_r@2": se_r[1], "se_p@3": se_p[2], "se_r@3": se_r[2],
+            "ste_p@1": ste_p[0], "ste_r@1": ste_r[0], "ste_p@2": ste_p[1], "ste_r@2": ste_r[1], "ste_p@3": ste_p[2], "ste_r@3": ste_r[2]})
 
     df = pd.DataFrame(rows)
     output_path = OUTPUT_ROOT / "paper/test_tab_6_reference_alignment.csv"
@@ -699,3 +703,80 @@ def test_full_ranking_table():
     result = result.set_index("rank")
 
     result.to_csv(OUTPUT_ROOT / "paper/test_tab_7_full_ranking_table.csv", sep="\t")
+
+def test_new_ranking_table():
+    """
+    """
+    from moviekg.paper.helpers.ranking import _rank_and_save3csv
+    df =_rank_and_save3csv("test_rank_new", psmd)
+    df["pipeline"] = df["pipeline"].map(PIPLEINE_NAME_MAP)
+    df.to_csv(OUTPUT_ROOT / "paper/test_tab_8_new_ranking_table.csv", sep="\t")
+    # metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
+    # metric_df["pipeline"] = metric_df["pipeline"].map(map_pipeline_name_pretty)
+    # # metric_df = metric_df[metric_df["stage"] == "stage_3"]
+    # # metric_df = metric_df[metric_df["metric"].isin(TABLE_DISPLAY_NAMES.keys())]
+    # # metric_df = metric_df[metric_df["pipeline"] != "reference"]
+    # # metric_df = metric_df.reset_index(drop=True)
+    # # metric_df = metric_df.pivot(index="pipeline", columns="metric", values="normalized")
+    # # metric_df = metric_df.reset_index()
+    # metric_df.to_csv(OUTPUT_ROOT / "paper/test_tab_8_new_ranking_table.csv", sep="\t")
+
+
+def test_new_quality_table():
+
+    metric_df = load_metrics_from_file(OUTPUT_ROOT / "all_metrics.csv")
+    metric_df["pipeline"] = metric_df["pipeline"].map(map_pipeline_name_pretty)
+    from moviekg.paper.helpers.getter import (
+        get_pipeline_stage_metric_dict, 
+        sta_entity_count, sta_fact_count, sta_type_count, sta_relation_count, sta_shallow_entity_count, sta_denisity, sta_duration,
+        ref_kg_f1, ref_kg_p, ref_kg_r, 
+        ref_source_entity_f1, ref_source_entity_p, ref_source_entity_r, 
+        ref_source_typed_entity_r, ref_source_typed_entity_p,
+        sem_disjoint_domain, sem_incorrect_relation_direction, sem_incorrect_relation_cardinality, sem_incorrect_relation_range, sem_incorrect_relation_domain, sem_incorrect_datatype, sem_incorrect_datatype_format,
+    )
+
+    metrics = [
+        sta_entity_count.__name__, sta_fact_count.__name__, sta_type_count.__name__, sta_relation_count.__name__, sta_shallow_entity_count.__name__, sta_denisity.__name__, sta_duration.__name__,
+        ref_kg_f1.__name__, ref_kg_p.__name__, 
+        ref_kg_r.__name__, ref_source_entity_f1.__name__, 
+        ref_source_entity_p.__name__, ref_source_entity_r.__name__, 
+        ref_source_typed_entity_r.__name__, ref_source_typed_entity_p.__name__,
+        sem_disjoint_domain.__name__, sem_incorrect_relation_direction.__name__, sem_incorrect_relation_cardinality.__name__, sem_incorrect_relation_range.__name__, sem_incorrect_relation_domain.__name__, sem_incorrect_datatype.__name__, sem_incorrect_datatype_format.__name__,
+    ]
+
+    psmd = get_pipeline_stage_metric_dict(metric_df, metrics)
+    # import json
+    # json.dump(psmd, open(OUTPUT_ROOT / "paper/test_tab_6_metrics.json", "w"), indent=4)
+
+    rows = []
+
+    round_to = 3
+
+    for pipeline, stage_dict in psmd.items():
+        if pipeline in ["reference", "seed"]:
+            continue
+
+        for stage, metric_dict in stage_dict.items():
+            ec = round(metric_dict.get(sta_entity_count.__name__, -1), round_to)
+            kg_p = round(metric_dict.get(ref_kg_p.__name__, -1), round_to)
+            kg_r = round(metric_dict.get(ref_kg_r.__name__, -1), round_to)
+            se_p = round(metric_dict.get(ref_source_entity_p.__name__, -1), round_to)
+            se_r= round(metric_dict.get(ref_source_entity_r.__name__, -1), round_to)
+            ste_p = round(metric_dict.get(ref_source_typed_entity_p.__name__, -1), round_to)
+            ste_r = round(metric_dict.get(ref_source_typed_entity_r.__name__, -1), round_to)
+            o_dt = round(metric_dict.get(sem_disjoint_domain.__name__, -1), round_to)
+            o_d = round(metric_dict.get(sem_incorrect_relation_domain.__name__, -1), round_to)
+            o_r = round(metric_dict.get(sem_incorrect_relation_range.__name__, -1), round_to)
+            o_rd = round(metric_dict.get(sem_incorrect_relation_direction.__name__, -1), round_to)
+            o_lt = round(metric_dict.get(sem_incorrect_datatype.__name__, -1), round_to)
+            o_lf = round(metric_dict.get(sem_incorrect_datatype_format.__name__, -1), round_to)
+        
+            rows.append({
+                "pipeline": pipeline, "stage": stage,
+                "EC": ec,
+                "kg_p": kg_p, "kg_r": kg_r, "se_p": se_p, "se_r": se_r, "ste_p": ste_p, "ste_r": ste_r, 
+                "O_DT": o_dt, "O_D": o_d, "O_R": o_r, "O_RD": o_rd, "O_LT": o_lt, "O_LF": o_lf
+            })
+
+    df = pd.DataFrame(rows)
+    df.to_csv(OUTPUT_ROOT / "paper/test_tab_9_new_quality_table.csv", sep="\t")

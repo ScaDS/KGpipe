@@ -20,7 +20,11 @@ from collections import defaultdict
 from kgcore.api.ontology import OntologyExtractor, OntologyUtil, Ontology
 from kgpipe.common.registry import Registry
 import time
+from ..base import MetricConfig
 
+class SemanticConfig(MetricConfig):
+    """Config for semantic metrics."""
+    pass
 
 def enrich_type_information(graph: Graph, ontology: Ontology, type_property: URIRef = RDF.type) -> Graph:
     type_dict = {}
@@ -55,7 +59,7 @@ class ReasoningMetric(Metric):
             aspect=EvaluationAspect.SEMANTIC
         )
     
-    def compute(self, kg: KG, **kwargs) -> MetricResult:
+    def compute(self, kg: KG, config: SemanticConfig, **kwargs) -> MetricResult:
         """Compute reasoning score."""
 
         import tempfile
@@ -118,7 +122,7 @@ class SchemaConsistencyMetric(Metric):
             aspect=EvaluationAspect.SEMANTIC
         )
     
-    def compute(self, kg: KG, **kwargs) -> MetricResult:
+    def compute(self, kg: KG, config: SemanticConfig, **kwargs) -> MetricResult:
         """Compute schema consistency score."""
         try:
             # Simple implementation - check for basic RDF structure
@@ -196,7 +200,7 @@ class NamespaceUsageMetric(Metric):
             aspect=EvaluationAspect.SEMANTIC
         )
     
-    def compute(self, kg: KG, **kwargs) -> MetricResult:
+    def compute(self, kg: KG, config: SemanticConfig, **kwargs) -> MetricResult:
         """Compute namespace usage score."""
         try:
             namespaces = set()
@@ -260,7 +264,7 @@ class DisjointDomainMetric(Metric):
             aspect=EvaluationAspect.SEMANTIC
         )
     
-    def compute(self, kg: KG, **kwargs) -> MetricResult:
+    def compute(self, kg: KG, config: SemanticConfig, **kwargs) -> MetricResult:
         """Compute disjoint domain score."""
 
         raw_graph: Graph = kg.get_graph()
@@ -305,7 +309,7 @@ class IncorrectRelationDirectionMetric(Metric):
             aspect=EvaluationAspect.SEMANTIC
         )
     
-    def compute(self, kg: KG, **kwargs) -> MetricResult:
+    def compute(self, kg: KG, config: SemanticConfig, **kwargs) -> MetricResult:
         """Compute incorrect relation direction score."""
         raw_graph: Graph = kg.get_graph()
         ontology_graph: Graph = kg.get_ontology_graph()
@@ -314,6 +318,7 @@ class IncorrectRelationDirectionMetric(Metric):
 
         if len(ontology_graph) == 0:
             ontology_graph = graph
+            print(f"INFO: ontology_graph is empty, using graph instead")
 
         # TODO use ontology implementation from framework
         predicate_defs_sr = ontology_graph.query(
@@ -403,7 +408,7 @@ class IncorrectRelationCardinalityMetric(Metric):
             aspect=EvaluationAspect.SEMANTIC
         )
     
-    def compute(self, kg: KG, **kwargs) -> MetricResult:
+    def compute(self, kg: KG, config: SemanticConfig, **kwargs) -> MetricResult:
         """Compute incorrect relation cardinality score."""
 
         raw_graph: Graph = kg.get_graph()
@@ -464,7 +469,7 @@ class IncorrectRelationRangeMetric(Metric):
             aspect=EvaluationAspect.SEMANTIC
         )
     
-    def compute(self, kg: KG, **kwargs) -> MetricResult:
+    def compute(self, kg: KG, config: SemanticConfig, **kwargs) -> MetricResult:
 
         raw_graph: Graph = kg.get_graph()
         ontology_graph: Graph = kg.get_ontology_graph()
@@ -534,7 +539,7 @@ class IncorrectRelationDomainMetric(Metric):
             aspect=EvaluationAspect.SEMANTIC
         )
     
-    def compute(self, kg: KG, **kwargs) -> MetricResult:
+    def compute(self, kg: KG, config: SemanticConfig, **kwargs) -> MetricResult:
         """Compute incorrect relation domain score."""
 
         raw_graph: Graph = kg.get_graph()
@@ -602,7 +607,7 @@ class IncorrectDatatypeMetric(Metric):
             aspect=EvaluationAspect.SEMANTIC
         )
     
-    def compute(self, kg: KG, **kwargs) -> MetricResult:
+    def compute(self, kg: KG, config: SemanticConfig, **kwargs) -> MetricResult:
         """Compute incorrect datatype score."""
 
         raw_graph: Graph = kg.get_graph()
@@ -675,7 +680,7 @@ class IncorrectDatatypeFormatMetric(Metric):
 
     
     
-    def compute(self, kg: KG, **kwargs) -> MetricResult:
+    def compute(self, kg: KG, config: SemanticConfig, **kwargs) -> MetricResult:
         """Compute incorrect datatype format score."""
 
         from kgpipe.evaluation.aspects.func.datatype_validator import validate_datatype
@@ -750,7 +755,7 @@ class OntologyClassCoverageMetric(Metric):
             aspect=EvaluationAspect.SEMANTIC
         )
 
-    def compute(self, kg: KG, **kwargs) -> MetricResult:
+    def compute(self, kg: KG, config: SemanticConfig, **kwargs) -> MetricResult:
         """Compute ontology class coverage score."""
 
         raw_graph: Graph = kg.get_graph()
@@ -788,7 +793,7 @@ class OntologyRelationCoverageMetric(Metric):
             aspect=EvaluationAspect.SEMANTIC
         )
 
-    def compute(self, kg: KG, **kwargs) -> MetricResult:
+    def compute(self, kg: KG, config: SemanticConfig, **kwargs) -> MetricResult:
         """Compute ontology relation coverage score."""
 
         raw_graph: Graph = kg.get_graph()
@@ -836,7 +841,7 @@ class OntologyPropertyCoverageMetric(Metric):
             aspect=EvaluationAspect.SEMANTIC
         )
 
-    def compute(self, kg: KG, **kwargs) -> MetricResult:
+    def compute(self, kg: KG, config: SemanticConfig, **kwargs) -> MetricResult:
         """Compute ontology property coverage score."""
         return MetricResult(
             name=self.name,
@@ -856,7 +861,7 @@ class OntologyNamespaceCoverageMetric(Metric):
             aspect=EvaluationAspect.SEMANTIC
         )
 
-    def compute(self, kg: KG, **kwargs) -> MetricResult:
+    def compute(self, kg: KG, config: SemanticConfig, **kwargs) -> MetricResult:
         """Compute ontology namespace coverage score."""
 
         # graph = kg.get_graph()
@@ -895,8 +900,10 @@ class SemanticEvaluator(AspectEvaluator):
             OntologyNamespaceCoverageMetric(),
         ]
     
-    def evaluate(self, kg: KG, metrics: Optional[List[str]] = None, **kwargs) -> AspectResult:
+    def evaluate(self, kg: KG, metrics: Optional[List[str]] = None, config: Optional[SemanticConfig] = None, **kwargs) -> AspectResult:
         """Evaluate semantic properties of the KG."""
+        if config is None:
+            config = SemanticConfig(name="default")
         results = []
         
         # Filter metrics if specified
@@ -908,9 +915,10 @@ class SemanticEvaluator(AspectEvaluator):
         for metric in metrics_to_compute:
             try:
                 start_time = time.time()
-                result = metric.compute(kg, **kwargs)
+                result = metric.compute(kg, config, **kwargs)
                 end_time = time.time()
                 result.duration = end_time - start_time
+                result.input = str(kg.path)
                 results.append(result)
             except Exception as e:
                 # Create error result
