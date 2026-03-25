@@ -377,9 +377,6 @@ def test_genie_pipe():
 def test_eval_text():
     from text_pipelines.text_tasks import text_eval
 
-    output_dir = tempfile.mkdtemp()
-    output_path = os.path.join(output_dir, "output.te.json")
-
     eval_task_input_path = Path("experiments/text-pipelines/test/test.te.json")
 
     output_dir = tempfile.mkdtemp()
@@ -395,10 +392,10 @@ def test_eval_text():
     )
 
     assert report.status == "success"
-    assert os.path.exists(output_path)
-    assert os.path.getsize(output_path) > 0
+    assert os.path.exists(task_output_path)
+    assert os.path.getsize(task_output_path) > 0
 
-    _delete_file(output_path)
+    #_delete_file(task_output_path)
 
 if __name__ == '__main__':
     test_eval_text()
