@@ -10,6 +10,7 @@ from kgpipe.common import TaskInput, TaskOutput, DataFormat, get_docker_volume_b
     Data
 from kgpipe.common.registry import Registry
 from kgpipe.execution import docker_client
+from text_pipelines.text_eval import write_csv
 
 
 def process_io(input_path, output_path, process_file_fn, extension):
@@ -484,5 +485,73 @@ def linked_te_json_triple_exchange(inputs: Dict[str, Data], outputs: Dict[str, D
                     span_to_mapping.get(predicate_sf, ""),
                     span_to_mapping.get(object_sf, "")
                 ])
+
+    process_io(input_path, output_path, exchange_file, ".csv")
+
+
+@Registry.task(
+    input_spec={"input": DataFormat.TE_JSON},
+    output_spec={"output": DataFormat.CSV},
+    description="Evaluate TE_JSON",
+    category=["Evaluation"]
+)
+def text_eval(inputs: Dict[str, Data], outputs: Dict[str, Data]):
+
+    from text_pipelines.text_eval import getModelAndTokenizerFromPath, getTripletCritic_proba
+
+    input_path = inputs["input"].path
+    output_path = outputs["output"].path
+
+    def sort_key(t):
+        return (
+            t.get("subject", {}).get("surface_form", "").lower(),
+            t.get("predicate", {}).get("surface_form", "").lower(),
+            t.get("object", {}).get("surface_form", "").lower(),
+        )
+
+    def extract_row(triple):
+        subject = triple.get("subject", {}).get("surface_form", "").strip()
+        predicate = triple.get("predicate", {}).get("surface_form", "").strip()
+        object_ = triple.get("object", {}).get("surface_form", "").strip()
+
+        if not (subject and predicate and object_):
+            return None
+
+        return [subject, predicate, object_]
+
+    def exchange_file(input_file, output_file):
+        with open(input_file, "r", encoding="utf-8") as f:
+            te_json = json.load(f)
+
+        model, tokenizer = getModelAndTokenizerFromPath("Babelscape/mdeberta-v3-base-triplet-critic-xnli")
+
+        with open(input_path, "r", encoding="utf-8") as f:
+            te_json = json.load(f)
+
+        triples = te_json.get("triples", [])
+        abstract = te_json.get("text")
+
+        triples_sorted = sorted(triples, key=sort_key)
+
+        with open(output_file, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+
+            writer.writerow([
+                "score", "subject", "predicate", "object"
+            ])
+
+            for triple in triples_sorted:
+                row = extract_row(triple)
+
+                score = getTripletCritic_proba(row, abstract, tokenizer, model)
+
+                writer.writerow([score, row, abstract])
+
+                # print(get_XNLI_proba(row, abstract, tokenizer, model))
+                # scorer = AlignScore(model='roberta-base', batch_size=32, device='cpu',
+                #                    ckpt_path='https://huggingface.co/yzha/AlignScore/resolve/main/AlignScore-large.ckpt',
+                #                    evaluation_mode='bin_sp')
+                # print(getAlignScore(row1, scorer))
+
 
     process_io(input_path, output_path, exchange_file, ".csv")

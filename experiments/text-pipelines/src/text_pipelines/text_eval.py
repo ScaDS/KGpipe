@@ -1,4 +1,4 @@
-import json
+import csv
 
 import transformers
 import torch
@@ -10,13 +10,14 @@ import nltk
 nltk.download('punkt_tab')
 spacy.load('en_core_web_sm')
 
-def get_XNLI_proba(row, tokenizer, model):
+def get_XNLI_proba(triple, abstract, tokenizer, model):
+    subject, predicate, _object = triple
     if model.config.num_labels != 3:
         raise ValueError("Model should have 3 classes. Got {}".format(model.config.num_labels))
-    verbalized =  row["prop"] + " is " + row["value"]
+    verbalized =  predicate + " is " + _object
 
     encoded_input = tokenizer(
-        row["abstract"], verbalized,
+        abstract, verbalized,
         return_tensors="pt",
         add_special_tokens=True,
         max_length=256,
@@ -34,14 +35,15 @@ def get_XNLI_proba(row, tokenizer, model):
 
     return prob_label_is_true
 
-def getTripletCritic_proba(row, tokenizer, model):
-    clean_subj=row["ent_uri"].replace("_", " ")
+def getTripletCritic_proba(triple, abstract, tokenizer, model):
+    subject, predicate, _object = triple
+    clean_subj=subject.replace("_", " ")
     if "(" in clean_subj:
         clean_subj=clean_subj.split("(")[0]
-    verbalized= clean_subj+"<sep>"+row["prop"]+"<sep>"+ row["value"]
+    verbalized= clean_subj+"<sep>"+predicate+"<sep>"+ _object
 
     encoded_input = tokenizer(
-    row["abstract"],verbalized,
+    abstract,verbalized,
     return_tensors="pt",
     add_special_tokens=True,
     max_length=256,
@@ -58,15 +60,16 @@ def getTripletCritic_proba(row, tokenizer, model):
 
     return prob_label_is_true
 
-def getAlignScore(row, scorer):
-    clean_subj = row["ent_uri"].replace("_", " ")
+def getAlignScore(triple, abstract, scorer):
+    subject, predicate, _object = triple
+    clean_subj = subject.replace("_", " ")
 
     if "(" in clean_subj:
         clean_subj=clean_subj.split("(")[0]
 
-    verbalized= clean_subj+" "+row["prop"]+" "+ row["value"]
+    verbalized= clean_subj+" "+predicate+" "+ _object
 
-    score = scorer.score(contexts=[row["abstract"]], claims=[verbalized])
+    score = scorer.score(contexts=[abstract], claims=[verbalized])
 
     return score[0]
 
@@ -82,37 +85,3 @@ def getModelAndTokenizerFromPath(model_name_or_path):
     model = transformers.AutoModelForSequenceClassification.from_pretrained(model_name_or_path, config=model_config)
 
     return model, tokenizer
-
-def convertTripleToFormat(triple, abstract):
-    subject = triple.get("subject", {}).get("surface_form", "").strip()
-    predicate = triple.get("predicate", {}).get("surface_form", "").strip()
-    object_ = triple.get("object", {}).get("surface_form", "").strip()
-
-    if not (subject and predicate and object_):
-        return None
-
-    return {
-        "ent_uri": subject,
-        "prop": predicate,
-        "value": object_,
-        "abstract": abstract
-    }
-
-if __name__ == '__main__':
-    model1, tokenizer1 = getModelAndTokenizerFromPath("Babelscape/mdeberta-v3-base-triplet-critic-xnli")
-
-    abstract = "Angela Merkel was born in Bonn."
-    triples = [{"subject": {"surface_form": "Angela Merkel"},
-                "predicate": {"surface_form": "was born in"},
-                "object": {"surface_form": "Bonn"}
-                }]
-
-    for triple in triples:
-        row1 = convertTripleToFormat(triple, abstract)
-
-        #print(get_XNLI_proba(row1, tokenizer1, model1))
-        print(getTripletCritic_proba(row1, tokenizer1, model1))
-        # scorer = AlignScore(model='roberta-base', batch_size=32, device='cpu',
-        #                    ckpt_path='https://huggingface.co/yzha/AlignScore/resolve/main/AlignScore-large.ckpt',
-        #                    evaluation_mode='bin_sp')
-        #print(getAlignScore(row1, scorer))
