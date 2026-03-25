@@ -272,7 +272,7 @@ def test_genie_exchange():
 
 
 def test_te_json_exchange():
-    from text_pipelines.text_tasks import te_json_triple_exchange
+    from text_pipelines.text_tasks import linked_te_json_triple_exchange
 
     exchange_task_input_path = Path("experiments/text-pipelines/test/test.te.json")
 
@@ -282,7 +282,7 @@ def test_te_json_exchange():
     data_source = Data(exchange_task_input_path, DataFormat.TE_JSON)
     data_output = Data(task_output_path, DataFormat.CSV)
 
-    report = te_json_triple_exchange.run(
+    report = linked_te_json_triple_exchange.run(
         [data_source],
         [data_output],
         stable_files_override=True
@@ -304,7 +304,7 @@ def test_te_json_exchange():
         "of the estimated 2,224 passengers aboard"
     ], "Wrong line 1"
 
-    _delete_file(task_output_path)
+    #_delete_file(task_output_path)
 
 # Pipe Tests
 from text_pipelines.text_pipes import run_pipe
@@ -373,3 +373,32 @@ def test_genie_pipe():
     assert os.path.getsize(output_path) > 0
 
     _delete_file(output_path)
+
+def test_eval_text():
+    from text_pipelines.text_tasks import text_eval
+
+    output_dir = tempfile.mkdtemp()
+    output_path = os.path.join(output_dir, "output.te.json")
+
+    eval_task_input_path = Path("experiments/text-pipelines/test/test.te.json")
+
+    output_dir = tempfile.mkdtemp()
+    task_output_path = os.path.join(output_dir, "output.csv")
+
+    data_source = Data(eval_task_input_path, DataFormat.TE_JSON)
+    data_output = Data(task_output_path, DataFormat.CSV)
+
+    report = text_eval.run(
+        [data_source],
+        [data_output],
+        stable_files_override=True
+    )
+
+    assert report.status == "success"
+    assert os.path.exists(output_path)
+    assert os.path.getsize(output_path) > 0
+
+    _delete_file(output_path)
+
+if __name__ == '__main__':
+    test_eval_text()
