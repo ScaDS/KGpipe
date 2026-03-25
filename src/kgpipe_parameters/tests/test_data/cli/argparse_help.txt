@@ -1,0 +1,8 @@
+usage: tool.py [-h] [--threshold THRESHOLD] [--output OUTPUT] [--verbose]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --threshold THRESHOLD  Matching threshold (default: 0.5)
+  --output OUTPUT       Output file path (required)
+  --verbose             Enable verbose logging
+

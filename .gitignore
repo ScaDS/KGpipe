@@ -4,6 +4,8 @@ out/
 .env
 *.env
 **/.env
+*.mmd
+*.db
 
 uv.lock
 .metals/

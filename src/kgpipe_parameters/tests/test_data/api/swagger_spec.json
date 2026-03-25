@@ -1,0 +1,43 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Matching API",
+    "version": "1.0.0"
+  },
+  "paths": {
+    "/api/match": {
+      "post": {
+        "parameters": [
+          {
+            "name": "threshold",
+            "in": "query",
+            "type": "number",
+            "default": 0.5,
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "description": "Matching threshold"
+          },
+          {
+            "name": "input_file",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "required": ["input_file"],
+              "properties": {
+                "input_file": {
+                  "type": "string",
+                  "description": "Input file path"
+                },
+                "output_file": {
+                  "type": "string",
+                  "description": "Output file path"
+                }
+              }
+            }
+          }
+        ]
+      }
+    }
+  }
+}
+

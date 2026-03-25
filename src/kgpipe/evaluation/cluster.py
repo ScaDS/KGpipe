@@ -205,8 +205,6 @@ def is_match(uri1: str, uri2: str, match_cluster: Optional[MatchCluster] = None,
     Check if two URIs are in the same match cluster.
     """
     checker = False
-    if uri2 == "http://kg.org/resource/b25598f9c0fce28a7700869fcb55d706":
-        checker = True
 
     if allow_match_on_suffix:
         suffix1 = uri1.split("/")[-1]

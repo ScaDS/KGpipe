@@ -54,6 +54,14 @@ class ParameterBinding(BaseModel):
     parameter: Parameter
     value: str | int | float | bool # TODO extend to more types?
 
+@kg_class()
+class ConfigurationDefinition(BaseModel):
+    """
+    Possible configurations of a task
+    """
+    name: str
+    description: Optional[str] = None
+    parameters: List[Parameter] = field(default_factory=list)
     
 @kg_class()
 class ConfigurationProfile(BaseModel):
@@ -61,5 +69,13 @@ class ConfigurationProfile(BaseModel):
     Configuration profile definition, not the actual values of the parameters in the pipeline execution
     """
     name: str
+    definition: ConfigurationDefinition
     description: Optional[str] = None   
     bindings: List[ParameterBinding] = field(default_factory=list)
+
+class ConfigurationMapping(BaseModel):
+    """
+    Mapping of a configuration profile to a task implementation
+    """
+    for_task_spec: ConfigurationDefinition
+    to_global_spec: ConfigurationDefinition

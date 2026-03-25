@@ -17,6 +17,8 @@ import yaml
 from rich.console import Console
 from rich.table import Table
 
+from kgcore.config import HOME_CONFIG_DIR
+
 # Initialize Rich console for pretty output
 console = Console()
 
@@ -35,9 +37,9 @@ def get_default_config():
 
 def get_config_file():
     """Get the path to the configuration file."""
-    config_dir = Path.home() / ".kgpipe"
+    config_dir = HOME_CONFIG_DIR
     config_dir.mkdir(exist_ok=True)
-    return config_dir / "config.yaml"
+    return config_dir / "kgpipe.yaml"
 
 
 def load_config():

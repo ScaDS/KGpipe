@@ -1,0 +1,8 @@
+Usage: tool.py [OPTIONS]
+
+Options:
+  --threshold FLOAT     Matching threshold [default: 0.5]
+  --output TEXT         Output file path (required)
+  --verbose             Enable verbose logging
+  --help                Show this message and exit.
+

@@ -1,0 +1,23 @@
+version: '3.8'
+
+services:
+  matcher:
+    image: matcher:latest
+    environment:
+      THRESHOLD: 0.5
+      OUTPUT_DIR: /output
+      MAX_RESULTS: 100
+      VERBOSE: "false"
+    volumes:
+      - ./data:/data
+    ports:
+      - "8080:8080"
+  
+  processor:
+    image: processor:latest
+    environment:
+      INPUT_DIR: /input
+      BATCH_SIZE: 50
+    depends_on:
+      - matcher
+

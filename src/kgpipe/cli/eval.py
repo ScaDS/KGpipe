@@ -7,6 +7,8 @@ This module handles evaluation commands.
 
 import json
 import sys
+import traceback
+import os
 from pathlib import Path
 from typing import List, Optional
 
@@ -48,7 +50,8 @@ def show_evaluation_results(evaluation_report):
             
             console.print(table)
             console.print("")
-
+        else:
+            console.print("No metrics available")
 
 def save_evaluation_results(evaluation_report, output_file: str):
     """Save evaluation results to file."""
@@ -97,12 +100,18 @@ def save_evaluation_results(evaluation_report, output_file: str):
     default='json',
     help="Output format for results"
 )
+@click.option(
+    "--metric-config",
+    "-c",
+    type=click.Path(exists=True),
+    help="Path to metric config file"
+)
 @click.option( # flag
     "--debug",
 
 )
 @click.pass_context
-def eval_cmd(ctx: click.Context, target: List[str], ground_truth: Optional[str], aspects: tuple, metrics: tuple, output: Optional[str], format: str, debug: Optional[str]):
+def eval_cmd(ctx: click.Context, target: List[str], ground_truth: Optional[str], aspects: tuple, metrics: tuple, output: Optional[str], format: str, metric_config: Optional[str], debug: Optional[str]):
     """
     Evaluate a knowledge graph against ground truth.
     
@@ -123,34 +132,42 @@ def eval_cmd(ctx: click.Context, target: List[str], ground_truth: Optional[str],
             except ValueError:
                 kg_format = DataFormat.JSON  # Default to JSON
             
+            ontology_path = os.environ.get("ONTOLOGY_PATH", None)
+            if ontology_path is None:
+                raise ValueError("ONTOLOGY_PATH is not set")
+            from rdflib import Graph
+            ontology_graph = Graph()
+            ontology_graph.parse(ontology_path, format="turtle")
+
             target_kg = KG(
                 id=str(target_path),
                 name=target_path.stem,
                 path=target_path,
-                format=kg_format
+                format=kg_format,
+                ontology_graph=ontology_graph
             )
             
             # Load ground truth if provided
-            reference_kg = None
-            if ground_truth:
-                ground_truth_path = Path(ground_truth)
-                console.print(f"[dim]Loading ground truth from:[/dim] {ground_truth_path}")
+            # reference_kg = None
+            # if ground_truth:
+            #     ground_truth_path = Path(ground_truth)
+            #     console.print(f"[dim]Loading ground truth from:[/dim] {ground_truth_path}")
                 
-                ref_format_ext = ground_truth_path.suffix.lower().lstrip('.')
-                try:
-                    ref_kg_format = DataFormat(ref_format_ext)
-                except ValueError:
-                    ref_kg_format = DataFormat.JSON
+            #     ref_format_ext = ground_truth_path.suffix.lower().lstrip('.')
+            #     try:
+            #         ref_kg_format = DataFormat(ref_format_ext)
+            #     except ValueError:
+            #         ref_kg_format = DataFormat.JSON
                 
-                reference_kg = KG(
-                    id=str(ground_truth_path),
-                    name=ground_truth_path.stem,
-                    path=ground_truth_path,
-                    format=ref_kg_format
-                )
+            #     reference_kg = KG(
+            #         id=str(ground_truth_path),
+            #         name=ground_truth_path.stem,
+            #         path=ground_truth_path,
+            #         format=ref_kg_format
+            #     )
             
             # Set up evaluation configuration
-            config = EvaluationConfig()
+            config = EvaluationConfig(metric_config_path=metric_config)
             
             # Set aspects if specified
             if aspects:
@@ -169,7 +186,7 @@ def eval_cmd(ctx: click.Context, target: List[str], ground_truth: Optional[str],
             
             # Run evaluation
             evaluator = Evaluator(config)
-            evaluation_report = evaluator.evaluate(target_kg)
+            evaluation_report = evaluator.evaluate(target_kg, config)
             
             # Display results
             console.print(f"[green]✓ Evaluation completed![/green]")
@@ -181,15 +198,16 @@ def eval_cmd(ctx: click.Context, target: List[str], ground_truth: Optional[str],
                 console.print(f"[dim]Results saved to:[/dim] {output}")
             
         except Exception as e:
+            print(traceback.format_exc())
             console.print(f"[red]✗ Evaluation failed:[/red] {e}")
             if ctx.obj["verbose"]:
                 console.print_exception()
             sys.exit(1) 
     
-    if debug:
-        from kgpipe.meta.systemgraph import SYS_KG
-        # if has method asGraph, serialize it
-        if hasattr(SYS_KG, "asGraph"):
-            print(SYS_KG.asGraph().serialize(format="turtle"))
-        else:
-            print("SYS_KG does not have asGraph method")
+    # if debug:
+    #     from kgpipe.meta.systemgraph import SYS_KG
+    #     # if has method asGraph, serialize it
+    #     if hasattr(SYS_KG, "asGraph"):
+    #         print(SYS_KG.asGraph().serialize(format="turtle"))
+    #     else:
+    #         print("SYS_KG does not have asGraph method")

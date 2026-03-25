@@ -1,0 +1,249 @@
+@prefix :     <http://example.org/kgp#> .
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix owl:  <http://www.w3.org/2002/07/owl#> .
+@prefix xsd:  <http://www.w3.org/2001/XMLSchema#> .
+
+:kgp a owl:Ontology .
+
+#################################################################
+# Classes
+#################################################################
+
+:Task a owl:Class, :CoreLayer .
+:Method a owl:Class, :CoreLayer .
+:Tool a owl:Class, :CoreLayer .
+#:FrameworkTool a owl:Class ; rdfs:subClassOf :Tool .
+
+:Implementation a owl:Class, :CoreLayer .
+
+#:Interface a owl:Class, :CoreLayer .
+#:CLIInterface a owl:Class ; rdfs:subClassOf :Interface .
+#:RESTInterface a owl:Class ; rdfs:subClassOf :Interface .
+#:LibraryAPIInterface a owl:Class ; rdfs:subClassOf :Interface .
+
+:Pipeline a owl:Class, :PipelineLayer . 
+:PipelineStep a owl:Class, :PipelineLayer .
+:PipelineDefinition a owl:Class, :PipelineLayer .
+
+:TaskRun a owl:Class, :RunLayer .
+:PipelineRun a owl:Class, :RunLayer .
+
+:Artifact a owl:Class, :DataLayer .
+:ArtifactType a owl:Class, :DataLayer .
+:Schema a owl:Class, :DataLayer .
+
+:Parameter a owl:Class, :ParameterLayer .
+:ParameterBinding a owl:Class, :ParameterLayer .
+
+#################################################################
+# Object Properties
+#################################################################
+
+### Task decomposition
+:hasSubtask a owl:ObjectProperty ;
+  rdfs:domain :Task ;
+  rdfs:range  :Task .
+
+### Semantics: method / tool / implementation
+:realizesTask a owl:ObjectProperty ;
+  rdfs:domain :Method ;
+  rdfs:range  :Task .
+
+:providesMethod a owl:ObjectProperty ;
+  rdfs:domain :Tool ;
+  rdfs:range  :Method .
+
+:supportsTask a owl:ObjectProperty ;
+  rdfs:domain :Tool ;
+  rdfs:range  :Task .
+
+:usesTool a owl:ObjectProperty ;
+  rdfs:domain :Implementation ;
+  rdfs:range  :Tool .
+
+:implementsMethod a owl:ObjectProperty ;
+  rdfs:domain :Implementation ;
+  rdfs:range  :Method .
+
+:hasInterface a owl:ObjectProperty ;
+  rdfs:domain :Implementation ;
+  rdfs:range  :Interface .
+
+### Pipeline structure
+:hasStep a owl:ObjectProperty ;
+  rdfs:domain :Pipeline ;
+  rdfs:range  :PipelineStep .
+
+:stepTask a owl:ObjectProperty ;
+  rdfs:domain :PipelineStep ;
+  rdfs:range  :Task .
+
+:stepMethod a owl:ObjectProperty ;
+  rdfs:domain :PipelineStep ;
+  rdfs:range  :Method .
+
+:nextStep a owl:ObjectProperty ;
+  rdfs:domain :PipelineStep ;
+  rdfs:range  :PipelineStep .
+
+:definesPipeline a owl:ObjectProperty ;
+  rdfs:domain :PipelineDefinition ;
+  rdfs:range  :Pipeline .
+
+:definedInTool a owl:ObjectProperty ;
+  rdfs:domain :PipelineDefinition ;
+  rdfs:range  :Tool .
+
+:hasSourceArtifact a owl:ObjectProperty ;
+  rdfs:domain :PipelineDefinition ;
+  rdfs:range  :Artifact .
+
+### Execution / runs
+:executesTask a owl:ObjectProperty ;
+  rdfs:domain :TaskRun ;
+  rdfs:range  :Task .
+
+:usesImplementation a owl:ObjectProperty ;
+  rdfs:domain :TaskRun ;
+  rdfs:range  :Implementation .
+
+:runsPipeline a owl:ObjectProperty ;
+  rdfs:domain :PipelineRun ;
+  rdfs:range  :Pipeline .
+
+:usesPipelineDefinition a owl:ObjectProperty ;
+  rdfs:domain :PipelineRun ;
+  rdfs:range  :PipelineDefinition .
+
+:hasTaskRun a owl:ObjectProperty ;
+  rdfs:domain :PipelineRun ;
+  rdfs:range  :TaskRun .
+
+### Data flow (runtime)
+:hasInputArtifact a owl:ObjectProperty ;
+  rdfs:domain :TaskRun ;
+  rdfs:range  :Artifact .
+
+:hasOutputArtifact a owl:ObjectProperty ;
+  rdfs:domain :TaskRun ;
+  rdfs:range  :Artifact .
+
+### Data flow typing (design-time)
+:expectsInputType a owl:ObjectProperty ;
+  rdfs:domain :Implementation ;
+  rdfs:range  :ArtifactType .
+
+:producesOutputType a owl:ObjectProperty ;
+  rdfs:domain :Implementation ;
+  rdfs:range  :ArtifactType .
+
+### Artifact typing / schema
+:hasArtifactType a owl:ObjectProperty ;
+  rdfs:domain :Artifact ;
+  rdfs:range  :ArtifactType .
+
+:conformsToSchema a owl:ObjectProperty ;
+  rdfs:domain :Artifact ;
+  rdfs:range  :Schema .
+
+### Parameters
+:hasParameter a owl:ObjectProperty ;
+  rdfs:domain :Implementation ;
+  rdfs:range  :Parameter .
+
+:hasParameterBinding a owl:ObjectProperty ;
+  rdfs:domain :TaskRun ;
+  rdfs:range  :ParameterBinding .
+
+:bindsParameter a owl:ObjectProperty ;
+  rdfs:domain :ParameterBinding ;
+  rdfs:range  :Parameter .
+
+#################################################################
+# Datatype Properties
+#################################################################
+
+### Implementation
+:commandTemplate a owl:DatatypeProperty ;
+  rdfs:domain :Implementation ;
+  rdfs:range  xsd:string .
+
+:runtime a owl:DatatypeProperty ;
+  rdfs:domain :Implementation ;
+  rdfs:range  xsd:string .
+
+:implementationVersion a owl:DatatypeProperty ;
+  rdfs:domain :Implementation ;
+  rdfs:range  xsd:string .
+
+### Tool
+:toolVersion a owl:DatatypeProperty ;
+  rdfs:domain :Tool ;
+  rdfs:range  xsd:string .
+
+### Parameter
+:paramName a owl:DatatypeProperty ;
+  rdfs:domain :Parameter ;
+  rdfs:range  xsd:string .
+
+:paramDescription a owl:DatatypeProperty ;
+  rdfs:domain :Parameter ;
+  rdfs:range  xsd:string .
+
+:paramDataType a owl:DatatypeProperty ;
+  rdfs:domain :Parameter ;
+  rdfs:range  xsd:string .
+
+:defaultValue a owl:DatatypeProperty ;
+  rdfs:domain :Parameter ;
+  rdfs:range  xsd:string .
+
+### ParameterBinding
+:value a owl:DatatypeProperty ;
+  rdfs:domain :ParameterBinding ;
+  rdfs:range  xsd:string .
+
+### TaskRun
+:startedAt a owl:DatatypeProperty ;
+  rdfs:domain :TaskRun ;
+  rdfs:range  xsd:dateTime .
+
+:endedAt a owl:DatatypeProperty ;
+  rdfs:domain :TaskRun ;
+  rdfs:range  xsd:dateTime .
+
+:status a owl:DatatypeProperty ;
+  rdfs:domain :TaskRun ;
+  rdfs:range  xsd:string .
+
+:exitCode a owl:DatatypeProperty ;
+  rdfs:domain :TaskRun ;
+  rdfs:range  xsd:integer .
+
+:logPath a owl:DatatypeProperty ;
+  rdfs:domain :TaskRun ;
+  rdfs:range  xsd:string .
+
+### PipelineRun
+:pipelineStartedAt a owl:DatatypeProperty ;
+  rdfs:domain :PipelineRun ;
+  rdfs:range  xsd:dateTime .
+
+:pipelineEndedAt a owl:DatatypeProperty ;
+  rdfs:domain :PipelineRun ;
+  rdfs:range  xsd:dateTime .
+
+:pipelineStatus a owl:DatatypeProperty ;
+  rdfs:domain :PipelineRun ;
+  rdfs:range  xsd:string .
+
+### Artifact
+:location a owl:DatatypeProperty ;
+  rdfs:domain :Artifact ;
+  rdfs:range  xsd:anyURI .
+
+### ArtifactType
+:format a owl:DatatypeProperty ;
+  rdfs:domain :ArtifactType ;
+  rdfs:range  xsd:string .

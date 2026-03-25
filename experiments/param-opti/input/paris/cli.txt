@@ -1,0 +1,10 @@
+Paris <settingFile>
+
+You can specify a file that has no content.
+PARIS will ask for the necessary data and store it in <settingFile>.
+
+Paris <ontology1> <ontology2> <outputFolder>
+
+Shorthand for the previous form.
+
+Paris <factstore> <dump>

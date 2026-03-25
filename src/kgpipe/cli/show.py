@@ -16,6 +16,10 @@ from rich.table import Table
 from kgpipe.common.discovery import (
     discover_entry_points, find_task_by_name, find_pipeline_by_name
 )
+from kgpipe.evaluation.aspects.reference import ReferenceConfig
+from kgpipe.evaluation.aspects.semantic import SemanticConfig
+from kgpipe.evaluation.aspects.statistical import StatisticalConfig
+from kgpipe.evaluation.util import get_metric_config_template
 
 # Initialize Rich console for pretty output
 console = Console()
@@ -145,8 +149,22 @@ def show_task_details(task_name: str):
     console.print(table)
 
 
-@click.command()
-@click.argument("item", type=str)
+def show_metric_config_templates():
+    """Show YAML templates for metric config models."""
+    templates = [
+        ("ReferenceConfig", get_metric_config_template(ReferenceConfig)),
+        ("StatisticalConfig", get_metric_config_template(StatisticalConfig)),
+        ("SemanticConfig", get_metric_config_template(SemanticConfig)),
+    ]
+
+    for idx, (_, template) in enumerate(templates):
+        if idx > 0:
+            click.echo("---")
+        click.echo(template.rstrip())
+
+
+@click.group(name="show", invoke_without_command=True)
+@click.argument("item", type=str, required=False)
 @click.option(
     "--type", 
     "-t", 
@@ -154,12 +172,25 @@ def show_task_details(task_name: str):
     help="Type of item to show"
 )
 @click.pass_context
-def show_cmd(ctx: click.Context, item: str, type: Optional[str]):
+def show_cmd(ctx: click.Context, item: Optional[str], type: Optional[str]):
     """
     Show detailed information about an item.
     
-    ITEM: Name or path of the item to show details for
+    ITEM: Name or path of the item to show details for.
     """
+    if ctx.invoked_subcommand:
+        return
+
+    if not item:
+        console.print(ctx.get_help())
+        return
+
+    # Keep legacy `kgpipe show <item>` behavior while supporting
+    # `kgpipe show metric-config-templates`.
+    if item == "metric-config-templates":
+        show_metric_config_templates()
+        return
+
     # Auto-detect type if not specified
     if not type:
         if item.endswith('.yaml') or item.endswith('.yml'):
@@ -190,3 +221,9 @@ def show_cmd(ctx: click.Context, item: str, type: Optional[str]):
         show_task_details(item)
     else:
         console.print(f"[red]Unknown type:[/red] {type}") 
+
+
+@show_cmd.command(name="metric-config-templates")
+def show_metric_config_templates_cmd():
+    """Show YAML templates for evaluation metric configs."""
+    show_metric_config_templates()

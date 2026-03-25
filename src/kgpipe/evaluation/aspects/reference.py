@@ -112,12 +112,12 @@ class ER_RelationMatchMetric(Metric):
         print(f"[CONFIG] Relation matching threshold: {config.RELATION_MATCH_THRESHOLD}")
 
         # TODO change to verfied entities level
-        dataset = config.dataset
-        if dataset is None:
-            raise ValueError("Dataset is not set")
-        gt_match_path = dataset.root / "split_match_entities.csv"
+        # dataset = config.dataset
+        # if dataset is None:
+        #     raise ValueError("Dataset is not set")
+        # gt_match_path = dataset.root / "split_match_entities.csv"
         
-        value, normalized_score, details = evaluate_relation_matching(kg, gt_match_path, config.RELATION_MATCH_THRESHOLD)
+        value, normalized_score, details = evaluate_relation_matching(kg, config.GT_MATCHES, config.RELATION_MATCH_THRESHOLD)
 
         return MetricResult(
             name=self.name,
@@ -660,24 +660,24 @@ class ReferenceEvaluator(AspectEvaluator):
     def __init__(self):
         super().__init__(EvaluationAspect.REFERENCE)
         self.metrics = [
-            # ER_EntityMatchMetric(),
-            # ER_RelationMatchMetric(),
-            # TE_ExpectedEntityLinkMetric(),
-            # TE_ExpectedRelationLinkMetric(),
-            # JsonEntityMatchingMetric(),
-            # JsonRelationMatchingMetric(),
-            # JsonEntityLinkingMetric(),
-            # SourceEntityCoverageMetric(),
-            # SourceEntityCoverageMetricSoft(),
-            # SourceEntityPrecisionMetric(),
+            ER_EntityMatchMetric(),
+            ER_RelationMatchMetric(),
+            TE_ExpectedEntityLinkMetric(),
+            TE_ExpectedRelationLinkMetric(),
+            JsonEntityMatchingMetric(),
+            JsonRelationMatchingMetric(),
+            JsonEntityLinkingMetric(),
+            SourceEntityCoverageMetric(),
+            SourceEntityCoverageMetricSoft(),
+            SourceEntityPrecisionMetric(),
             SourceTypedEntityCoverageMetric(),
-            # ReferenceTripleAlignmentMetric(),
-            # ReferenceTripleAlignmentMetricSoftE(),
-            # ReferenceTripleAlignmentMetricSoftEV(),
-            # ReferenceClassCoverageMetric()
+            ReferenceTripleAlignmentMetric(),
+            ReferenceTripleAlignmentMetricSoftE(),
+            ReferenceTripleAlignmentMetricSoftEV(),
+            ReferenceClassCoverageMetric()
         ]
     
-    def evaluate(self, kg: KG, config: ReferenceConfig, metrics: Optional[List[str]] = None, **kwargs) -> AspectResult:
+    def evaluate(self, kg: KG, config: Optional[ReferenceConfig] = None, metrics: Optional[List[str]] = None, **kwargs) -> AspectResult:
         """Evaluate reference-based properties of the KG."""
         # if references is {}:
         #     # Return empty result if no reference KG provided
@@ -697,7 +697,7 @@ class ReferenceEvaluator(AspectEvaluator):
         metrics_to_compute = self.metrics
         if metrics:
             metrics_to_compute = [m for m in self.metrics if m.name in metrics]
-        
+
         # Compute each metric
         for metric in metrics_to_compute:
             try:
@@ -705,6 +705,7 @@ class ReferenceEvaluator(AspectEvaluator):
                 result = metric.compute(kg, config, **kwargs)
                 end_time = time.time()
                 result.duration = end_time - start_time
+                result.input = str(kg.path)
                 results.append(result)
             except Exception as e:
                 print(f"[Error] computing metric {metric.name}: {e}")

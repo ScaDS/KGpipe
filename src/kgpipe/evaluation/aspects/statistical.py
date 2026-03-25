@@ -69,6 +69,7 @@ class EntityCountMetric(Metric):
             )
             
         except Exception as e:
+            print("this exception is raised")
             return MetricResult(
                 name=self.name,
                 value=0.0,
@@ -440,6 +441,7 @@ class StatisticalEvaluator(AspectEvaluator):
                 result = metric.compute(kg, config, **kwargs)
                 end_time = time.time()
                 result.duration = end_time - start_time
+                result.input = str(kg.path)
                 results.append(result)
             except Exception as e:
                 # Create error result
