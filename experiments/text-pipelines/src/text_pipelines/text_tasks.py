@@ -487,7 +487,7 @@ def text_eval(inputs: Dict[str, Data], outputs: Dict[str, Data]):
 
                 score = getTripletCritic_proba(row, abstract, tokenizer, model)
 
-                writer.writerow([score, row, abstract])
+                writer.writerow([score, row[0], row[1], row[2]])
 
                 # print(get_XNLI_proba(row, abstract, tokenizer, model))
                 # scorer = AlignScore(model='roberta-base', batch_size=32, device='cpu',
