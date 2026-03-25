@@ -389,36 +389,16 @@ def te_json_triple_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     input_path = inputs["input"].path
     output_path = outputs["output"].path
 
-    def sort_key(t):
-        return (
-            t.get("subject", {}).get("surface_form", "").lower(),
-            t.get("predicate", {}).get("surface_form", "").lower(),
-            t.get("object", {}).get("surface_form", "").lower(),
-        )
-
-    def extract_row(triple):
-        subject = triple.get("subject", {}).get("surface_form", "").strip()
-        predicate = triple.get("predicate", {}).get("surface_form", "").strip()
-        object_ = triple.get("object", {}).get("surface_form", "").strip()
-
-        if not (subject and predicate and object_):
-            return None
-
-        return [subject, predicate, object_]
-
     def exchange_file(input_file, output_file):
-        with open(input_file, "r", encoding="utf-8") as f:
-            te_json = json.load(f)
-
-        triples = te_json.get("triples", [])
-        triples_sorted = sorted(triples, key=sort_key)
+        te_json = _load_te_json(input_file)
+        triples = _get_sorted_triples(te_json)
 
         with open(output_file, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
             writer.writerow(["subject", "predicate", "object"])
 
-            for triple in triples_sorted:
-                row = extract_row(triple)
+            for triple in triples:
+                row = _extract_row(triple)
                 if row:
                     writer.writerow(row)
 
@@ -434,30 +414,16 @@ def linked_te_json_triple_exchange(inputs: Dict[str, Data], outputs: Dict[str, D
     input_path = inputs["input"].path
     output_path = outputs["output"].path
 
-    def get_sf(triple, key):
-        return triple.get(key, {}).get("surface_form", "").strip()
-
-    def sort_key(t):
-        return (
-            get_sf(t, "subject").lower(),
-            get_sf(t, "predicate").lower(),
-            get_sf(t, "object").lower(),
-        )
-
     def exchange_file(input_file, output_file):
-        with open(input_file, "r", encoding="utf-8") as f:
-            te_json = json.load(f)
+        te_json = _load_te_json(input_file)
+        triples = _get_sorted_triples(te_json)
 
-        triples = te_json.get("triples", [])
         global_links = te_json.get("links", [])
-
         span_to_mapping = {
             link.get("span"): link.get("mapping")
             for link in global_links
             if link.get("span") and link.get("mapping")
         }
-
-        triples_sorted = sorted(triples, key=sort_key)
 
         with open(output_file, "w", newline="", encoding="utf-8") as f:
             writer = csv.writer(f)
@@ -467,22 +433,107 @@ def linked_te_json_triple_exchange(inputs: Dict[str, Data], outputs: Dict[str, D
                 "subject_link", "predicate_link", "object_link"
             ])
 
-            for triple in triples_sorted:
-                subject_sf = get_sf(triple, "subject")
-                predicate_sf = get_sf(triple, "predicate")
-                object_sf = get_sf(triple, "object")
-
-                # skip kaputte triples
-                if not (subject_sf and predicate_sf and object_sf):
+            for triple in triples:
+                if not _is_valid_triple(triple):
                     continue
 
+                s = _get_sf(triple, "subject")
+                p = _get_sf(triple, "predicate")
+                o = _get_sf(triple, "object")
+
                 writer.writerow([
-                    subject_sf,
-                    predicate_sf,
-                    object_sf,
-                    span_to_mapping.get(subject_sf, ""),
-                    span_to_mapping.get(predicate_sf, ""),
-                    span_to_mapping.get(object_sf, "")
+                    s, p, o,
+                    span_to_mapping.get(s, ""),
+                    span_to_mapping.get(p, ""),
+                    span_to_mapping.get(o, "")
                 ])
 
     process_io(input_path, output_path, exchange_file, ".csv")
+
+
+@Registry.task(
+    input_spec={"input": DataFormat.TE_JSON},
+    output_spec={"output": DataFormat.CSV},
+    description="Evaluate TE_JSON",
+    category=["Evaluation"]
+)
+def text_eval(inputs: Dict[str, Data], outputs: Dict[str, Data]):
+
+    from text_pipelines.text_eval import getModelAndTokenizerFromPath, getTripletCritic_proba
+
+    input_path = inputs["input"].path
+    output_path = outputs["output"].path
+
+    def exchange_file(input_file, output_file):
+        te_json = _load_te_json(input_file)
+
+        triples = _get_sorted_triples(te_json)
+        abstract = te_json.get("text")
+
+        if not abstract:
+            raise ValueError("Abstract should not be empty")
+
+        model, tokenizer = getModelAndTokenizerFromPath("Babelscape/mdeberta-v3-base-triplet-critic-xnli")
+
+        with open(output_file, "w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+
+            writer.writerow([
+                "score", "subject", "predicate", "object"
+            ])
+
+            for triple in triples:
+                row = _extract_row(triple)
+
+                score = getTripletCritic_proba(row, abstract, tokenizer, model)
+
+                writer.writerow([score, row, abstract])
+
+                # print(get_XNLI_proba(row, abstract, tokenizer, model))
+                # scorer = AlignScore(model='roberta-base', batch_size=32, device='cpu',
+                #                    ckpt_path='https://huggingface.co/yzha/AlignScore/resolve/main/AlignScore-large.ckpt',
+                #                    evaluation_mode='bin_sp')
+                # print(getAlignScore(row1, scorer))
+
+
+    process_io(input_path, output_path, exchange_file, ".csv")
+
+
+
+def _get_sf(triple, key):
+    return triple.get(key, {}).get("surface_form", "").strip()
+
+
+def _is_valid_triple(triple):
+    return all([
+        _get_sf(triple, "subject"),
+        _get_sf(triple, "predicate"),
+        _get_sf(triple, "object"),
+    ])
+
+
+def _extract_row(triple):
+    if not _is_valid_triple(triple):
+        return None
+    return [
+        _get_sf(triple, "subject"),
+        _get_sf(triple, "predicate"),
+        _get_sf(triple, "object"),
+    ]
+
+
+def _sort_key(triple):
+    return (
+        _get_sf(triple, "subject").lower(),
+        _get_sf(triple, "predicate").lower(),
+        _get_sf(triple, "object").lower(),
+    )
+
+def _load_te_json(path):
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+def _get_sorted_triples(te_json):
+    triples = te_json.get("triples", [])
+    return sorted(triples, key=_sort_key)
