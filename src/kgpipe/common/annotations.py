@@ -1,5 +1,5 @@
 from rdflib import OWL, RDFS
-from kgpipe.common.systemgraph import SYS_KG
+from kgpipe.common.graph.systemgraph import SYS_KG, PipeKG
 from kgcore.api import KGProperty
 from typing import get_origin, get_args, Union
 
@@ -74,3 +74,87 @@ def kg_class(description: str = ""):
         return cls
 
     return decorator
+
+ 
+
+def trace_metric_run(): pass
+
+
+def trace_task_run(obj):
+    """
+    Mark a task (function or `KgTask`) so that its `.run()` persists a TaskRun in `PipeKG`.
+
+    Works with either decorator order:
+
+    ```python
+    @trace_task_run
+    @Registry.task(...)
+    def my_task(...): ...
+
+    # or
+    @Registry.task(...)
+    @trace_task_run
+    def my_task(...): ...
+    ```
+    """
+    setattr(obj, "trace_task_run", True)
+    # TODO use logger print(f"trace_task_run decorator called for object: {obj.__name__}")
+    return obj
+
+def trace_pipeline_run(obj):
+    """
+    Mark a pipeline (function or `KgPipeline`) so that its `.run()` persists a PipelineRun in `PipeKG`.
+    """
+    setattr(obj, "trace_pipeline_run", True)
+    # TODO use logger print(f"trace_pipeline_run decorator called for object: {obj.__name__}")
+    return obj
+
+
+# def Track(_cls=None, *, with_timestamp: bool = False):
+#     """
+#     Use as:
+#         @Track
+#         @Track(with_timestamp=True)
+#     """
+#     def decorator(cls):
+#         class Tracked(cls):  # subclass the original class
+#             def __init__(self, *args: Any, **kwargs: Any):
+#                 super().__init__(*args, **kwargs)
+
+#                 inst_id = f"{cls.__name__}:{uuid4().hex[:8]}"
+#                 setattr(self, "_kg_id", inst_id)
+
+#                 if isinstance(self, BaseModel):
+#                     props = self.model_dump()
+#                 else:
+#                     props = {k: v for k, v in vars(self).items() if not k.startswith("_")}
+
+#                 if with_timestamp:
+#                     props["timestamp"] = datetime.now(timezone.utc).isoformat()
+
+#                 SYS_KG.create_entity([cls.__name__], id=inst_id, props=props)
+
+#         Tracked.__name__ = cls.__name__  # optional cosmetics
+#         Tracked.__qualname__ = cls.__qualname__
+#         Tracked.__doc__ = cls.__doc__
+#         return Tracked
+
+#     return decorator if _cls is None else decorator(_cls)
+
+# def kg_function(fn):
+#     @functools.wraps(fn)
+#     def wrapper(*args, **kwargs):
+#         result = fn(*args, **kwargs)
+#         call_id = f"{fn.__name__}:{uuid4().hex[:8]}"
+#         SYS_KG.create_entity(
+#             ["FunctionCall"],
+#             id=call_id,
+#             props={
+#                 "name": fn.__name__,
+#                 # Be careful serializing args/kwargs; this is a toy example:
+#                 "args": repr(args),
+#                 "kwargs": repr(kwargs),
+#             },
+#         )
+#         return result
+#     return wrapper

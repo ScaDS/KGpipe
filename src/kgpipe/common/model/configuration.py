@@ -19,7 +19,6 @@ class ParameterType(Enum):
     object = "object"
 
 
-@kg_class()
 class Parameter(BaseModel):
     """
     Configuration parameter definition, not the actual value of the parameter in the pipeline execution
@@ -46,7 +45,6 @@ class Parameter(BaseModel):
     unit: Optional[str] = None
 
 
-@kg_class()
 class ParameterBinding(BaseModel):
     """
     Binding of a configuration parameter to a value in the pipeline execution
@@ -54,24 +52,49 @@ class ParameterBinding(BaseModel):
     parameter: Parameter
     value: str | int | float | bool # TODO extend to more types?
 
-@kg_class()
+
 class ConfigurationDefinition(BaseModel):
     """
-    Possible configurations of a task
+    Possible configurations specification of a task
     """
     name: str
     description: Optional[str] = None
     parameters: List[Parameter] = field(default_factory=list)
-    
-@kg_class()
+
+
 class ConfigurationProfile(BaseModel):
     """
-    Configuration profile definition, not the actual values of the parameters in the pipeline execution
+    Configuration profile specification, the actual values of the parameters in the pipeline execution
     """
     name: str
     definition: ConfigurationDefinition
     description: Optional[str] = None   
     bindings: List[ParameterBinding] = field(default_factory=list)
+
+    def get_parameter(self, name: str) -> Parameter:
+        for parameter in self.definition.parameters:
+            if parameter.name == name:
+                return parameter
+        raise ValueError(f"Parameter {name} not found in configuration profile {self.name}")
+
+    def get_parameter_binding(self, name: str) -> ParameterBinding:
+        for binding in self.bindings:
+            if binding.parameter.name == name:
+                return binding
+        raise ValueError(f"Parameter binding {name} not found in configuration profile {self.name}")
+
+    def get_parameter_value(self, name: str) -> str | int | float | bool:
+        return self.get_parameter_binding(name).value
+
+class ConfigurationBuilder():
+    def __init__(self, config_spec: ConfigurationDefinition):
+        self.config_spec = config_spec
+        self.config_profile = ConfigurationProfile(name=config_spec.name, definition=config_spec)
+
+    def add_parameter(self, name: str, value: str | int | float | bool) -> None:
+        self.config_profile.bindings.append(ParameterBinding(parameter=self.get_parameter(name), value=value))
+
+
 
 class ConfigurationMapping(BaseModel):
     """

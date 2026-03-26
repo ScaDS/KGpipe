@@ -25,8 +25,9 @@ def setup_logging(log_file='app.log', level=logging.DEBUG):
 # Call this once at the start of your application
 setup_logging()
 
+from .annotations import trace_task_run
 from .models import (
-    Data, DataFormat, KgTask, KgTaskReport, DynamicFormat, FormatRegistry,
+    Data, DataFormat, BasicDataFormats, CustomDataFormats, BasicTaskCategoryCatalog, KgTask, KgTaskReport,
     DataSet, KG, Metric, EvaluationReport, KgPipe, TaskInput, TaskOutput
 )
 from .registry import Registry
@@ -38,8 +39,9 @@ from .discovery import (
 )
 
 __all__ = [
-    "Data", "DataFormat", "KgTask", "KgTaskReport", "DynamicFormat", "FormatRegistry",
+    "Data", "DataFormat", "BasicDataFormats", "CustomDataFormats", "BasicTaskCategoryCatalog", "KgTask", "KgTaskReport",
     "DataSet", "KG", "Stage", "Metric", "EvaluationReport", "KgPipe", "TaskInput", "TaskOutput",
+    "trace_task_run",
     "Registry",
     "get_docker_volume_bindings", "remap_data_path_for_container",
     "discover_entry_points", "get_registered_tasks", "get_registered_pipelines",
