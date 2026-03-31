@@ -4,7 +4,7 @@ from typing import List, Dict, Mapping, Optional, Callable
 # import field
 from dataclasses import dataclass, field
 from .data import Data, Format, DataFormat
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, ConfigDict, model_validator
 import time
 import shutil
 from uuid import uuid4
@@ -26,7 +26,12 @@ type TaskOutput = Dict[TaskName, Data]
 
 class KgTaskReport(BaseModel):
     """Report of a task execution."""
-    task: "KgTask"
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    # Backwards-compatible identifier for persisted reports (`exec-report.json`).
+    # Historically we stored only the task name; newer runtime code may also attach the `KgTask`.
+    task_name: str
+    task: Optional["KgTask"] = Field(default=None, exclude=True)
     inputs: List[Data]
     outputs: List[Data]
     start_ts: float
@@ -34,6 +39,24 @@ class KgTaskReport(BaseModel):
     status: str
     error: Optional[str] = None
     config_profile: Optional[ConfigurationProfile] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _coerce_task_fields(cls, data):
+        """
+        Accept both legacy reports (with `task_name`) and new runtime reports (with `task`).
+        """
+        if not isinstance(data, dict):
+            return data
+
+        # If we have a task object but no explicit task_name, derive it.
+        if "task_name" not in data and "task" in data and data["task"] is not None:
+            task_obj = data["task"]
+            name = getattr(task_obj, "name", None)
+            if name is not None:
+                data["task_name"] = name
+
+        return data
 
 KgTaskRun = KgTaskReport
 
@@ -243,6 +266,7 @@ class KgTask:
     ) -> KgTaskReport:
         return KgTaskReport(
             task=self,
+            task_name=self.name,
             inputs=inputs,
             outputs=outputs,
             start_ts=start_ts,

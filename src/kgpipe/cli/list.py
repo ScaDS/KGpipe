@@ -45,14 +45,18 @@ def show_registered_tasks(format: str = "table") -> None:
     tasks = get_registered_tasks()
 
     for task in tasks:
-        table.add_row(
-            task.name,
-            ", ".join(getattr(task, 'category', [])),
-            getattr(task, 'description', 'N/A'),
-            str(getattr(task, 'input_spec', 'N/A')),
-            str(getattr(task, 'output_spec', 'N/A')),
-            "/".join(function_location(task.function).split(".")[:-1])
-        )
+        try:
+            table.add_row(
+                task.name,
+                ", ".join(getattr(task, 'category', [])),
+                getattr(task, 'description', 'N/A'),
+                str(getattr(task, 'input_spec', 'N/A')),
+                str(getattr(task, 'output_spec', 'N/A')),
+                "/".join(function_location(task.function).split(".")[:-1])
+            )
+        except Exception as e:
+            print(f"Error adding task {task.name}: {e}")
+            continue
     
     if format == "table":
         console.print(table)

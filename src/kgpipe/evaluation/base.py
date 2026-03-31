@@ -9,7 +9,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
 # from kgpipe.common.systemgraph import kg_class
-from kgpipe.common.systemgraph import PipeKG
+from kgpipe.common.graph.systemgraph import PipeKG
 import time
 import json
 import functools
@@ -18,10 +18,11 @@ import inspect
 from pydantic import BaseModel
 
 from kgpipe.common.models import KG
-from kgpipe.common.definitions import MetricEntity, MetricRunEntity, MetricEntityId, DataHandle
+from kgpipe.common.graph.definitions import MetricRunEntity, MetricEntityId
 from kgpipe.common.config import config
 from pathlib import Path
 from kgpipe.common.util import encode_string
+
 class EvaluationAspect(Enum):
     """The three main aspects of KG evaluation."""
     STATISTICAL = "statistical"
@@ -76,19 +77,19 @@ class AspectResult:
 
 # @Track(with_timestamp=True)
 # @kg_class(type="MetricResult", description="Result of computing a single metric.")
-class MetricResult(BaseModel):
+@dataclass
+class MetricResult:
     """Result of computing a single metric."""
     name: str
+    metric: "Metric"
     value: float
     normalized_score: float  # 0.0-1.0 range
-    details: Dict[str, Any]
     aspect: EvaluationAspect
+    kg: KG
+    started_at: float = field(default_factory=time.time)
+    ended_at: float = field(default_factory=time.time)
+    details: Dict[str, Any] = field(default_factory=dict)
     duration: float = 0.0
-    input: str = "" # TODO
-    
-    def __post_init__(self):
-        if not 0.0 <= self.normalized_score <= 1.0:
-            raise ValueError("Normalized score must be between 0.0 and 1.0")
 
 class MetricConfig(BaseModel):
     name: str
@@ -117,7 +118,7 @@ def save_metric_run(metric: MetricResult):
         started_at=time.time(),
         ended_at=time.time(),
         computedMetric=MetricEntityId(config.PIPEKG_PREFIX+encode_string(metric.name)),
-        input=[DataHandle(uri=metric.input, type="any/text")],
+        input=[], # [Data(uri=metric.kg.path, type="any/text")],
         value=metric.value, 
         details=json.dumps(metric.details, default=str)
     )

@@ -68,12 +68,13 @@ class KG:
 
 # TODO wip class for central KgPipe KG entity
 
+@dataclass
 class KgKg:
     """Represents a KG for the KgPipe framework."""
-    # data: List[KgData]
+    graph_data: KgData
+    ontology_data: KgData
     # provenance: str
-
-    @staticmethod
-    def load_from_plan(plan: KgPipePlan) -> KG:
-        pass
-    pass
+    # @staticmethod
+    # def load_from_plan(plan: KgPipePlan) -> KG:
+    #     pass
+    # pass
