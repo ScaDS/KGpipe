@@ -10,7 +10,7 @@ from kgpipe.common.models import KG, DataFormat
 from kgpipe.evaluation.aspects import reference, semantic, statistical
 from kgpipe.evaluation.aspects.reference import ReferenceConfig
 from kgpipe.evaluation.base import MetricResult
-from kgcore.model.ontology import OntologyUtil
+from kgcore.api.ontology import OntologyUtil
 
 from moviekg.datasets.pipe_out import StageOut
 from moviekg.config import dataset
@@ -145,6 +145,8 @@ def add_duration_metrics(stage: StageOut) -> MetricResult:
     try:
         duration = stage.report.duration
         return MetricResult(
+            metric=None,
+            kg=KG(id=f"result_{stage.stage_name}", name=f"result_{stage.stage_name}", path=stage.resultKG, format=DataFormat.RDF_NTRIPLES,plan=stage.plan),
             aspect=EvaluationAspect.STATISTICAL,
             name="duration",
             value=duration,
@@ -156,6 +158,8 @@ def add_duration_metrics(stage: StageOut) -> MetricResult:
     
     except Exception as e:
         return MetricResult(
+            metric=None,
+            kg=KG(id=f"result_{stage.stage_name}", name=f"result_{stage.stage_name}", path=stage.resultKG, format=DataFormat.RDF_NTRIPLES,plan=stage.plan),
             aspect=EvaluationAspect.STATISTICAL,
             name="duration",
             value=0,
@@ -178,12 +182,13 @@ def evaluate_stage(stage: StageOut, is_ssp: bool) -> List[MetricResult]:
     ref_eval = reference.ReferenceEvaluator()
     sem_eval = semantic.SemanticEvaluator()
 
-    stats_aspect_result = stat_eval.evaluate(result_kg)
-    ref_aspect_result = ref_eval.evaluate(result_kg, config=get_reference_config(stage, is_ssp))
-    sem_aspect_result = sem_eval.evaluate(result_kg)
+    # stats_aspect_result = stat_eval.evaluate(result_kg)
+    ref_aspect_result = ref_eval.evaluate(result_kg, config=get_reference_config(stage, is_ssp), metrics=["SourceTypedEntityCoverageMetric"])
+    # sem_aspect_result = sem_eval.evaluate(result_kg)
     
     metrics = []
-    metrics = stats_aspect_result.metrics + ref_aspect_result.metrics + sem_aspect_result.metrics
+    # metrics = stats_aspect_result.metrics + ref_aspect_result.metrics + sem_aspect_result.metrics
+    metrics = ref_aspect_result.metrics
     # metrics = sem_aspect_result.metrics
     metrics.append(add_duration_metrics(stage))
     # metrics = ref_aspect_result.metrics
