@@ -98,3 +98,8 @@ Results are saved as JSON files in `output/`:
 A `_summary.json` file is also generated with aggregate statistics.
 
 
+# Configuration Apsects
+
+1. Task Assignment: Selecting
+2. Task Tunning
+3. 
