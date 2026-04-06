@@ -4,13 +4,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Protocol, Union, runtime_checkable, Optional, Tuple, Literal
 
-from rdflib import RDF, Graph
-from rdflib.term import Identifier
-from rdflib.term import Literal
-from rdflib.term import URIRef
+from rdflib import RDF, Graph, RDFS
+from rdflib.term import Identifier, Literal, URIRef
 
 from kgpipe.common import KG
-
 
 KgLike = Union[KG, Graph, str, Path]
 
@@ -33,6 +30,15 @@ class TripleGraph(Protocol):
     """
 
     def triples(self, triple_pattern: TriplePattern) -> Iterable[Triple]:
+        pass
+
+    def subjects(self) -> Iterable[Term]:
+        pass
+
+    def labels(self, term: Term) -> Literal:
+        pass
+
+    def types(self, term: Term) -> Iterable[Term]:
         pass
 
     def close(self) -> None:
@@ -105,6 +111,18 @@ class RdfLibTripleGraph(TripleGraph):
         g = self._graph()
         # RDFLib yields (s, p, o) as Identifiers
         return g.triples(triple_pattern)
+
+    def subjects(self) -> Iterable[Term]:
+        g = self._graph()
+        return g.subjects(unique=True)
+
+    def labels(self, term: Term) -> Literal:
+        g = self._graph()
+        return g.triples((term, RDFS.label, None))
+
+    def types(self, term: Term) -> Iterable[Term]:
+        g = self._graph()
+        return g.triples((term, RDF.type, None))
 
 class KgManager:
     """

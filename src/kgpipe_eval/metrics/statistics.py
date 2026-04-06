@@ -1,6 +1,6 @@
 from kgpipe.common import KG
-from kgpipe_eval.metrics.kg_utils import TripleGraph, KgManager
-from kgpipe_eval.api import Metric, MetricResult, MetricConfig
+from kgpipe_eval.utils.kg_utils import TripleGraph, KgManager
+from kgpipe_eval.api import Metric, MetricResult, Measurement
 from functools import lru_cache
 
 from pydantic import BaseModel
@@ -18,7 +18,7 @@ class CountMeasures(BaseModel):
     property_occurrence: Mapping[str, int]
     class_occurrence: Mapping[str, int]
 
-@lru_cache(maxsize=1000)
+@lru_cache(maxsize=1)
 def count_measures(kg: TripleGraph) -> CountMeasures:
     
     entity_count = 0 # TODO requires distinct entities
@@ -44,4 +44,16 @@ def count_measures(kg: TripleGraph) -> CountMeasures:
 
 class CountMetric(Metric):
     def compute(self, kg: TripleGraph) -> MetricResult:
-        return MetricResult(value=count_measures(kg))
+        return MetricResult(
+            metric=self,
+            measurements=[
+                Measurement(name="entity_count", value=count_measures(kg).entity_count, unit="number"),
+                Measurement(name="triple_count", value=count_measures(kg).triple_count, unit="number"),
+                Measurement(name="property_count", value=count_measures(kg).property_count, unit="number"),
+                Measurement(name="class_count", value=count_measures(kg).class_count, unit="number"),
+                Measurement(name="property_occurrence", value=count_measures(kg).property_occurrence, unit="number"),
+                Measurement(name="class_occurrence", value=count_measures(kg).class_occurrence, unit="number"),
+            ],
+            summary=f"Measures of entities, triples, properties, classes, property occurrences, and class occurrences"
+        )
+
