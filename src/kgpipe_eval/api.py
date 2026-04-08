@@ -1,8 +1,8 @@
-from dataclasses import dataclass
-from functools import lru_cache
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from typing import Callable
-from kgpipe.common.model.kg import KgKg
+from dataclasses import dataclass
+from typing import Any
 
 
 # MetricConfig (rich, typed, input)
@@ -20,7 +20,7 @@ class MetricConfig:
 @dataclass(frozen=True)
 class Measurement:
     name: str
-    value: int | float | str | bool
+    value: Any
     unit: str | None = None
 
 @dataclass(frozen=True)
@@ -30,11 +30,18 @@ class MetricResult:
     summary: str | None = None
     # TODO metadata/properties: dict[str, int | float | str | bool] = field(default_factory=dict)
 
-@dataclass(frozen=True)
-class Metric:
+class Metric(ABC):
+    """
+    Minimal metric interface for the `kgpipe eval-new` CLI.
+
+    Metrics are instantiated (usually with default config) and then run via `compute(...)`.
+    """
+
     key: str
     description: str
-    compute: Callable[[KgKg, MetricConfig], MetricResult]
+
+    @abstractmethod
+    def compute(self, *args: Any, **kwargs: Any) -> MetricResult: ...
 
 
 # ---

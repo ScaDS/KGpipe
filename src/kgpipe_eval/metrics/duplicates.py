@@ -1,43 +1,56 @@
-from kgpipe.util.embeddings.st_emb import get_model
-from kgpipe_eval.utils.alignment_utils import Alignment, align_entities_by_label_embedding
+from kgpipe_eval.utils.alignment_utils import EntityAlignment, align_entities_by_label_embedding, EntityAlignmentConfig
 from kgpipe_eval.api import Metric, MetricResult, Measurement
+from kgpipe_eval.utils.kg_utils import Term, TripleGraph
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from kgpipe.common import KG
 import numpy as np
 
 DEBUG = False
 
 class DuplicateConfig(BaseModel):
-    threshold: float = 0.5
-    similarity_model: str = "cosine"
-    similarity_function: str = "cosine"
-    reference_kg: KG
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    entity_alignment_config: EntityAlignmentConfig
 
-def eval_duplicates(kg: KG, config: DuplicateConfig): 
+class DuplicateMeasures(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+    duplicates: int
+    total_references: int
+    already_matched_references: set[Term]
+
+def eval_duplicates(kg: TripleGraph, config: DuplicateConfig): 
     """
     checks expected & integrated source entity overlap using label embeddings
     """
 
-    alignments : list[Alignment] = align_entities_by_label_embedding(kg, ref_kg, threshold=config.threshold, model=config.similarity_model, similarity=config.similarity_function)
+    alignments : list[EntityAlignment] = align_entities_by_label_embedding(kg, config.entity_alignment_config)
 
-    duplicates = 0
+    duplicates = set()
     already_matched_references = set()
 
     for alignment in alignments:
         if alignment.target in already_matched_references:
-            duplicates += 1
+            duplicates.add(alignment.target)
         already_matched_references.add(alignment.target)
+
+    if DEBUG:
+        print("Duplicates:")
+        for alignment in alignments:
+            if alignment.target in duplicates:
+                print(alignment.target, alignment.source, alignment.score)
 
     return duplicates
 
 class DuplicateMetric(Metric):
-    def compute(self, kg: KG, ref_kg: KG, config: DuplicateConfig):
-        duplicates = eval_duplicates(kg, ref_kg, config)
+    def compute(self, kg: TripleGraph, config: DuplicateConfig):
+        duplicates = eval_duplicates(kg, config)
+        entity_count = len(list(kg.entities()))
         return MetricResult(
             metric=self,
             measurements=[
-                Measurement(name="duplicates", value=duplicates, unit="number"),
+                Measurement(name="duplicates", value=len(duplicates), unit="number"),
+                Measurement(name="entity_count", value=entity_count, unit="number"),
+                Measurement(name="duplicates_ratio", value=len(duplicates) / entity_count, unit="percentage"),
             ],
             summary=f"Duplicates in the KG"
         )
