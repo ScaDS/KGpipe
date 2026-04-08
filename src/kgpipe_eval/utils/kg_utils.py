@@ -35,6 +35,9 @@ class TripleGraph(Protocol):
     def subjects(self) -> Iterable[Term]:
         pass
 
+    def entities(self) -> Iterable[Term]:
+        pass
+
     def labels(self, term: Term) -> Literal:
         pass
 
@@ -116,6 +119,9 @@ class RdfLibTripleGraph(TripleGraph):
         g = self._graph()
         return g.subjects(unique=True)
 
+    def entities(self) -> Iterable[Term]:
+        return self.subjects() # TODO inlcude objects that are not subjects
+
     def labels(self, term: Term) -> Literal:
         g = self._graph()
         return g.triples((term, RDFS.label, None))
@@ -131,7 +137,7 @@ class KgManager:
     """
 
     @staticmethod
-    def load_kg(kg: KG, backend: Literal["rdflib", "spark"] = "rdflib") -> TripleGraph:
+    def load_kg(kg: KgLike, backend: Literal["rdflib", "spark"] = "rdflib") -> TripleGraph:
         if backend == "rdflib":
             return RdfLibTripleGraph(kg=kg)
         else:
@@ -151,3 +157,18 @@ class KgManager:
     @staticmethod
     def unload_kg(kg: TripleGraph) -> None:
         kg.close()
+
+
+    @staticmethod
+    def substract_kg(kg: TripleGraph, other_kg: TripleGraph) -> TripleGraph:
+        """
+        Substract the other_kg from the kg.
+        """
+        # TODO can be improved later by using a more efficient algorithm
+        triples = kg._graph().triples((None, None, None))
+        other_triples = other_kg._graph()
+        new_graph = Graph()
+        for triple in triples:
+            if triple not in other_triples:
+                new_graph.add(triple)
+        return RdfLibTripleGraph(kg=new_graph)
