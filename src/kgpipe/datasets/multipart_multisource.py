@@ -90,8 +90,8 @@ class VerifiedMatches(BaseModel):
     def read_csv(self) -> List[MatchesRow]:
         return read_matches_csv(self.file)
 
-def read_entities_csv(path: Path) -> List[EntitiesRow]:
-    return [EntitiesRow(entity_id=row["entity_id"], entity_label=row["entity_label"], entity_type=row["entity_type"], dataset=row["dataset"]) for row in csv.DictReader(path.open("r"), delimiter="\t")]
+def read_entities_csv(path: Path, delimiter: str = "\t") -> List[EntitiesRow]:
+    return [EntitiesRow(entity_id=row["entity_id"], entity_label=row["entity_label"], entity_type=row["entity_type"], dataset=row["dataset"]) for row in csv.DictReader(path.open("r"), delimiter=delimiter)]
 
 class VerifiedEntities(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)

@@ -1,26 +1,13 @@
 from __future__ import annotations
 
-import os
-import time
 import uuid
-from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime
-from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Mapping, Optional, Set, Tuple, Union, Type
-import json
-from uuid import uuid4
-import logging
-import shutil
-from rdflib import Graph
-from pydantic import BaseModel, field_validator
-from pydantic_core import core_schema
+from typing import Any, Dict, List, Optional
+from rdflib import Graph, SKOS, RDF
 
 from .data import Format
 from .pipeline import KgPipePlan
-
-from rdflib import SKOS
 
 # TODO check if this is still needed or if we can use the KG from kgcore and only use Data and DataSet
 
@@ -77,3 +64,17 @@ class KG:
     
     def __str__(self) -> str:
         return f"KG({self.name}, {self.path}, {self.format.value})"
+
+
+# TODO wip class for central KgPipe KG entity
+
+@dataclass
+class KgKg:
+    """Represents a KG for the KgPipe framework."""
+    graph_data: KgData
+    ontology_data: KgData
+    # provenance: str
+    # @staticmethod
+    # def load_from_plan(plan: KgPipePlan) -> KG:
+    #     pass
+    # pass

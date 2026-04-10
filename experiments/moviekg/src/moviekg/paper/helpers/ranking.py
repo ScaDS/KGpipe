@@ -8,7 +8,7 @@ from moviekg.paper.helpers.getter import (
     TABLE_DISPLAY_NAMES,
     normalize_metric, normalize_min_best, normalize_max_best,
     sta_fact_count, sta_denisity, sta_duration, #memory_peak is not considered
-    ref_kg_p, ref_kg_r, ref_source_entity_f1, ref_source_entity_r, ref_source_entity_p,
+    ref_kg_p, ref_source_entity_f1, 
     sem_disjoint_domain, sem_incorrect_relation_direction, sem_incorrect_relation_range, sem_incorrect_relation_domain, sem_incorrect_datatype, sem_incorrect_datatype_format
 )
 
@@ -98,66 +98,6 @@ def _rank_and_save2csv(weights: dict, outfile_stem: str, psmd: pipeline_stage_me
     # Sort & save (keep default index=True to match original behavior)
     out = df[["pipeline", "combined"]].sort_values(by="combined", ascending=False)
     out.to_csv(OUTPUT_ROOT / f"paper/{outfile_stem}.csv", sep="\t")
-
-def _rank_and_save3csv(outfile_stem: str, psmd: pipeline_stage_metric_dict, round_digits: int = 3) -> pd.DataFrame:
-    
-    # psmd = normalize_metric(psmd, sta_fact_count.__name__, ["stage_3"], normalize_max_best)
-    # psmd = normalize_metric(psmd, sta_denisity.__name__, ["stage_3"], normalize_max_best)
-    # psmd = normalize_metric(psmd, sta_fact_count.__name__, ["stage_3"], normalize_max_best)
-    # sta_metric_names = [sta_denisity.__name__+"_norm", sta_fact_count.__name__+"_norm"] 
-    # sta_agg = agg_metrics(psmd, sta_metric_names)
-
-    sem_metric_names = [
-        sem_disjoint_domain.__name__, sem_incorrect_relation_direction.__name__, 
-        sem_incorrect_relation_range.__name__, sem_incorrect_relation_domain.__name__, 
-        sem_incorrect_datatype.__name__, sem_incorrect_datatype_format.__name__]
-    sem_agg = agg_metrics(psmd, sem_metric_names)
-    
-    acc_metric_names = [ref_kg_p.__name__] # only final stage (3)
-    acc_agg = agg_metrics(psmd, acc_metric_names)
-
-    cov_metric_names = [ref_source_typed_entity_r.__name__+"_avg"] # avg of all stages
-    cov_agg = agg_metrics(psmd, cov_metric_names)
-
-    # psmd = normalize_metric(psmd, sta_duration.__name__+"_sum", ["stage_3"], normalize_min_best)
-    # eff_metric_names = [sta_duration.__name__+"_sum_norm"]
-    # eff_agg = agg_metrics(psmd, eff_metric_names)
-
-    import json
-    json.dump(psmd, open(OUTPUT_ROOT / f"paper/{outfile_stem}_psmd.json", "w"), indent=4)
-
-    df_rows = []
-
-    for pipeline, value in sem_agg.items():
-        df_rows.append(
-            {
-                "pipeline": pipeline, 
-                "semantic": round(value, round_digits), 
-                "correctness": round(acc_agg[pipeline], round_digits),
-                "coverage": round(cov_agg[pipeline], round_digits),
-                # "size": round(sta_agg[pipeline], round_digits),
-                # "efficiency": round(eff_agg[pipeline], round_digits)
-            }
-        )
-
-
-    df = pd.DataFrame(df_rows)
-
-    return df
-
-    # cols = ["semantic", "correctness", "coverage"]
-    # # Ensure we only use known columns; fill missing weights with 0.0
-    # w = pd.Series(weights).reindex(cols, fill_value=0.0)
-
-    # # Compute combined score
-    # df = df[["pipeline"] + cols].copy()
-    # df["combined"] = (df[cols] * w).sum(axis=1).round(round_digits)
-
-    # print(df.to_string())
-
-    # # Sort & save (keep default index=True to match original behavior)
-    # out = df[["pipeline", "combined"]].sort_values(by="combined", ascending=False)
-    # out.to_csv(OUTPUT_ROOT / f"paper/{outfile_stem}.csv", sep="\t")
 
 # TODO cleanup
 # def _rank_and_save(weights: dict, outfile_stem: str, df: pd.DataFrame, round_digits: int = 3) -> None:

@@ -1,0 +1,221 @@
+@prefix : <http://example.org/paper-content#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+########
+# Classes
+########
+
+:ScientificPaper a owl:Class .
+
+:ContentUnit a owl:Class .
+:RhetoricalUnit a owl:Class ; rdfs:subClassOf :ContentUnit .
+:ScientificContribution a owl:Class ; rdfs:subClassOf :ContentUnit .
+
+:ResearchProblem a owl:Class ; rdfs:subClassOf :ScientificContribution .
+:ResearchQuestion a owl:Class ; rdfs:subClassOf :ScientificContribution .
+:Motivation a owl:Class ; rdfs:subClassOf :ScientificContribution .
+:Goal a owl:Class ; rdfs:subClassOf :ScientificContribution .
+:Hypothesis a owl:Class ; rdfs:subClassOf :ScientificContribution .
+:Claim a owl:Class ; rdfs:subClassOf :ScientificContribution .
+:Method a owl:Class ; rdfs:subClassOf :ScientificContribution .
+:Material a owl:Class ; rdfs:subClassOf :ScientificContribution .
+:Dataset a owl:Class ; rdfs:subClassOf :ScientificContribution .
+:Experiment a owl:Class ; rdfs:subClassOf :ScientificContribution .
+:Model a owl:Class ; rdfs:subClassOf :ScientificContribution .
+:Observation a owl:Class ; rdfs:subClassOf :ScientificContribution .
+:Result a owl:Class ; rdfs:subClassOf :ScientificContribution .
+:Conclusion a owl:Class ; rdfs:subClassOf :ScientificContribution .
+:Limitation a owl:Class ; rdfs:subClassOf :ScientificContribution .
+:FutureWork a owl:Class ; rdfs:subClassOf :ScientificContribution .
+:Evidence a owl:Class ; rdfs:subClassOf :ScientificContribution .
+:RelatedWorkStatement a owl:Class ; rdfs:subClassOf :ScientificContribution .
+:Concept a owl:Class .
+:Variable a owl:Class .
+:Metric a owl:Class .
+
+########
+# Paper -> content
+########
+
+:hasContentUnit a owl:ObjectProperty ;
+  rdfs:domain :ScientificPaper ;
+  rdfs:range :ContentUnit .
+
+:hasProblem a owl:ObjectProperty ;
+  rdfs:subPropertyOf :hasContentUnit ;
+  rdfs:domain :ScientificPaper ;
+  rdfs:range :ResearchProblem .
+
+:hasResearchQuestion a owl:ObjectProperty ;
+  rdfs:subPropertyOf :hasContentUnit ;
+  rdfs:domain :ScientificPaper ;
+  rdfs:range :ResearchQuestion .
+
+:hasMotivation a owl:ObjectProperty ;
+  rdfs:subPropertyOf :hasContentUnit ;
+  rdfs:domain :ScientificPaper ;
+  rdfs:range :Motivation .
+
+:hasGoal a owl:ObjectProperty ;
+  rdfs:subPropertyOf :hasContentUnit ;
+  rdfs:domain :ScientificPaper ;
+  rdfs:range :Goal .
+
+:hasHypothesis a owl:ObjectProperty ;
+  rdfs:subPropertyOf :hasContentUnit ;
+  rdfs:domain :ScientificPaper ;
+  rdfs:range :Hypothesis .
+
+:hasClaim a owl:ObjectProperty ;
+  rdfs:subPropertyOf :hasContentUnit ;
+  rdfs:domain :ScientificPaper ;
+  rdfs:range :Claim .
+
+:hasMethod a owl:ObjectProperty ;
+  rdfs:subPropertyOf :hasContentUnit ;
+  rdfs:domain :ScientificPaper ;
+  rdfs:range :Method .
+
+:hasMaterial a owl:ObjectProperty ;
+  rdfs:subPropertyOf :hasContentUnit ;
+  rdfs:domain :ScientificPaper ;
+  rdfs:range :Material .
+
+:hasDataset a owl:ObjectProperty ;
+  rdfs:subPropertyOf :hasContentUnit ;
+  rdfs:domain :ScientificPaper ;
+  rdfs:range :Dataset .
+
+:hasExperiment a owl:ObjectProperty ;
+  rdfs:subPropertyOf :hasContentUnit ;
+  rdfs:domain :ScientificPaper ;
+  rdfs:range :Experiment .
+
+:hasModel a owl:ObjectProperty ;
+  rdfs:subPropertyOf :hasContentUnit ;
+  rdfs:domain :ScientificPaper ;
+  rdfs:range :Model .
+
+:hasObservation a owl:ObjectProperty ;
+  rdfs:subPropertyOf :hasContentUnit ;
+  rdfs:domain :ScientificPaper ;
+  rdfs:range :Observation .
+
+:hasResult a owl:ObjectProperty ;
+  rdfs:subPropertyOf :hasContentUnit ;
+  rdfs:domain :ScientificPaper ;
+  rdfs:range :Result .
+
+:hasConclusion a owl:ObjectProperty ;
+  rdfs:subPropertyOf :hasContentUnit ;
+  rdfs:domain :ScientificPaper ;
+  rdfs:range :Conclusion .
+
+:hasLimitation a owl:ObjectProperty ;
+  rdfs:subPropertyOf :hasContentUnit ;
+  rdfs:domain :ScientificPaper ;
+  rdfs:range :Limitation .
+
+:hasFutureWork a owl:ObjectProperty ;
+  rdfs:subPropertyOf :hasContentUnit ;
+  rdfs:domain :ScientificPaper ;
+  rdfs:range :FutureWork .
+
+:hasRelatedWorkStatement a owl:ObjectProperty ;
+  rdfs:subPropertyOf :hasContentUnit ;
+  rdfs:domain :ScientificPaper ;
+  rdfs:range :RelatedWorkStatement .
+
+########
+# Internal semantics
+########
+
+:addressesProblem a owl:ObjectProperty ;
+  rdfs:domain :Method ;
+  rdfs:range :ResearchProblem .
+
+:investigatesQuestion a owl:ObjectProperty ;
+  rdfs:domain :Experiment ;
+  rdfs:range :ResearchQuestion .
+
+:testsHypothesis a owl:ObjectProperty ;
+  rdfs:domain :Experiment ;
+  rdfs:range :Hypothesis .
+
+:usesMethod a owl:ObjectProperty ;
+  rdfs:domain :Experiment ;
+  rdfs:range :Method .
+
+:usesMaterial a owl:ObjectProperty ;
+  rdfs:domain :Experiment ;
+  rdfs:range :Material .
+
+:usesDataset a owl:ObjectProperty ;
+  rdfs:domain :Experiment ;
+  rdfs:range :Dataset .
+
+:studiesConcept a owl:ObjectProperty ;
+  rdfs:domain :ScientificContribution ;
+  rdfs:range :Concept .
+
+:hasVariable a owl:ObjectProperty ;
+  rdfs:domain :Experiment ;
+  rdfs:range :Variable .
+
+:usesMetric a owl:ObjectProperty ;
+  rdfs:domain :Result ;
+  rdfs:range :Metric .
+
+:producesObservation a owl:ObjectProperty ;
+  rdfs:domain :Experiment ;
+  rdfs:range :Observation .
+
+:supportsClaim a owl:ObjectProperty ;
+  rdfs:domain :Evidence ;
+  rdfs:range :Claim .
+
+:reportsEvidence a owl:ObjectProperty ;
+  rdfs:domain :Result ;
+  rdfs:range :Evidence .
+
+:derivedFromObservation a owl:ObjectProperty ;
+  rdfs:domain :Result ;
+  rdfs:range :Observation .
+
+:supports a owl:ObjectProperty ;
+  rdfs:domain :ScientificContribution ;
+  rdfs:range :ScientificContribution .
+
+:contradicts a owl:ObjectProperty ;
+  rdfs:domain :ScientificContribution ;
+  rdfs:range :ScientificContribution .
+
+:extends a owl:ObjectProperty ;
+  rdfs:domain :ScientificContribution ;
+  rdfs:range :ScientificContribution .
+
+:motivates a owl:ObjectProperty ;
+  rdfs:domain :Motivation ;
+  rdfs:range :Goal .
+
+:answers a owl:ObjectProperty ;
+  rdfs:domain :Conclusion ;
+  rdfs:range :ResearchQuestion .
+
+:basedOn a owl:ObjectProperty ;
+  rdfs:domain :Conclusion ;
+  rdfs:range :Result .
+
+:hasLimitationOn a owl:ObjectProperty ;
+  rdfs:domain :Limitation ;
+  rdfs:range :Method .
+
+########
+# Optional rhetorical typing
+########
+
+:IntroductionUnit a owl:Class ; rdfs:subClassOf :RhetoricalUnit .
+:MethodsUnit a owl:Class ; rdfs:subClassOf :RhetoricalUnit .
+:ResultsUnit a owl:Class ; rdfs:subClassOf :RhetoricalUnit .
+:DiscussionUnit a owl:Class ; rdfs:subClassOf :RhetoricalUnit .

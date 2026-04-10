@@ -163,13 +163,23 @@ def ref_source_entity_r(df: pd.DataFrame):
         res[row.pipeline][row.stage] = recall
     return res
 
+def ref_source_typed_entity_fn(df: pd.DataFrame):
+    df = df[df["metric"] == "SourceTypedEntityCoverageMetric"]
+    res: pipeline_stage_dict = defaultdict[pipeline_name, defaultdict[stage_name, metric_value]](lambda: defaultdict[stage_name, metric_value](lambda: None))
+    for row in df.itertuples():
+        details = json.loads(row.details)
+        # print(details)
+        fn = details.get("fn", -1)
+        res[row.pipeline][row.stage] = fn
+    return res
+
 def ref_source_typed_entity_p(df: pd.DataFrame):
     df = df[df["metric"] == "SourceTypedEntityCoverageMetric"]
     res: pipeline_stage_dict = defaultdict[pipeline_name, defaultdict[stage_name, metric_value]](lambda: defaultdict[stage_name, metric_value](lambda: None))
     for row in df.itertuples():
         details = json.loads(row.details)
         # print(details)
-        precision = details.get("fn", -1)
+        precision = details.get("precision", -1)
         res[row.pipeline][row.stage] = precision
     return res
 
@@ -372,6 +382,7 @@ TABLE_DISPLAY_NAMES = {
     ref_source_entity_r.__name__: "VSEC-R",
     ref_source_typed_entity_p.__name__: "VSEC-P-TE",
     ref_source_typed_entity_r.__name__: "VSEC-R-TE",
+    ref_source_typed_entity_fn.__name__: "VSEC-FN-TE",
     ref_entity_matching_f1.__name__: "ER-EM",
     ref_entity_matching_p.__name__: "ER-EM-P",
     ref_entity_matching_r.__name__: "ER-EM-R",
@@ -520,13 +531,7 @@ def apply_selected_updates(psmd: pipeline_stage_metric_dict) -> pipeline_stage_m
     agg_metric_over_stages(psmd, "ref_selected_task_metric", "_avg", agg_avg)
     agg_metric_over_stages(psmd, "sta_duration", "_sum", agg_sum)
     agg_metric_over_stages(psmd, "ref_source_entity_f1", "_avg", agg_avg)
-    agg_metric_over_stages(psmd, "ref_source_entity_p", "_avg", agg_avg)
-    agg_metric_over_stages(psmd, "ref_source_entity_r", "_avg", agg_avg)
-    agg_metric_over_stages(psmd, "ref_source_typed_entity_p", "_avg", agg_avg)
-    agg_metric_over_stages(psmd, "ref_source_typed_entity_r", "_avg", agg_avg)
-    # agg_metric_over_stages(psmd, "ref_kg_f1", "_avg", agg_avg)
-    # agg_metric_over_stages(psmd, "ref_kg_p", "_avg", agg_avg)
-    # agg_metric_over_stages(psmd, "ref_kg_r", "_avg", agg_avg)
+    agg_metric_over_stages(psmd, "ref_kg_f1", "_avg", agg_avg)
     return psmd
 
 def test_getter():

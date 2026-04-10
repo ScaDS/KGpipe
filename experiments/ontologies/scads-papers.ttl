@@ -1,0 +1,38 @@
+@prefix : <http://example.org/paper-content#> .
+
+:paper1 a :ScientificPaper ;
+  :hasProblem :problem1 ;
+  :hasGoal :goal1 ;
+  :hasMethod :method1 ;
+  :hasExperiment :exp1 ;
+  :hasObservation :obs1 ;
+  :hasResult :result1 ;
+  :hasClaim :claim1 ;
+  :hasConclusion :concl1 .
+
+:problem1 a :ResearchProblem .
+:goal1 a :Goal .
+:method1 a :Method ;
+  :addressesProblem :problem1 .
+
+:exp1 a :Experiment ;
+  :usesMethod :method1 ;
+  :testsHypothesis :hyp1 ;
+  :producesObservation :obs1 .
+
+:hyp1 a :Hypothesis .
+:obs1 a :Observation .
+
+:result1 a :Result ;
+  :derivedFromObservation :obs1 .
+
+:evidence1 a :Evidence ;
+  :supportsClaim :claim1 .
+
+:result1 :reportsEvidence :evidence1 .
+
+:claim1 a :Claim ;
+  :supports :goal1 .
+
+:concl1 a :Conclusion ;
+  :basedOn :result1 .

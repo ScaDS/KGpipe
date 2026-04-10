@@ -29,9 +29,10 @@
 :TaskRun a owl:Class, :RunLayer .
 :PipelineRun a owl:Class, :RunLayer .
 
-:Artifact a owl:Class, :DataLayer .
-:ArtifactType a owl:Class, :DataLayer .
-:Schema a owl:Class, :DataLayer .
+:DataArtifact a owl:Class, :DataLayer .
+:DataDataArtifactSpec a owl:Class, :DataLayer .
+:DataDataArtifactType a owl:Class, :DataLayer .
+#:Schema a owl:Class, :DataLayer .
 
 :Parameter a owl:Class, :ParameterLayer .
 :ParameterBinding a owl:Class, :ParameterLayer .
@@ -95,9 +96,9 @@
   rdfs:domain :PipelineDefinition ;
   rdfs:range  :Tool .
 
-:hasSourceArtifact a owl:ObjectProperty ;
+:hasSourceDataArtifact a owl:ObjectProperty ;
   rdfs:domain :PipelineDefinition ;
-  rdfs:range  :Artifact .
+  rdfs:range  :DataArtifact .
 
 ### Execution / runs
 :executesTask a owl:ObjectProperty ;
@@ -121,31 +122,35 @@
   rdfs:range  :TaskRun .
 
 ### Data flow (runtime)
-:hasInputArtifact a owl:ObjectProperty ;
+:hasInputDataArtifact a owl:ObjectProperty ;
   rdfs:domain :TaskRun ;
-  rdfs:range  :Artifact .
+  rdfs:range  :DataArtifact .
 
-:hasOutputArtifact a owl:ObjectProperty ;
+:hasOutputDataArtifact a owl:ObjectProperty ;
   rdfs:domain :TaskRun ;
-  rdfs:range  :Artifact .
+  rdfs:range  :DataArtifact .
 
 ### Data flow typing (design-time)
-:expectsInputType a owl:ObjectProperty ;
+:expectsInputSpec a owl:ObjectProperty ;
   rdfs:domain :Implementation ;
-  rdfs:range  :ArtifactType .
+  rdfs:range  :DataDataArtifactSpec .
 
-:producesOutputType a owl:ObjectProperty ;
+:producesOutputSpec a owl:ObjectProperty ;
   rdfs:domain :Implementation ;
-  rdfs:range  :ArtifactType .
+  rdfs:range  :DataDataArtifactSpec .
 
-### Artifact typing / schema
-:hasArtifactType a owl:ObjectProperty ;
-  rdfs:domain :Artifact ;
-  rdfs:range  :ArtifactType .
+:requiresType a owl:ObjectProperty ;
+  rdfs:domain :DataDataArtifactSpec ;
+  rdfs:range  :DataDataArtifactType .
 
-:conformsToSchema a owl:ObjectProperty ;
-  rdfs:domain :Artifact ;
-  rdfs:range  :Schema .
+### DataArtifact typing / schema
+:hasDataDataArtifactType a owl:ObjectProperty ;
+  rdfs:domain :DataArtifact ;
+  rdfs:range  :DataDataArtifactType .
+
+#:conformsToSchema a owl:ObjectProperty ;
+#  rdfs:domain :DataArtifact ;
+#  rdfs:range  :Schema .
 
 ### Parameters
 :hasParameter a owl:ObjectProperty ;
@@ -165,6 +170,10 @@
 #################################################################
 
 ### Implementation
+:implementationName a owl:DatatypeProperty ;
+  rdfs:domain :Implementation ;
+  rdfs:range  xsd:string .
+
 :commandTemplate a owl:DatatypeProperty ;
   rdfs:domain :Implementation ;
   rdfs:range  xsd:string .
@@ -177,9 +186,45 @@
   rdfs:domain :Implementation ;
   rdfs:range  xsd:string .
 
+### Method
+:methodName a owl:DatatypeProperty ;
+  rdfs:domain :Method ;
+  rdfs:range  xsd:string .
+
 ### Tool
 :toolVersion a owl:DatatypeProperty ;
   rdfs:domain :Tool ;
+  rdfs:range  xsd:string .
+
+:toolName a owl:DatatypeProperty ;
+  rdfs:domain :Tool ;
+  rdfs:range  xsd:string .
+
+:toolPage a owl:DatatypeProperty ;
+  rdfs:domain :Tool ;
+  rdfs:range  xsd:string .
+
+:toolName a owl:DatatypeProperty ;
+  rdfs:domain :Tool ;
+  rdfs:range  xsd:string .
+
+### DataArtifact
+:location a owl:DatatypeProperty ;
+  rdfs:domain :DataArtifact ;
+  rdfs:range  xsd:anyURI .
+
+### DataDataArtifactSpec
+:dataType a owl:DatatypeProperty ;
+  rdfs:domain :DataDataArtifactSpec ;
+  rdfs:range  xsd:string .
+
+### DataDataArtifactType
+:dataFormat a owl:DatatypeProperty ;
+  rdfs:domain :DataDataArtifactType ;
+  rdfs:range  xsd:string .
+
+:dataSchema a owl:DatatypeProperty ;
+  rdfs:domain :DataDataArtifactType ;
   rdfs:range  xsd:string .
 
 ### Parameter
@@ -238,12 +283,3 @@
   rdfs:domain :PipelineRun ;
   rdfs:range  xsd:string .
 
-### Artifact
-:location a owl:DatatypeProperty ;
-  rdfs:domain :Artifact ;
-  rdfs:range  xsd:anyURI .
-
-### ArtifactType
-:format a owl:DatatypeProperty ;
-  rdfs:domain :ArtifactType ;
-  rdfs:range  xsd:string .

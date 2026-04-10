@@ -20,7 +20,7 @@ from .data import Data, DataFormat, DataSet, Format
 from .task import KgTask, KgTaskReport
 # from .kg import KG
 from kgpipe.common.annotations import kg_class
-from kgpipe.common.systemgraph import PipeKG
+from kgpipe.common.graph.systemgraph import PipeKG
 
 
 class KgPipePlanStep(BaseModel):
@@ -29,19 +29,25 @@ class KgPipePlanStep(BaseModel):
     input: List[Data]
     output: List[Data]
 
-kg_class()
+# kg_class()
 class KgPipePlan(BaseModel):
     """A KG pipeline plan."""
     steps: List[KgPipePlanStep]
     seed: Optional[Data] = None
     source: Optional[Data] = None
     result: Optional[Data] = None
-    
+
+    @staticmethod
+    def from_path(json_file: str) -> 'KgPipePlan':
+        with open(json_file, "r") as f:
+            json_data = json.load(f)
+            return KgPipePlan(**json_data)
+
     # def __str__(self) -> str:
     #     return f"KgTaskReport({self.task_name}, {self.status}, {self.duration:.2f}s)"
 
 # TODO rename to KgPipeReport
-@kg_class()
+# @kg_class()
 class KgStageReport(BaseModel):
     """Report of a stage execution."""
     stage_name: str
@@ -50,6 +56,15 @@ class KgStageReport(BaseModel):
     duration: float
     status: str
     error: Optional[str] = None
+
+    @staticmethod
+    def from_path(json_file: str) -> 'KgStageReport':
+        with open(json_file, "r") as f:
+            json_data = json.load(f)
+            return KgStageReport(**json_data)
+
+KgPipeReport = KgStageReport
+KgPipelineRun = KgStageReport
 
 # @dataclass
 # class Stage:
@@ -78,7 +93,7 @@ class KgStageReport(BaseModel):
 
 
 # TODO rename to Pipeline
-@kg_class()
+# @kg_class()
 @dataclass
 class KgPipe:
     """A KG pipeline using a list of tasks."""
@@ -227,44 +242,8 @@ class KgPipe:
 
             reports.append(report)
 
-        from kgpipe.common.definitions import PipelineRunEntity, TaskRunEntity, ImplementationEntity, TaskEntity, ImplementationEntityId, TaskEntityId
-        from kgcore.api.kg import KGId
-        from kgpipe.common.config import config
-        from kgpipe.common.definitions import DataHandle
-        
-        # TODO this is a workaround for now, taskrun should be built from the task itself
-        def build_pipeline_run_entity(reports: List[KgTaskReport]) -> PipelineRunEntity:
-            
-            task_runs: List[TaskRunEntity] = []
-            for idx, report in enumerate(reports):
-
-
-                # def get_implementation_entity(report: KgTaskReport) -> ImplementationEntityId:
-                #     return PipeKG.find_implementation_by_name(report.task_name).id
-
-                task_runs.append(TaskRunEntity(
-                    number=idx,
-                    name=report.task_name,
-                    status=report.status,
-                    started_at=report.start_ts,
-                    ended_at=report.start_ts + report.duration,
-                    executesTask=TaskEntityId(config.PIPEKG_PREFIX+report.task_name),
-                    usesImplementation=ImplementationEntityId(config.PIPEKG_PREFIX+report.task_name+"Impl"),
-                    input=[DataHandle(uri=str(input_data.path), type=input_data.format) for input_data in report.inputs],
-                    output=[DataHandle(uri=str(output_data.path), type=output_data.format) for output_data in report.outputs],
-                    hasParameterBinding=[]
-                ))
-
-            return PipelineRunEntity(
-                name=self.name,
-                status="success",
-                started_at=time.time(),
-                ended_at=time.time(),
-                hasTaskRun=task_runs
-            )
-
-        pipeline_run_entity = build_pipeline_run_entity(reports)
-        PipeKG.add_pipeline_run(pipeline_run_entity)
+        # pipeline_run_entity = reports_to_pipeline_run_entity(reports, self.name)
+        # PipeKG.add_pipeline_run(pipeline_run_entity)
 
         return reports
     
