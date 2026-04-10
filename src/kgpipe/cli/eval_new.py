@@ -4,12 +4,14 @@ from rich.table import Table
 from typing import List, Optional, Sequence, Any
 import json
 from pathlib import Path
+import codecs
 
 from kgpipe_eval.metrics.statistics import CountMetric
 from kgpipe_eval.metrics.duplicates import DuplicateMetric
 from kgpipe_eval.metrics.entity_alignment import EntityAlignmentMetric
 from kgpipe_eval.utils.kg_utils import KgManager
-from kgpipe_eval.config.manager import load_metric_configs
+from kgpipe_eval.utils.metric_utils import MeasurementKey, parse_eval_results, write_eval_csv
+from kgpipe_eval.config.manager import load_metric_configs, write_default_config_yaml
 from kgpipe_eval.evaluator import Evaluator
 # from kgpipe_eval.metrics.semantic import OntologyClassCoverageMetric, OntologyRelationCoverageMetric, OntologyNamespaceCoverageMetric
 # from kgpipe_eval.metrics.reference import PrecisionMetric, RecallMetric, F1ScoreMetric
@@ -19,6 +21,45 @@ from kgpipe_eval.evaluator import Evaluator
 # from kgpipe_eval.metrics.accuracy import AccuracyMetric
 
 console = Console()
+
+_DEFAULT_EVAL_RESULTS_ALLOWLIST = {
+    "DuplicateMetric": {
+        "duplicates": "number",
+        "entity_count": "number",
+        "duplicates_ratio": "percentage",
+    }
+}
+
+def _measurement_key_to_col(k: MeasurementKey) -> str:
+    return f"{k.metric}__{k.measurement}__{k.unit}"
+
+
+def _col_to_measurement_key(col: str) -> MeasurementKey:
+    parts = col.split("__")
+    if len(parts) != 3 or not all(parts):
+        raise click.ClickException(
+            f"Invalid selection '{col}'. Expected format: <metric>__<measurement>__<unit>"
+        )
+    return MeasurementKey(metric=parts[0], measurement=parts[1], unit=parts[2])
+
+
+def _available_eval_result_keys(paths: list[Path]) -> list[MeasurementKey]:
+    keys: set[MeasurementKey] = set()
+    for p in paths:
+        flat = parse_eval_results(p)
+        keys.update(flat.keys())
+    return sorted(keys, key=_measurement_key_to_col)
+
+def _decode_single_char_delimiter(delimiter: str) -> str:
+    """
+    Allow passing common escape sequences like '\\t' for tab.
+    """
+    decoded = codecs.decode(delimiter, "unicode_escape") if "\\" in delimiter else delimiter
+    if len(decoded) != 1:
+        raise click.ClickException(
+            f"--delimiter must be a single character (you passed {delimiter!r} -> {decoded!r})"
+        )
+    return decoded
 
 
 def _available_metric_instances() -> dict[str, Any]:
@@ -61,13 +102,20 @@ def _build_confs_for_selected_metrics(
         norm_mkey = _normalize_key(mkey)
         norm_cls = _normalize_key(metric.__class__.__name__)
 
+        # Try common YAML ids derived from metric names
+        base_from_key = norm_mkey.replace("_metric", "").replace("metric", "")
+        base_from_cls = norm_cls.replace("_metric", "").replace("metric", "")
+
         cfg = (
             confs_by_norm.get(norm_mkey)
             or confs_by_norm.get(norm_cls)
             or confs_by_norm.get(_normalize_key(alias_to_metric_key.get(norm_mkey, "")))
             or confs_by_norm.get(_normalize_key(alias_to_metric_key.get(norm_cls, "")))
-            or confs_by_norm.get(norm_mkey.replace("metric", ""))
-            or confs_by_norm.get(norm_cls.replace("metric", ""))
+            or confs_by_norm.get(base_from_key)
+            or confs_by_norm.get(base_from_cls)
+            # plural fallback (e.g. DuplicateMetric -> duplicates)
+            or confs_by_norm.get(f"{base_from_key}s")
+            or confs_by_norm.get(f"{base_from_cls}s")
         )
 
         if cfg is not None:
@@ -112,20 +160,27 @@ def _results_to_json_rows(kg_path: str, metric_key: str, measurements: Sequence[
     return rows
 
 
-@click.command()
+@click.group(name="eval-new")
+def eval_new_cmd() -> None:
+    """
+    Evaluation commands for the new metric framework.
+    """
+
+
+@eval_new_cmd.command(name="run")
 @click.argument("kg_paths", nargs=-1, type=click.Path(exists=True))
 @click.option(
-    "--config", 
-    "-c", 
-    type=click.Path(exists=True), 
-    help="Path to metric config file"
+    "--config",
+    "-c",
+    type=click.Path(exists=True),
+    help="Path to metric config file",
 )
 @click.option(
-    "--metrics", 
-    "-m", 
-    multiple=True, 
+    "--metrics",
+    "-m",
+    multiple=True,
     type=click.Choice(sorted(_available_metric_instances().keys())),
-    help="Metrics to compute"
+    help="Metrics to compute",
 )
 @click.option(
     "--output",
@@ -134,7 +189,7 @@ def _results_to_json_rows(kg_path: str, metric_key: str, measurements: Sequence[
     help="Write results to a JSON file (list of measurement rows).",
 )
 @click.pass_context
-def eval_new_cmd(ctx: click.Context, kg_paths: List[str], config: Optional[str], metrics: tuple, output: Optional[str]):
+def run_cmd(ctx: click.Context, kg_paths: List[str], config: Optional[str], metrics: tuple, output: Optional[str]) -> None:
     """
     Compute selected metrics for one or more KGs.
 
@@ -173,3 +228,114 @@ def eval_new_cmd(ctx: click.Context, kg_paths: List[str], config: Optional[str],
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(json.dumps(all_rows, indent=2, ensure_ascii=False, default=str) + "\n", encoding="utf-8")
         console.print(f"[green]✓ Saved results to[/green] {output}")
+
+
+@eval_new_cmd.command(name="init-config")
+@click.argument("output_path", type=click.Path(dir_okay=False), default="eval.default.yaml", required=False)
+def init_config_cmd(output_path: str) -> None:
+    """
+    Write a default metric-config template YAML to OUTPUT_PATH.
+    """
+    out = write_default_config_yaml(output_path)
+    console.print(f"[green]✓ Wrote default config to[/green] {out}")
+
+
+@eval_new_cmd.command(name="to-csv")
+@click.argument("eval_json_paths", nargs=-1, type=click.Path(exists=True, dir_okay=False))
+@click.option(
+    "--glob",
+    "glob_pattern",
+    type=str,
+    help="Optional glob pattern (expanded by the shell) for eval_results.json files.",
+)
+@click.option(
+    "--select",
+    "-s",
+    "selected_cols",
+    multiple=True,
+    help="Select columns to include (repeatable). Format: <metric>__<measurement>__<unit>. If omitted, defaults are used.",
+)
+@click.option(
+    "--list-keys",
+    is_flag=True,
+    help="Print available column keys found in the inputs and exit.",
+)
+@click.option(
+    "--round",
+    "round_ndigits",
+    type=int,
+    default=None,
+    help="Round float values to N decimal digits before writing CSV.",
+)
+@click.option(
+    "--delimiter",
+    "delimiter",
+    type=str,
+    default=",",
+    show_default=True,
+    help="CSV delimiter character (supports escapes like '\\t').",
+)
+@click.option(
+    "--output",
+    "-o",
+    "output_csv",
+    type=click.Path(dir_okay=False),
+    required=True,
+    help="Path to write the CSV table to.",
+)
+def to_csv_cmd(
+    eval_json_paths: List[str],
+    glob_pattern: Optional[str],
+    selected_cols: tuple[str, ...],
+    list_keys: bool,
+    round_ndigits: Optional[int],
+    delimiter: str,
+    output_csv: str,
+) -> None:
+    """
+    Convert one or more `eval_results.json` files into a CSV table.
+
+    The CSV contains one row per (pipeline, stage), derived from file paths like:
+      `<pipeline>/stage_<i>/eval_results.json`
+
+    Columns follow: `<metric>__<measurement>__<unit>`.
+    """
+    paths: list[Path] = [Path(p) for p in eval_json_paths]
+    if glob_pattern:
+        paths.extend(sorted(Path().glob(glob_pattern)))
+
+    if not paths:
+        raise click.ClickException("No input files provided. Pass paths or --glob.")
+
+    available = _available_eval_result_keys(paths)
+    console.print("[bold]Available keys in inputs:[/bold]")
+    for k in available:
+        console.print(f"  - {_measurement_key_to_col(k)}")
+
+    if list_keys:
+        return
+
+    allowlist = _DEFAULT_EVAL_RESULTS_ALLOWLIST
+    if selected_cols:
+        available_cols = {_measurement_key_to_col(k) for k in available}
+        missing = [c for c in selected_cols if c not in available_cols]
+        if missing:
+            raise click.ClickException(
+                "Selected keys not found in inputs:\n" + "\n".join(f"- {m}" for m in missing)
+            )
+
+        allowlist = {}
+        for c in selected_cols:
+            k = _col_to_measurement_key(c)
+            allowlist.setdefault(k.metric, {})[k.measurement] = k.unit
+
+    out_path = Path(output_csv)
+    delimiter = _decode_single_char_delimiter(delimiter)
+    write_eval_csv(
+        paths,
+        out_path=out_path,
+        allowlist=allowlist,
+        delimiter=delimiter,
+        round_ndigits=round_ndigits,
+    )
+    console.print(f"[green]✓ Wrote CSV to[/green] {out_path}")
