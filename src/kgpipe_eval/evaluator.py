@@ -3,6 +3,7 @@ from __future__ import annotations
 import inspect
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Mapping, Sequence
+import traceback
 
 from kgpipe_eval.api import Metric, MetricResult
 from kgpipe_eval.utils.kg_utils import TripleGraph
@@ -55,6 +56,8 @@ class Evaluator:
                         )
                     res = compute(kg, cfg)
             except Exception as e:
+                print(f"Failed running metric {key!r}: {e}")
+                print(traceback.format_exc())
                 raise RuntimeError(f"Failed running metric {key!r}") from e
 
             if not isinstance(res, MetricResult):

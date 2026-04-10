@@ -105,10 +105,12 @@ class RdfLibTripleGraph(TripleGraph):
     def _graph(self) -> Graph:
         if isinstance(self.kg, Graph):
             return self.kg
-        if isinstance(self.kg, KG):
+        elif isinstance(self.kg, KG):
             return self.kg.get_graph()
-        # Assume filesystem path
-        return Graph().parse(str(self.kg))
+        elif isinstance(self.kg, Path):
+            return Graph().parse(str(self.kg))
+        else:
+            raise ValueError(f"Unsupported KG type: {type(self.kg)}")
 
     def triples(self, triple_pattern: TriplePattern) -> Iterable[Triple]:
         g = self._graph()

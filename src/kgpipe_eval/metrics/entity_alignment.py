@@ -26,6 +26,20 @@ def eval_entity_alignment_by_label_embedding_and_type(kg: KG, config: EntityAlig
     ref_entity_uri_label_type_pairs = load_entity_uri_label_type_pairs(config)
     gen_entity_uri_label_type_pairs = list(get_entity_uri_label_type_pairs(kg))
 
+    # print ref and gen pairs for testing
+    # print("--------------------------------")
+    # print("ref_entity_uri_label_type_pairs")
+    # for pair in ref_entity_uri_label_type_pairs:
+    #     print(pair)
+    # print("--------------------------------")
+    # print("gen_entity_uri_label_type_pairs")
+    # for pair in gen_entity_uri_label_type_pairs:
+    #     print(pair)
+    # print("--------------------------------")
+    # print("alignments")
+    # for alignment in alignments:
+    #     print(alignment)
+
     ref_types = {pair.uri: pair.type for pair in ref_entity_uri_label_type_pairs if pair.type is not None}
     # TODO gen_types can be multiple types, we need to handle this
     gen_types = {pair.uri: pair.type for pair in gen_entity_uri_label_type_pairs if pair.type is not None}

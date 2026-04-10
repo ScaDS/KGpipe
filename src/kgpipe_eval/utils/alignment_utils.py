@@ -3,7 +3,7 @@ from typing import Literal, NamedTuple, Optional
 from functools import lru_cache
 from pydantic import BaseModel, ConfigDict, model_validator
 
-from kgpipe_eval.utils.kg_utils import TripleGraph, Term, Triple
+from kgpipe_eval.utils.kg_utils import TripleGraph, Term, Triple, KgLike, KgManager
 from kgpipe.util.embeddings.st_emb import get_model
 
 from rdflib import RDFS, RDF
@@ -16,7 +16,7 @@ from pathlib import Path
 class EntityAlignmentConfig(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
     method: Literal["label_embedding", "label_alias_embedding", "label_embedding_and_type"] = "label_embedding"
-    reference_kg: Optional[KG] = None
+    reference_kg: Optional[KgLike] = None
     verified_entities_path: Optional[Path] = None
     verified_entities_delimiter: str = "\t"
     entity_sim_threshold: float = 0.95
@@ -76,7 +76,8 @@ def load_entity_uri_label_type_pairs(config: EntityAlignmentConfig) -> list[UriL
     if config.verified_entities_path is not None:
         return load_verified_entities(config.verified_entities_path, delimiter=config.verified_entities_delimiter)
     elif config.reference_kg is not None:
-        return get_entity_uri_label_type_pairs(config.reference_kg)
+        # `get_entity_uri_label_type_pairs` is a generator; downstream alignment uses indexing.
+        return list(get_entity_uri_label_type_pairs(KgManager.load_kg(config.reference_kg)))
     else:
         raise ValueError("No verified entities path or reference KG provided")
 

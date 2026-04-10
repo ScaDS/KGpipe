@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Mapping, MutableMapping
+from typing import Any, Mapping
+import re
 
 import yaml
 from pydantic import BaseModel
@@ -16,6 +17,54 @@ from kgpipe_eval.utils.alignment_utils import EntityAlignmentConfig
 
 
 MetricConfigModel = BaseModel
+REQUIRED = "<REQUIRED>"
+
+_VAR_PATTERN = re.compile(r"^\$(\w+)$|^\$\{(\w+)\}$")
+
+
+def _interpolate_vars(obj: Any, vars_map: Mapping[str, Any]) -> Any:
+    """
+    Recursively interpolate simple $var / ${var} references inside YAML-loaded data.
+
+    Only replaces when the *entire* string is a reference token.
+    """
+    if isinstance(obj, str):
+        m = _VAR_PATTERN.match(obj.strip())
+        if not m:
+            return obj
+        name = m.group(1) or m.group(2)
+        if name in vars_map:
+            return vars_map[name]
+        return obj
+    if isinstance(obj, list):
+        return [_interpolate_vars(v, vars_map) for v in obj]
+    if isinstance(obj, dict):
+        return {k: _interpolate_vars(v, vars_map) for k, v in obj.items()}
+    return obj
+
+
+def _resolve_paths(obj: Any, *, base_dir: Path) -> Any:
+    """
+    Recursively resolve relative paths for common config keys.
+
+    - For keys ending with `_path` or `_kg_path`, if the value is a str/Path and
+      relative, make it absolute by joining with `base_dir`.
+    - For `reference_kg` when passed as str/Path, treat it as a path too.
+    """
+    if isinstance(obj, list):
+        return [_resolve_paths(v, base_dir=base_dir) for v in obj]
+    if isinstance(obj, dict):
+        out: dict[str, Any] = {}
+        for k, v in obj.items():
+            vv = _resolve_paths(v, base_dir=base_dir)
+            if isinstance(vv, (str, Path)):
+                if k == "reference_kg" or k.endswith("_path") or k.endswith("_kg_path"):
+                    p = Path(vv)
+                    if not p.is_absolute():
+                        vv = (base_dir / p).resolve()
+            out[k] = vv
+        return out
+    return obj
 
 
 def _deep_merge_dict(base: Mapping[str, Any], override: Mapping[str, Any]) -> dict[str, Any]:
@@ -118,6 +167,13 @@ def load_metric_configs(config_path: str | Path) -> dict[str, MetricConfigModel]
     if not isinstance(raw, Mapping):
         raise TypeError("Top-level YAML must be a mapping/dict.")
 
+    # Allow simple variable indirection like:
+    # reference_kg: test.ttl
+    # ... reference_kg: $reference_kg
+    vars_map = {k: v for k, v in raw.items() if isinstance(k, str)}
+    raw = _interpolate_vars(raw, vars_map)
+    raw = _resolve_paths(raw, base_dir=path.parent)
+
     named_entity_alignment: dict[str, dict[str, Any]] = {}
     raw_named = raw.get("entity_alignment_configs") or {}
     if raw_named:
@@ -152,6 +208,9 @@ def load_metric_configs(config_path: str | Path) -> dict[str, MetricConfigModel]
             if "reference_kg_path" in entity_cfg_dict and "reference_kg" not in entity_cfg_dict:
                 ref_path = Path(entity_cfg_dict.pop("reference_kg_path"))
                 entity_cfg_dict["reference_kg"] = _kg_from_path(ref_path)
+            # Backward compatible: accept `reference_kg: "/path/to/file.nt"` in YAML
+            if isinstance(entity_cfg_dict.get("reference_kg"), (str, Path)):
+                entity_cfg_dict["reference_kg"] = _kg_from_path(Path(entity_cfg_dict["reference_kg"]))
             out[metric_key] = EntityAlignmentConfig.model_validate(entity_cfg_dict)
             continue
 
@@ -160,6 +219,8 @@ def load_metric_configs(config_path: str | Path) -> dict[str, MetricConfigModel]
             if "reference_kg_path" in entity_cfg_dict and "reference_kg" not in entity_cfg_dict:
                 ref_path = Path(entity_cfg_dict.pop("reference_kg_path"))
                 entity_cfg_dict["reference_kg"] = _kg_from_path(ref_path)
+            if isinstance(entity_cfg_dict.get("reference_kg"), (str, Path)):
+                entity_cfg_dict["reference_kg"] = _kg_from_path(Path(entity_cfg_dict["reference_kg"]))
             out[metric_key] = DuplicateConfig.model_validate(
                 {
                     "entity_alignment_config": EntityAlignmentConfig.model_validate(entity_cfg_dict),
@@ -173,6 +234,8 @@ def load_metric_configs(config_path: str | Path) -> dict[str, MetricConfigModel]
             if "reference_kg_path" in entity_cfg_dict and "reference_kg" not in entity_cfg_dict:
                 ref_path = Path(entity_cfg_dict.pop("reference_kg_path"))
                 entity_cfg_dict["reference_kg"] = _kg_from_path(ref_path)
+            if isinstance(entity_cfg_dict.get("reference_kg"), (str, Path)):
+                entity_cfg_dict["reference_kg"] = _kg_from_path(Path(entity_cfg_dict["reference_kg"]))
             cfg_dict["entity_alignment_config"] = EntityAlignmentConfig.model_validate(entity_cfg_dict)
 
             # Allow YAML to specify a path rather than an in-memory KG object
@@ -196,6 +259,8 @@ def load_metric_configs(config_path: str | Path) -> dict[str, MetricConfigModel]
             if "reference_kg_path" in cfg_dict and "reference_kg" not in cfg_dict:
                 ref_path = Path(cfg_dict.pop("reference_kg_path"))
                 cfg_dict["reference_kg"] = _kg_from_path(ref_path)
+            if isinstance(cfg_dict.get("reference_kg"), (str, Path)):
+                cfg_dict["reference_kg"] = _kg_from_path(Path(cfg_dict["reference_kg"]))
             out[metric_key] = ConsistencyViolationsConfig.model_validate(cfg_dict)
             continue
 
@@ -205,4 +270,65 @@ def load_metric_configs(config_path: str | Path) -> dict[str, MetricConfigModel]
         )
 
     return out
+
+
+def generate_default_config_dict() -> dict[str, Any]:
+    """
+    Generate a complete default YAML config structure for all supported metric configs.
+
+    This is intended as a *template* for users. Required values are filled with the
+    placeholder string `"<REQUIRED>"`.
+    """
+    # Shared sub-config defaults
+    entity_alignment_default = {
+        "method": "label_embedding",
+        # Prefer a path-based template: avoids embedding runtime `KG` objects into YAML.
+        "verified_entities_path": REQUIRED,
+        "verified_entities_delimiter": EntityAlignmentConfig.model_fields["verified_entities_delimiter"].default,
+        "entity_sim_threshold": EntityAlignmentConfig.model_fields["entity_sim_threshold"].default,
+    }
+
+    return {
+        "entity_alignment_configs": {
+            "default": entity_alignment_default,
+        },
+        "metrics": {
+            # Standalone metric uses EntityAlignmentConfig directly via a ref.
+            "entity_align": {
+                "entity_alignment_config_ref": "default",
+            },
+            "duplicates": {
+                "entity_alignment_config_ref": "default",
+            },
+            "triple_alignment": {
+                "reference_kg_path": REQUIRED,
+                "entity_alignment_config_ref": "default",
+                "value_sim_threshold": TripleAlignmentConfig.model_fields["value_sim_threshold"].default,
+            },
+            # Consistency config currently requires both fields at type-level;
+            # template includes both so users can fill in one/both.
+            "consistency_violations": {
+                "reference_kg_path": REQUIRED,
+                "ontology_path": REQUIRED,
+            },
+        },
+    }
+
+
+def generate_default_config_yaml() -> str:
+    """
+    Return a YAML string (template) for `load_metric_configs`.
+    """
+    cfg = generate_default_config_dict()
+    # Keep output stable and readable.
+    return yaml.safe_dump(cfg, sort_keys=False, default_flow_style=False)
+
+
+def write_default_config_yaml(path: str | Path) -> Path:
+    """
+    Write a default template YAML to disk and return the written path.
+    """
+    out_path = Path(path)
+    out_path.write_text(generate_default_config_yaml(), encoding="utf-8")
+    return out_path
 
