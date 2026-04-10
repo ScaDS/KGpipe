@@ -7,8 +7,9 @@ from typing import Dict, Optional
 import json
 from kgpipe.common.registry import Registry
 import os
-from kgcore.model.ontology import OntologyUtil
-from kgpipe.execution.config import SOURCE_NAMESPACE, TARGET_ONTOLOGY_NAMESPACE, TARGET_RESOURCE_NAMESPACE
+
+from kgcore.api.ontology import OntologyUtil
+from kgpipe.common.config import SOURCE_NAMESPACE, TARGET_ONTOLOGY_NAMESPACE, TARGET_RESOURCE_NAMESPACE
 
 
 def fuse_rdf_files(f1,f2,er):
