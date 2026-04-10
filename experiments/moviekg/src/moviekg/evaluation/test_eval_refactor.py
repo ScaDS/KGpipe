@@ -17,6 +17,13 @@ from kgpipe.common.model.pipeline import KgPipePlan, KgPipeReport
 from kgpipe.common.model.kg import KG
 from kgpipe.common.model.data import DataFormat
 import json
+from dataclasses import asdict
+
+try:
+    from moviekg import config as moviekg_config
+except Exception as e:
+    # These are integration-style tests that depend on local env/config files.
+    pytest.skip(f"MovieKG config not available for eval integration test: {e}", allow_module_level=True)
 # TODO 
 # [ ] Dataset Reader (split,ref,source,metadata)
 # [ ] Pipeline Results Reader (stage,kg,plan,report,tmp_file)
@@ -27,7 +34,7 @@ import json
 
 
 EX_BENCH_DATA_PATH = Path("/home/marvin/phd/data/moviekg/datasets/film_10k")
-EX_INC_PIPE_DATA_PATH = Path("/home/marvin/phd/data/moviekg/output/large/rdf_a")
+# EX_INC_PIPE_DATA_PATH = Path("/home/marvin/phd/data/moviekg/output/large/rdf_a")
 
 # TODO is a wrapper interface for now, Dataset needs refactor later
 # TODO can be abstracted and implemented to have direct method per type, so dict is not needed for access
@@ -98,6 +105,32 @@ def evaluate_stage(i: int, pipe_data: KgPipeData, bench_data: KgBenchData) -> Li
     config_dict = build_config_dict(i, pipe_data, bench_data)
     return Evaluator().run(tg, metrics, config_dict)
 
+
+def _stage_dirs(output_dir: Path) -> list[Path]:
+    stage_dirs = [p for p in output_dir.iterdir() if p.is_dir() and p.name.startswith("stage_")]
+    # stage_1, stage_2, ...
+    stage_dirs.sort(key=lambda p: int(p.name.split("_", 1)[1]))
+    return stage_dirs
+
+
+def _metric_results_to_jsonable(results: list[MetricResult]) -> list[dict]:
+    """
+    Convert `MetricResult` dataclasses to JSON-serializable dicts.
+
+    `MetricResult.metric` is an object instance, so we store its key/classname.
+    """
+    out: list[dict] = []
+    for r in results:
+        metric_key = getattr(r.metric, "key", None) or r.metric.__class__.__name__
+        out.append(
+            {
+                "metric": metric_key,
+                "summary": r.summary,
+                "measurements": [asdict(m) for m in r.measurements],
+            }
+        )
+    return out
+
 # EX_PIPE_DATA_PATH = Path("/home/marvin/phd/data/moviekg/output/small/rdf_a/stage_1")
 # def test_evaluate_stage():
 #     if not EX_PIPE_DATA_PATH.exists() or not EX_BENCH_DATA_PATH.exists():
@@ -111,16 +144,51 @@ def evaluate_stage(i: int, pipe_data: KgPipeData, bench_data: KgBenchData) -> Li
 #     for result in results:
 #         print(render_metric_result(result, truncate=True, truncate_value=3))
 
-def test_evaluate_inc_stage():
-    if not EX_INC_PIPE_DATA_PATH.exists() or not EX_BENCH_DATA_PATH.exists():
-        pytest.skip("Local MovieKG inc data not available; test is an integration/WIP scaffold.")
+# def test_evaluate_inc_stage():
+#     if not EX_INC_PIPE_DATA_PATH.exists() or not EX_BENCH_DATA_PATH.exists():
+#         pytest.skip("Local MovieKG inc data not available; test is an integration/WIP scaffold.")
 
-    for i in range(1, 4):
-        pipe_data = KgPipeData.from_path(EX_INC_PIPE_DATA_PATH / f"stage_{i}")
-        bench_data = KgBenchData.from_path(EX_BENCH_DATA_PATH)
-        results = evaluate_stage(i, pipe_data, bench_data)
+#     for i in range(1, 4):
+#         pipe_data = KgPipeData.from_path(EX_INC_PIPE_DATA_PATH / f"stage_{i}")
+#         bench_data = KgBenchData.from_path(EX_BENCH_DATA_PATH)
+#         results = evaluate_stage(i, pipe_data, bench_data)
 
-        # render
-        print() # avoids pytest output being interleaved with print statements
-        for result in results:
-            print(render_metric_result(result, truncate=True, truncate_value=3))
+#         # render
+#         print() # avoids pytest output being interleaved with print statements
+#         for result in results:
+#             print(render_metric_result(result, truncate=True, truncate_value=3))
+
+@pytest.mark.parametrize(
+    "pipeline_name",
+    list[str](moviekg_config.pipeline_types.keys()) + list[str](moviekg_config.llm_pipeline_types.keys()),
+)
+def test_evaluate_new(pipeline_name: str):
+    """
+    Boilerplate integration test that runs the new eval API for each pipeline
+    output under `OUTPUT_ROOT/<pipeline_name>/stage_*`.
+    """
+    output_dir = moviekg_config.OUTPUT_ROOT / pipeline_name
+
+    if not output_dir.exists():
+        pytest.skip(f"Pipeline output directory {output_dir} not found")
+
+    stage_dirs = _stage_dirs(output_dir)
+    if not stage_dirs:
+        pytest.skip(f"No stage directories found under {output_dir}")
+
+    # Uses the dataset selected/configured via `moviekg.config` env vars.
+    bench_data = KgBenchData.from_path(EX_BENCH_DATA_PATH)
+
+    for stage_dir in stage_dirs:
+        i = int(stage_dir.name.split("_", 1)[1])
+        pipe_data = KgPipeData.from_path(stage_dir)
+        results = evaluate_stage(i=i, pipe_data=pipe_data, bench_data=bench_data)
+
+        eval_results = _metric_results_to_jsonable(results)
+        with open(stage_dir / "eval_results.json", "w") as f:
+            json.dump(eval_results, f, indent=2)
+            print(f"Wrote results to {stage_dir / 'eval_results.json'}")
+
+        # Smoke checks: we got metric results back for this stage.
+        assert isinstance(results, list)
+        assert results
