@@ -36,7 +36,13 @@ class KgPipePlan(BaseModel):
     seed: Optional[Data] = None
     source: Optional[Data] = None
     result: Optional[Data] = None
-    
+
+    @staticmethod
+    def from_path(json_file: str) -> 'KgPipePlan':
+        with open(json_file, "r") as f:
+            json_data = json.load(f)
+            return KgPipePlan(**json_data)
+
     # def __str__(self) -> str:
     #     return f"KgTaskReport({self.task_name}, {self.status}, {self.duration:.2f}s)"
 
@@ -51,6 +57,13 @@ class KgStageReport(BaseModel):
     status: str
     error: Optional[str] = None
 
+    @staticmethod
+    def from_path(json_file: str) -> 'KgStageReport':
+        with open(json_file, "r") as f:
+            json_data = json.load(f)
+            return KgStageReport(**json_data)
+
+KgPipeReport = KgStageReport
 KgPipelineRun = KgStageReport
 
 # @dataclass
