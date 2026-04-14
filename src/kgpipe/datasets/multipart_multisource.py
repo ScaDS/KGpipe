@@ -215,13 +215,15 @@ class SplitIndex(BaseModel):
     #         raise ValueError(f"{self.entities_csv} must contain an 'entity_id' column; got {header}")
     #     return self
 
+# SourceType = Literal["rdf", "json", "text"]
+
 class Split(BaseModel):
     split_id: str
     root: Path
     index: SplitIndex
     kg_reference: Optional[KGBundle] = None
     kg_seed: Optional[KGBundle] = None
-    sources: Dict[str, SourceBundle]
+    sources: Dict[str, SourceBundle] # TODO SourceType
 
     def set_index(self, entities: List[EntitiesRow]):
         self.index.dir.mkdir(parents=True, exist_ok=True)
@@ -548,12 +550,16 @@ def load_dataset(root: Path) -> Dataset:
             if seed_dir.exists():
                 seed_data_dir = seed_dir / "data"
                 seed_meta_dir = seed_dir / "meta"
+                seed_meta = SourceMeta(root=seed_meta_dir)
+                ve = seed_meta_dir / "verified_entities.csv"
+                if ve.exists():
+                    seed_meta.entities = VerifiedEntities(file=ve)
                 seed_parts = list_parts(seed_data_dir, (".nt", ".ttl", ".nq"))
                 kg_seed = KGBundle(
                     kind="seed",
                     root=seed_dir,
                     data=SourceData(dir=seed_data_dir, parts=seed_parts),
-                    meta=SourceMeta(root=seed_meta_dir)
+                    meta=seed_meta
                 )
 
         # sources
