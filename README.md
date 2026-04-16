@@ -51,5 +51,29 @@ KGpipe provides Single-Source Pipelines (SSPs) and Multi-Source Pipelines (MSPs)
 
 For documentation see the [docs](docs/reproduce.md)
 
+## Installation notes (CPU vs CUDA)
+
+Some optional ML dependencies (e.g. `sentence_transformers`) pull in PyTorch (`torch`). Depending on which PyTorch wheel gets selected, you may see large downloads like `nvidia-*` and `triton`.
+
+KGpipe keeps the ML stack out of the default install; install it explicitly when needed. For `uv`, PyTorch is pinned to the official PyTorch wheel indexes to avoid accidentally pulling CUDA wheels from PyPI.
+
+### Base install (fast, no torch)
+
+```bash
+uv pip install .
+```
+
+### ML install with CPU-only PyTorch (no `nvidia-*`)
+
+```bash
+uv pip install ".[ml,cpu]"
+```
+
+### ML install with CUDA-enabled PyTorch (will download `nvidia-*`)
+
+```bash
+uv pip install ".[ml,cuda]"
+```
+
 ## Experiments
 - **[moviekg](experiments/moviekg/README.md)** evalaution of a pipelines, building a Movie KG from three sources (rdf,json,text).
