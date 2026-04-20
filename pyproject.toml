@@ -12,7 +12,9 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "docker>=7.0.0", # docker-sdk-for-python
+    "kgcore @ git+ssh://git@git.informatik.uni-leipzig.de/kglab/kgcore.git",
+    "kgback @ git+ssh://git@git.informatik.uni-leipzig.de/kglab/kgback.git",
+    "docker>=7.0.0",
     "PyYAML>=6.0",
     "click>=8.0",
     "pandas>=1.5.0",
@@ -31,21 +33,17 @@ dependencies = [
     "jsonpath-ng>=1.7.0",
     "SPARQLWrapper>=2.0.0",
     "redis>=7.0.0",
-    "kgcore @ git+https://github.com/Vehnem/kgcore.git",
-    "streamlit-elements>=0.1.0",
-    "uvicorn>=0.41.0",
-    "fastapi>=0.135.1",
 ]
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-mock", "pytest-cov", "ruff", "black"]
 
 [tool.setuptools.packages.find]
-where = ["src"]
-include = ["kgpipe*"]
+where = ["src","experiments/text-pipelines/src"]
+include = ["kgpipe*","text_pipelines*"]
 
 [tool.setuptools.package-dir]
-"" = "src" 
+"" = "src"
 
 [tool.setuptools.package-data]
 kgpipe = ["*.yaml", "*.yml"]
