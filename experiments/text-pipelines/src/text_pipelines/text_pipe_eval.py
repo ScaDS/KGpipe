@@ -67,36 +67,14 @@ def eval_example(kg_path: Path, reference_kg_path: Path, verified_source_entitie
     return statistical_results, semantic_results, reference_results
 
 def test_eval():
-    TEST_NTRIPLES = """<http://example.org/bookstore/itemA> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/bookstore/Book> .
-    <http://example.org/bookstore/itemA> <http://www.w3.org/2000/01/rdf-schema#label> "itemA" .
-    <http://example.org/bookstore/itemA> <http://example.org/bookstore/bookTitle> "The Hobbit, or There and Back Again" .
-    <http://example.org/bookstore/itemA> <http://example.org/bookstore/bookAuthor> <http://example.org/bookstore/authorTolkien> .
-    <http://example.org/bookstore/itemA> <http://example.org/bookstore/isbn13> "9780261102217" .
-
-    <http://example.org/bookstore/itemB> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/bookstore/Book> .
-    <http://example.org/bookstore/itemB> <http://www.w3.org/2000/01/rdf-schema#label> "itemB" .
-    <http://example.org/bookstore/itemB> <http://example.org/bookstore/bookTitle> "Pride & Prejudice" .
-    <http://example.org/bookstore/itemB> <http://example.org/bookstore/bookAuthor> <http://example.org/bookstore/authorAusten> .
-    <http://example.org/bookstore/itemB> <http://example.org/bookstore/isbn13> "9780199535569" .
-
-    <http://example.org/bookstore/itemC> <http://www.w3.org/1999/02/22-rdf-syntax-ns#type> <http://example.org/bookstore/Book> .
-    <http://example.org/bookstore/itemC> <http://www.w3.org/2000/01/rdf-schema#label> "itemC" .
-    <http://example.org/bookstore/itemC> <http://example.org/bookstore/bookTitle> "1984" .
-    <http://example.org/bookstore/itemC> <http://example.org/bookstore/bookAuthor> <http://example.org/bookstore/authorOrwell> .
-    <http://example.org/bookstore/itemC> <http://example.org/bookstore/isbn13> "9780452284234" .
-    """
-
     load_dotenv(Path(os.path.abspath(os.path.dirname(__file__))).parent.parent / ".env")
     tmp_path = Path(tempfile.mkdtemp())
-
-    kg_path = tmp_path / "my_kg.nt"
-    kg_path.write_text(TEST_NTRIPLES)
 
     seed_kg_path = tmp_path / "empty.nt"
     seed_kg_path.write_text("")
 
     st_res, sem_res, ref_res = eval_example(
-        kg_path,
+        Path(os.getenv("DATASET_PATH")) / "split_0" / "kg" / "seed" / "data.nt",
         Path(os.getenv("DATASET_PATH")) / "split_0" / "kg" / "reference" / "data.nt",
         Path(os.getenv("DATASET_PATH")) / "split_0" / "kg" / "seed" / "meta" / "verified_entities.csv",
         seed_kg_path
@@ -106,4 +84,4 @@ def test_eval():
 
     assert st_res.overall_score == 0.5
     assert sem_res.overall_score == 1/3
-    assert ref_res.overall_score == 0.0
+    assert ref_res.overall_score > 0.9
