@@ -1,6 +1,7 @@
 import os
 import time
 import uuid
+import hashlib
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -18,6 +19,7 @@ from pydantic_core import core_schema
 
 from .data import Data, DataFormat, DataSet, Format
 from .task import KgTask, KgTaskReport
+from .configuration import ConfigurationProfile
 # from .kg import KG
 from kgpipe.common.annotations import kg_class
 from kgpipe.common.graph.systemgraph import PipeKG
@@ -125,19 +127,71 @@ class KgPipe:
         self.data.append(data)
 
 
-    def build(self, source: Data, result: Optional[Data] = None, stable_files: bool = False) -> KgPipePlan:
+    def build(
+        self,
+        source: Data,
+        result: Optional[Data] = None,
+        stable_files: bool = False,
+        configCatalog: Optional[Mapping[str, ConfigurationProfile]] = None,
+    ) -> KgPipePlan:
         """Generate the execution plan as a list of dictionaries."""
         catalog = [source] + self.data
         calls: List[KgPipePlanStep] = []
 
-        def gen_file_path(task: KgTask, format_spec: Format, prefix: str = "", suffix: str = ""):
-            if stable_files:
+        def _profile_fingerprint(profile: Optional[ConfigurationProfile]) -> str:
+            if profile is None:
+                return ""
+            # Make it stable regardless of binding order.
+            bindings = []
+            for b in getattr(profile, "bindings", []) or []:
+                param = getattr(b, "parameter", None)
+                pname = getattr(param, "name", None)
+                if pname is None:
+                    pname = str(param)
+                bindings.append((str(pname), b.value))
+            bindings.sort(key=lambda kv: kv[0])
+            payload = json.dumps(
+                {"definition": getattr(getattr(profile, "definition", None), "name", None), "bindings": bindings},
+                sort_keys=True,
+                default=str,
+            )
+            return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+        def _chain_hash(prev_hash: str, task_name: str, profile: Optional[ConfigurationProfile]) -> str:
+            fp = _profile_fingerprint(profile)
+            payload = json.dumps({"prev": prev_hash, "task": task_name, "profile": fp}, sort_keys=True)
+            return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+        prev_hash = "0" * 64
+
+        def gen_file_path(
+            *,
+            task: KgTask,
+            format_spec: Format,
+            prefix: str = "",
+            suffix: str = "",
+            task_hash: Optional[str] = None,
+        ) -> Path:
+            # Backwards-compatible: stable_files without configCatalog keeps the old deterministic names.
+            if stable_files and configCatalog is None:
                 return Path(self.data_dir) / f"{prefix}{task.name}{suffix}.{format_spec.extension}"
-            else:
-                return Path(self.data_dir) / f"{prefix}{task.name}.{uuid4().hex}.{format_spec.extension}"
+
+            # If configCatalog is provided, filenames must be deterministic based on the hash chain.
+            if configCatalog is not None and task_hash is not None:
+                short = task_hash[:12]
+                return Path(self.data_dir) / f"{prefix}{task.name}.{short}{suffix}.{format_spec.extension}"
+
+            # Default behavior: unique filenames.
+            return Path(self.data_dir) / f"{prefix}{task.name}.{uuid4().hex}.{format_spec.extension}"
                 
 
         for idx, task in enumerate(self.tasks):
+            task_hash: Optional[str] = None
+            if configCatalog is not None:
+                profile = configCatalog.get(task.name)
+                task_hash = _chain_hash(prev_hash, task.name, profile)
+                prev_hash = task_hash
+
             # Match inputs
             inputs = []
             for input_name, format_spec in task.input_spec.items():
@@ -159,7 +213,13 @@ class KgPipe:
                     break
                 else:
                     suffix = f"_{len(outputs)}"
-                    output_path = gen_file_path(task, format_spec, prefix=f"{idx}_", suffix=suffix)
+                    output_path = gen_file_path(
+                        task=task,
+                        format_spec=format_spec,
+                        prefix=f"{idx}_",
+                        suffix=suffix,
+                        task_hash=task_hash,
+                    )
                     output_data = Data(path=output_path, format=format_spec)
                     outputs.append(output_data)
             
@@ -167,17 +227,19 @@ class KgPipe:
 
             if len(inputs) != len(task.input_spec):
                 missing_inputs = len(task.input_spec) - len(inputs)
+                catalog_str = "\n".join([str(i) for i in catalog])
                 raise ValueError(
                     f"For task {task.name}: expected {task.input_spec} inputs, got {inputs}. "
                     f"Missing {missing_inputs} inputs."
-                    f"catalog: {"\n".join([str(i) for i in catalog])}"
+                    f"catalog: {catalog_str}"
                 )
             elif len(outputs) != len(task.output_spec):
                 missing_outputs = len(task.output_spec) - len(outputs)
+                catalog_str = "\n".join([str(i) for i in catalog])
                 raise ValueError(
                     f"\nFor task {task.name}: expected {task.output_spec} outputs, got {outputs}. "
                     f"\nMissing {missing_outputs} outputs."
-                    f"\nCatalog: {"\n".join([str(i) for i in catalog])}"
+                    f"\nCatalog: {catalog_str}"
                 )
             else:
                 print(f"Adding task '{task.name}' to plan with\n\t inputs: {[str(i.path) for i in inputs]} and \n\t outputs: {[str(o.path) for o in outputs]}")
@@ -211,7 +273,11 @@ class KgPipe:
         """Plot the pipeline."""
         pass
 
-    def run(self, stable_files_override: bool = False) -> List[KgTaskReport]:
+    def run(
+        self,
+        stable_files_override: bool = False,
+        configCatalog: Optional[Mapping[str, ConfigurationProfile]] = None,
+    ) -> List[KgTaskReport]:
         """Execute each task defined in the plan and collect the reports."""
         if not self.plan:
             raise ValueError("Pipeline plan is empty. Call build() first.")
@@ -232,10 +298,24 @@ class KgPipe:
                 if not input_data.exists():
                     raise FileNotFoundError(f"Input file {input_data.path} does not exist")
 
+            configProfile = None
+            if configCatalog is not None:
+                configProfile = configCatalog.get(task.name)
+
             if self.previous_was_skipped:
-                report = task.run(task_spec.input, task_spec.output, stable_files_override=stable_files_override)
+                report = task.run(
+                    task_spec.input,
+                    task_spec.output,
+                    stable_files_override=stable_files_override,
+                    configProfile=configProfile,
+                )
             else:
-                report = task.run(task_spec.input, task_spec.output, stable_files_override=True)
+                report = task.run(
+                    task_spec.input,
+                    task_spec.output,
+                    stable_files_override=True,
+                    configProfile=configProfile,
+                )
 
             if report.status != "skipped":
                 self.previous_was_skipped = False
