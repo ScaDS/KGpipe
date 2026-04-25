@@ -21,8 +21,8 @@ dependencies = [
     "rdflib>=6.0.0",
     "matplotlib>=3.5.0",
     "networkx>=2.8.0",
-    "transformers>=4.50.0",
-    "sentence_transformers>=4.1.0",
+    # ML stack (torch/transformers) is intentionally NOT in base deps.
+    # Install via `pip/uv pip install ".[ml]"` plus the desired torch index (CPU/CUDA).
     "pulp>=3.3.0",
     "pytest>=8.4.2",
     "dotenv>=0.9.9",
@@ -39,6 +39,54 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-mock", "pytest-cov", "ruff", "black"]
+cpu = [
+    "torch",
+    "torchvision",
+    "torchaudio",
+]
+cuda = [
+    "torch",
+    "torchvision",
+    "torchaudio",
+]
+ml = [
+    "transformers>=4.50.0",
+    "sentence_transformers>=4.1.0",
+]
+
+[tool.uv]
+conflicts = [
+    [
+        { extra = "cpu" },
+        { extra = "cuda" },
+    ],
+]
+
+[tool.uv.sources]
+torch = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cuda", extra = "cuda" },
+]
+torchvision = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cuda", extra = "cuda" },
+]
+torchaudio = [
+    { index = "pytorch-cpu", extra = "cpu" },
+    { index = "pytorch-cuda", extra = "cuda" },
+]
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+# CUDA wheels live on a separate PyTorch index.
+# If you need a different CUDA version, change the URL (e.g. `cu128`, `cu126`, `cu121`).
+[[tool.uv.index]]
+name = "pytorch-cuda"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true
 
 [tool.setuptools.packages.find]
 where = ["src"]

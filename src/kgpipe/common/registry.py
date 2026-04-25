@@ -60,6 +60,10 @@ class Registry:
     # Task #
 
     @classmethod
+    def add_task(cls, name: str, task: KgTask):
+        cls._registry[f"task:{task.name}"] = task
+
+    @classmethod
     def task(
         cls, 
         input_spec: Dict[str, DataFormat], 
