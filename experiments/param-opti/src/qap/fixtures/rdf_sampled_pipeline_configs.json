@@ -1,0 +1,175 @@
+{
+  "samples": [
+    {
+      "profiles": {
+        "graph_alignment_label_alias_embedding_transformer": {
+          "bindings": [
+            {
+              "parameter": "model_name",
+              "value": "sentence-transformers/all-mpnet-base-v2"
+            },
+            {
+              "parameter": "similarity_threshold",
+              "value": 0.8
+            }
+          ],
+          "profile_name": "graph_alignment_label_alias_embedding_transformer_model_name=sentence-transformers/all-mpnet-base-v2,similarity_threshold=0.8"
+        }
+      },
+      "task_keys": [
+        "graph_alignment_label_alias_embedding_transformer_task",
+        "fusion_first_value_task"
+      ]
+    },
+    {
+      "profiles": {
+        "entity_matcher_label_alias_embedding_transformer": {
+          "bindings": [
+            {
+              "parameter": "model_name",
+              "value": "sentence-transformers/all-mpnet-base-v2"
+            },
+            {
+              "parameter": "similarity_threshold",
+              "value": 0.8
+            }
+          ],
+          "profile_name": "entity_matcher_label_alias_embedding_transformer_model_name=sentence-transformers/all-mpnet-base-v2,similarity_threshold=0.8"
+        },
+        "relation_matcher_label_alias_embedding_transformer": {
+          "bindings": [
+            {
+              "parameter": "model_name",
+              "value": "sentence-transformers/all-MiniLM-L6-v2"
+            },
+            {
+              "parameter": "similarity_threshold",
+              "value": 0.7
+            }
+          ],
+          "profile_name": "relation_matcher_label_alias_embedding_transformer_model_name=sentence-transformers/all-MiniLM-L6-v2,similarity_threshold=0.7"
+        }
+      },
+      "task_keys": [
+        "relation_matcher_label_alias_embedding_transformer_task",
+        "entity_matcher_label_alias_embedding_transformer_task",
+        "aggregate_matching_results_task",
+        "fusion_first_value_task"
+      ]
+    },
+    {
+      "profiles": {
+        "paris_entity_alignment": {
+          "bindings": [
+            {
+              "parameter": "entity_matching_threshold",
+              "value": 0.7
+            }
+          ],
+          "profile_name": "paris_entity_alignment_entity_matching_threshold=0.7"
+        },
+        "relation_matcher_label_alias_embedding_transformer": {
+          "bindings": [
+            {
+              "parameter": "model_name",
+              "value": "sentence-transformers/all-mpnet-base-v2"
+            },
+            {
+              "parameter": "similarity_threshold",
+              "value": 0.8
+            }
+          ],
+          "profile_name": "relation_matcher_label_alias_embedding_transformer_model_name=sentence-transformers/all-mpnet-base-v2,similarity_threshold=0.8"
+        }
+      },
+      "task_keys": [
+        "relation_matcher_label_alias_embedding_transformer_task",
+        "paris_entity_alignment_task",
+        "aggregate_matching_results_task",
+        "fusion_first_value_task"
+      ]
+    },
+    {
+      "profiles": {
+        "entity_matcher_label_alias_embedding_transformer": {
+          "bindings": [
+            {
+              "parameter": "model_name",
+              "value": "sentence-transformers/all-MiniLM-L6-v2"
+            },
+            {
+              "parameter": "similarity_threshold",
+              "value": 0.9
+            }
+          ],
+          "profile_name": "entity_matcher_label_alias_embedding_transformer_model_name=sentence-transformers/all-MiniLM-L6-v2,similarity_threshold=0.9"
+        },
+        "paris_ontology_matching": {
+          "bindings": [
+            {
+              "parameter": "ontology_matching_threshold",
+              "value": 0.9
+            }
+          ],
+          "profile_name": "paris_ontology_matching_ontology_matching_threshold=0.9"
+        }
+      },
+      "task_keys": [
+        "paris_ontology_matching_task",
+        "entity_matcher_label_alias_embedding_transformer_task",
+        "aggregate_matching_results_task",
+        "fusion_first_value_task"
+      ]
+    },
+    {
+      "profiles": {
+        "paris_entity_alignment": {
+          "bindings": [
+            {
+              "parameter": "entity_matching_threshold",
+              "value": 0.7
+            }
+          ],
+          "profile_name": "paris_entity_alignment_entity_matching_threshold=0.7"
+        },
+        "paris_ontology_matching": {
+          "bindings": [
+            {
+              "parameter": "ontology_matching_threshold",
+              "value": 0.6
+            }
+          ],
+          "profile_name": "paris_ontology_matching_ontology_matching_threshold=0.6"
+        }
+      },
+      "task_keys": [
+        "paris_ontology_matching_task",
+        "paris_entity_alignment_task",
+        "aggregate_matching_results_task",
+        "fusion_first_value_task"
+      ]
+    },
+    {
+      "profiles": {
+        "paris_graph_alignment": {
+          "bindings": [
+            {
+              "parameter": "entity_matching_threshold",
+              "value": 0.6
+            },
+            {
+              "parameter": "relation_matching_threshold",
+              "value": 0.5
+            }
+          ],
+          "profile_name": "paris_graph_alignment_entity_matching_threshold=0.6,relation_matching_threshold=0.5"
+        }
+      },
+      "task_keys": [
+        "paris_graph_alignment_task",
+        "fusion_first_value_task"
+      ]
+    }
+  ],
+  "version": 1
+}
