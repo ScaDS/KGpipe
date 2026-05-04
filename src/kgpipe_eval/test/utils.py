@@ -24,6 +24,16 @@ def get_test_kg(sample_size: int = -1) -> KG:
     g.serialize(destination=tmp_dir / "test.nt", format="ntriples")
     return KG("test", name="test", path=tmp_dir / "test.nt", format=DataFormat.RDF_NTRIPLES)
 
+def get_generated_kg(sample_size: int = -1) -> KG:
+    generated_triples = GENERATED_TURTLE_TRIPLES
+    if sample_size > 0:
+        generated_triples = generated_triples[:sample_size]
+    # write generated_triples to a file
+    g = Graph()
+    g.parse(data=generated_triples, format="turtle")
+    g.serialize(destination=tmp_dir / "generated.nt", format="ntriples")
+    return KG("generated", name="generated", path=tmp_dir / "generated.nt", format=DataFormat.RDF_NTRIPLES)
+
 def get_reference_kg(sample_size: int = -1) -> KG:
     reference_triples = REFERENCE_TURTLE_TRIPLES
     if sample_size > 0:
