@@ -10,16 +10,18 @@ from rdflib import RDFS, RDF
 from kgpipe.datasets.multipart_multisource import read_entities_csv, EntitiesRow
 import numpy as np
 from pathlib import Path
+from typing import Set
 
 # TODO source entities csv to label only graph
 
 class EntityAlignmentConfig(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
-    method: Literal["label_embedding", "label_alias_embedding", "label_embedding_and_type"] = "label_embedding"
+    method: Literal["label_embedding", "label_alias_embedding", "label_embedding_and_type", "label_embedding_and_intersecting_type"] = "label_embedding"
     reference_kg: Optional[KgLike] = None
     verified_entities_path: Optional[Path] = None
     verified_entities_delimiter: str = "\t"
     entity_sim_threshold: float = 0.95
+    ignored_entities: Optional[Set[Term]] = None
 
     # value_sim_threshold: float = 0.5
 
@@ -48,8 +50,9 @@ def get_aligned_triples(kg: KG, reference_kg: KG, method: Literal["exact", "fuzz
 #     return [(s, label) for s, _, label in triple_graph.triples((None, RDFS.label, None))]
 
 UriLabelTypePair = NamedTuple("UriLabelTypePair", [("uri", Term), ("label", Term), ("type", Term)])
+UriLabelTypeSetPair = NamedTuple("UriLabelTypeSetPair", [("uri", Term), ("label", Term), ("type_set", set[Term])])
 
-def get_entity_uri_label_type_pairs(kg: KG) -> list[UriLabelTypePair]:
+def get_entity_uri_label_type_pairs(kg: KG, ignored_entities: Optional[Set[Term]] = None) -> list[UriLabelTypePair]:
     label_by_uri = {}
     type_by_uri = {}
     for s, p, o in kg.triples((None, RDFS.label, None)):
@@ -57,10 +60,29 @@ def get_entity_uri_label_type_pairs(kg: KG) -> list[UriLabelTypePair]:
     for s, p, o in kg.triples((None, RDF.type, None)):
         type_by_uri[str(s)] = str(o)
     for uri in label_by_uri:
+        if ignored_entities and str(uri) in ignored_entities:
+            continue
         if uri in type_by_uri:
             yield UriLabelTypePair(uri=uri, label=label_by_uri[uri], type=type_by_uri[uri])
         else:
             yield UriLabelTypePair(uri=uri, label=label_by_uri[uri], type=None)
+
+def get_entity_uri_label_typeset_pairs(kg: KG, ignored_entities: Optional[Set[Term]] = None) -> list[UriLabelTypeSetPair]:
+    label_by_uri = {}
+    types_by_uri = {}
+    for s, p, o in kg.triples((None, RDFS.label, None)):
+        label_by_uri[str(s)] = str(o)
+    for s, p, o in kg.triples((None, RDF.type, None)):
+        if str(s) not in types_by_uri:
+            types_by_uri[str(s)] = set()
+        types_by_uri[str(s)].add(str(o))
+    for uri in label_by_uri:
+        if ignored_entities and str(uri) in ignored_entities:
+            continue
+        if uri in types_by_uri:
+            yield UriLabelTypeSetPair(uri=uri, label=label_by_uri[uri], type_set=types_by_uri[uri])
+        else:
+            yield UriLabelTypeSetPair(uri=uri, label=label_by_uri[uri], type_set=set())
 
 def load_verified_entities(path: Path, delimiter: str = "\t") -> list[UriLabelTypePair]:
     """
@@ -89,7 +111,7 @@ def align_entities_by_label_embedding(tg: TripleGraph, config: EntityAlignmentCo
     ref_labels = [pair.label for pair in ref_entity_uri_label_type_pairs]
     ref_labels_embeddings = model.encode(ref_labels, convert_to_numpy=True, show_progress_bar=False)
 
-    gen_entity_uri_label_type_pairs = list(get_entity_uri_label_type_pairs(tg))
+    gen_entity_uri_label_type_pairs = list(get_entity_uri_label_type_pairs(tg, config.ignored_entities))
     gen_labels = [pair.label for pair in gen_entity_uri_label_type_pairs]
     gen_labels_embeddings = model.encode(gen_labels, convert_to_numpy=True, show_progress_bar=False)
 

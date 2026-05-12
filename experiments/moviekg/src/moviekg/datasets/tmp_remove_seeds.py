@@ -7,7 +7,7 @@ for every verified_seed remove in the bench data remove the seed entities and st
 import pandas as pd
 from pathlib import Path
 
-bench_data = KgBenchData.from_path(Path("/home/marvin/phd/data/moviekg/datasets/film_10k"))
+bench_data = KgBenchData.from_path(Path("/home/marvin/phd/data/moviekg/datasets/film_1k"))
 
 for i in range(1, 4):
     seed = bench_data.dataset.splits[f"split_{0}"].kg_reference.meta.entities.file

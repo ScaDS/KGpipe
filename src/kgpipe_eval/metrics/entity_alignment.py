@@ -3,7 +3,7 @@ from kgpipe.common import KG
 from kgpipe_eval.api import Metric, Measurement, MetricResult
 
 from kgpipe_eval.utils.measurement_utils import BCMeasurement
-from kgpipe_eval.utils.alignment_utils import align_entities_by_label_embedding, EntityAlignmentConfig, load_entity_uri_label_type_pairs, get_entity_uri_label_type_pairs
+from kgpipe_eval.utils.alignment_utils import align_entities_by_label_embedding, EntityAlignmentConfig, load_entity_uri_label_type_pairs, get_entity_uri_label_typeset_pairs, get_entity_uri_label_type_pairs
 
 # Core Interface
 
@@ -14,6 +14,8 @@ def eval_entity_alignment(kg: KG, config: EntityAlignmentConfig):
         alignments = eval_entity_alignment_by_label_alias_embedding(kg, config)
     elif config.method == "label_embedding_and_type":
         alignments = eval_entity_alignment_by_label_embedding_and_type(kg, config)
+    elif config.method == "label_embedding_and_intersecting_type":
+        alignments = eval_entity_alignment_by_label_embedding_and_intersecting_type(kg, config)
     else:
         raise ValueError(f"Invalid method: {config.method}")
     return alignments
@@ -24,7 +26,7 @@ def eval_entity_alignment_by_label_embedding_and_type(kg: KG, config: EntityAlig
     alignments = align_entities_by_label_embedding(kg, config)
 
     ref_entity_uri_label_type_pairs = load_entity_uri_label_type_pairs(config)
-    gen_entity_uri_label_type_pairs = list(get_entity_uri_label_type_pairs(kg))
+    gen_entity_uri_label_type_pairs = list(get_entity_uri_label_type_pairs(kg, config.ignored_entities))
 
     # print ref and gen pairs for testing
     # print("--------------------------------")
@@ -66,6 +68,54 @@ def eval_entity_alignment_by_label_embedding_and_type(kg: KG, config: EntityAlig
         tn=tn,
         fn=fn
     )
+
+def eval_entity_alignment_by_label_embedding_and_intersecting_type(kg: KG, config: EntityAlignmentConfig):
+    # Debugging: print some information about the config
+    print("--------------------------------")
+    print("ignored_entities")
+    print(len(config.ignored_entities))
+    print("--------------------------------")
+
+    alignments = align_entities_by_label_embedding(kg, config)
+
+    ref_entity_uri_label_type_pairs = load_entity_uri_label_type_pairs(config)
+    gen_entity_uri_label_type_pairs = list(get_entity_uri_label_typeset_pairs(kg, config.ignored_entities))
+
+    ref_types = {pair.uri: set([pair.type]) for pair in ref_entity_uri_label_type_pairs if pair.type is not None}
+    # TODO gen_types can be multiple types, we need to handle this
+    gen_types = {pair.uri: pair.type_set for pair in gen_entity_uri_label_type_pairs if pair.type_set is not None}
+
+    filtered_alignments = []
+    for alignment in alignments:
+        if alignment.target in ref_types and alignment.source in gen_types:
+            # Debugging: print the intersection of the reference and generated types
+            # print("---")
+            # print("alignment.target", alignment.target)
+            # print("alignment.source", alignment.source)
+            # print("ref_types[alignment.target]", ref_types[alignment.target])
+            # print("gen_types[alignment.source]", gen_types[alignment.source])
+            # print("intersection", ref_types[alignment.target] & gen_types[alignment.source])
+            # print("---")
+            if len(ref_types[alignment.target] & gen_types[alignment.source]) > 0:
+                filtered_alignments.append(alignment)
+
+    ref_uris = set(pair.uri for pair in ref_entity_uri_label_type_pairs)
+    gen_uris = set(pair.uri for pair in gen_entity_uri_label_type_pairs)
+    aligned_gen_uris = set(alignment.target for alignment in filtered_alignments)
+    aligned_ref_uris = set(alignment.source for alignment in filtered_alignments)
+
+    tp = len(ref_uris & aligned_gen_uris) # generated entities that are also in the reference
+    fp = len(gen_uris - aligned_ref_uris) # generated entities that are not in the reference
+    tn = 0
+    fn = len(ref_uris - aligned_gen_uris) # missing generated entities that are in the reference
+
+    return BCMeasurement(
+        tp=tp,
+        fp=fp,
+        tn=tn,
+        fn=fn
+    )
+
 
 def eval_entity_alignment_by_label_embedding(kg: KG, config: EntityAlignmentConfig):
     alignments = align_entities_by_label_embedding(kg, config)

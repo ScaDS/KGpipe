@@ -130,10 +130,33 @@ PALETTE = {
     "text_json_rdf":  "#d95f0e", "text_rdf_json":  "#d95f0e",
 }
 
+PALETTE_2 = {
+    # JSON solo
+    "JSON_base": "#9ecae1",
+    # "json_baseA": "#9ecae1",
+    # RDF solo
+    "RDF_base":  "#a1d99b", "RDF_llm":  "#2ca02c",
+    # TEXT solo
+    "TEXT_base": "#fdd0a2",
+
+    # JSON mixed → violet
+    "json_rdf_text": "#756bb1", "json_text_rdf": "#756bb1",
+    # RDF mixed → teal
+    "rdf_json_text":  "#1c9099", "rdf_text_json":  "#1c9099",
+    # TEXT mixed → red-brown
+    "text_json_rdf":  "#d95f0e", "text_rdf_json":  "#d95f0e",
+}
+
+
 HUE_ORDER = [
     "json_a","json_b","json_rdf_text","json_text_rdf",
     "rdf_a","rdf_b","rdf_json_text","rdf_text_json",
     "text_a","text_b","text_json_rdf","text_rdf_json"
+]
+HUE_ORDER_2 = [
+    "RDF_base","RDF_llm","rdf_json_text","rdf_text_json",
+    "JSON_base","json_rdf_text","json_text_rdf",
+    "TEXT_base","text_json_rdf","text_rdf_json"
 ]
 
 def plot_growth(df, metrics, kind="bar", references={}):
@@ -636,11 +659,23 @@ def plot_class_occurence_new(df, reference_stage_class_count, classes):
                     class_name = "Other"
                 pipeline_stage_class_count[pipeline][stage][class_name] += count
 
+    pretty_pipeline_names = {
+        "json_a": "JSON_base",
+        "json_c": "JSON_llm",
+        "rdf_a": "RDF_base",
+        "rdf_c": "RDF_llm",
+        "text_a": "TEXT_base",
+        "text_c": "TEXT_llm",
+        "json_llm_mapping_v1": "JSON_llm",
+        "rdf_llm_schema_align_v1": "RDF_llm",
+        "text_llm_triple_extract_v1": "TEXT_llm",
+    }
+    
     # convert dict of dict to rows
     for pipeline, stage_class_count in pipeline_stage_class_count.items():
         for stage, class_count in stage_class_count.items():
             for class_name, count in class_count.items():
-                rows.append({"pipeline": pipeline, "stage": stage, "class": class_name.split("/")[-1], "count": count})
+                rows.append({"pipeline": pretty_pipeline_names.get(pipeline, pipeline), "stage": stage, "class": class_name.split("/")[-1], "count": count})
 
     # df: pipeline, stage, class, count
     df = pd.DataFrame(rows)
@@ -655,8 +690,8 @@ def plot_class_occurence_new(df, reference_stage_class_count, classes):
         df,
         col="class",
         col_wrap=3,
-        height=4,
-        aspect=1.5,
+        height=3,
+        aspect=1.2,
         sharey=False,
         col_order=classes_short #+["Other"],  # preserve requested order
     )
@@ -665,8 +700,8 @@ def plot_class_occurence_new(df, reference_stage_class_count, classes):
         x="stage",
         y="count",
         hue="pipeline",
-        hue_order=HUE_ORDER,
-        palette=PALETTE,
+        hue_order=HUE_ORDER_2,
+        palette=PALETTE_2,
         order=stage_order,
         dodge=True,
         errorbar=None
@@ -699,7 +734,7 @@ def plot_class_occurence_new(df, reference_stage_class_count, classes):
         handles, labels,
         loc="lower center",
         ncol=min(6, len(labels)),   # split across columns
-        bbox_to_anchor=(0.5, -0.02) # push below the grid
+        bbox_to_anchor=(0.5, -0.15) # push below the grid
     )
 
     # make space at bottom so legend isn’t cut off
@@ -729,6 +764,9 @@ def plot_class_occ_4_bar_chart(df):
 
     # remove seed and reference pipeline
     df = df[df["pipeline"] != "seed"]
+    df = df[df["pipeline"] != "json_b"]
+    df = df[df["pipeline"] != "rdf_b"]
+    df = df[df["pipeline"] != "text_b"]
     df = df[df["pipeline"] != "reference"]
 
     # subplot_source_entity_integration(df)
