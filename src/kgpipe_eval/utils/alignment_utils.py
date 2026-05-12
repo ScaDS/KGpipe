@@ -220,13 +220,26 @@ def align_triples_by_value_embedding(tg: TripleGraph, config: "TripleAlignmentCo
 
     if DEBUG: print("Entity alignments: ", len(entity_alignments))
 
+    def _as_term(t: Term | str) -> Term:
+        # Entity alignment currently carries string IDs; convert to rdflib Terms so
+        # aligned triples are comparable to `ref_tg.triples(...)` output.
+        if isinstance(t, str):
+            try:
+                from rdflib import URIRef
+                return URIRef(t)
+            except Exception:
+                # Fall back to raw string (will likely not match ref triples, but
+                # avoids crashing on non-URI identifiers).
+                return t  # type: ignore[return-value]
+        return t
+
     gen_to_ref_entity: dict[str, Term] = {}
     best_score_by_gen: dict[str, float] = {}
     for a in entity_alignments:
         gen_key = str(a.source)
         if gen_key not in best_score_by_gen or a.score > best_score_by_gen[gen_key]:
             best_score_by_gen[gen_key] = float(a.score)
-            gen_to_ref_entity[gen_key] = a.target
+            gen_to_ref_entity[gen_key] = _as_term(a.target)
 
     # 2) Index generated triples, both raw and entity-mapped
     mapped_gen_triples: list[tuple[Triple, Triple]] = []  # (raw_gen, mapped_to_ref_space)
@@ -308,12 +321,9 @@ def align_triples_by_value_embedding(tg: TripleGraph, config: "TripleAlignmentCo
     if DEBUG: print("gen_lit_emb_by_text: ", len(gen_lit_emb_by_text))
     if DEBUG: print("ref_lit_emb_by_text: ", len(ref_lit_emb_by_text))
 
-    from rdflib import Graph, URIRef
+    from rdflib import Graph
     gen_graph : Graph = tg._graph()
     ref_graph : Graph = ref_tg._graph()
-
-    test_objects = list(ref_graph.objects(URIRef("http://kg.org/resource/f4eb17c4ed78c87c29124018c9f180b5"), URIRef("http://kg.org/ontology/deathPlace"), unique=True))
-    if DEBUG: print("Test objects: ", len(test_objects))
 
     if DEBUG: print("Gen graph: ", len(list(gen_graph.triples((None, None, None)))))
     if DEBUG: print("Ref graph: ", len(list(ref_graph.triples((None, None, None)))))
@@ -330,7 +340,7 @@ def align_triples_by_value_embedding(tg: TripleGraph, config: "TripleAlignmentCo
         gen_literal_objs = [o for o in gen_objects if _is_literal(o)]
 
         # IMPORTANT: query reference objects in reference-space subject
-        ref_objects = list(ref_graph.objects(URIRef(str(ref_s)), URIRef(str(gp))))
+        ref_objects = list(ref_graph.objects(ref_s, gp))
         ref_literal_objs = [o for o in ref_objects if _is_literal(o)]
 
         # print("gs: ", gs, "gp: ", gp)
@@ -366,7 +376,13 @@ def align_triples_by_value_embedding(tg: TripleGraph, config: "TripleAlignmentCo
 
         # find if any of the non-literal objects in the generated graph are mapped to the same object in the reference graph
         for gen_obj in gen_object_non_literal:
-            if gen_to_ref_entity.get(str(gen_obj), gen_bnode_to_ref.get(str(gen_obj), gen_obj)) in ref_object_non_literal:
-                alignments.append(TripleAlignment(source=(gs, gp, gen_obj), target=(gs, gp, ref_object_non_literal[ref_object_non_literal.index(gen_obj)])))
+            ref_o = gen_to_ref_entity.get(str(gen_obj), gen_bnode_to_ref.get(str(gen_obj), gen_obj))
+            if ref_o in ref_object_non_literal:
+                alignments.append(
+                    TripleAlignment(
+                        source=(gs, gp, gen_obj),
+                        target=(ref_s, gp, ref_o),
+                    )
+                )
 
     return alignments

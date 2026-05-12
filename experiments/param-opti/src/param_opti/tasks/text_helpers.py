@@ -18,6 +18,8 @@ from rdflib import Graph, Literal, RDF, RDFS, URIRef, XSD
 
 logger = logging.getLogger(__name__)
 
+
+
 def __aggregate_x_te_json(input_paths: List[Path], output_path: Path):
 
     if len(input_paths) == 0:
@@ -65,22 +67,43 @@ def aggregate3_text_tasks_task_function(inputs: Dict[str, Data], outputs: Dict[s
     __aggregate_x_te_json([inputs["json1"].path, inputs["json2"].path, inputs["json3"].path], outputs["output"].path)
 
 aggregate_text_tasks_task = KgTask(
-    name="aggregate3_text_tasks_task",
+    name="aggregate_text_tasks_task",
     input_spec={"json1": DataFormat.TE_JSON, "json2": DataFormat.TE_JSON, "json3": DataFormat.TE_JSON},
     output_spec={"output": DataFormat.TE_JSON},
     function=aggregate3_text_tasks_task_function
 )
 
+def aggregate2_text_tasks_task_function(inputs: Dict[str, Data], outputs: Dict[str, Data]):
+    __aggregate_x_te_json([inputs["json1"].path, inputs["json2"].path], outputs["output"].path)
+
+aggregate_entity_linking_task = KgTask(
+    name="aggregate_entity_linking_task",
+    input_spec={"json1": DataFormat.TE_JSON, "json2": DataFormat.TE_JSON},
+    output_spec={"output": DataFormat.TE_JSON},
+    function=aggregate2_text_tasks_task_function
+)
+
+aggregate_relation_linking_task = KgTask(
+    name="aggregate_relation_linking_task",
+    input_spec={"json1": DataFormat.TE_JSON, "json2": DataFormat.TE_JSON},
+    output_spec={"output": DataFormat.TE_JSON},
+    function=aggregate2_text_tasks_task_function
+)
 
 def generatePredicate(surface_form, namespace):
     return URIRef(namespace + surface_form.replace(" ", "_"))
+
+def __hash_dbpedia_uri(uri: URIRef, namespace: str = "http://kg.org/resource/"):
+    if uri.startswith("http://dbpedia.org/"):
+        return URIRef(namespace + hash_uri(str(uri)))
+    else:
+        return uri
 
 def __generateRDF(doc: TE_Document, ontology: Ontology, newP: bool = False, newE: bool = False, namespace: str = "http://kg.org/text/"):
     """
     A processing node, part of a pipeline
     collects information from extractors, linkers, and resolvers and then it produces the final triples
     """
-
 
     def process_chains(triples, chains: List[TE_Chains]):
         new_triples = triples
@@ -180,7 +203,7 @@ def __generateRDF(doc: TE_Document, ontology: Ontology, newP: bool = False, newE
             # print(f"predicate: {predicate}, domain: {domain}, range: {range}")
 
             if subject and subject.startswith("http://dbpedia.org"): # TODO workaround for dbpedia...
-                finalGraph.add((subject, RDFS.label, Literal(triple.subject.surface_form)))
+                finalGraph.add((__hash_dbpedia_uri(subject), RDFS.label, Literal(triple.subject.surface_form)))
 
 
             if not subject and triple.subject.surface_form and newE:
@@ -191,7 +214,10 @@ def __generateRDF(doc: TE_Document, ontology: Ontology, newP: bool = False, newE
                 print(f"subject: {subject} {triple.subject.surface_form}")
 
             if domain and subject:
-                finalGraph.add((subject, RDF.type, URIRef(domain)))
+                finalGraph.add((__hash_dbpedia_uri(subject), RDF.type, URIRef(domain)))
+
+            if object and isObjectProperty and object.startswith("http://dbpedia.org"): # TODO workaround for dbpedia...
+                finalGraph.add((__hash_dbpedia_uri(object), RDFS.label, Literal(triple.object.surface_form)))
 
             if not object and triple.object.surface_form and newE:
                 if isObjectProperty:
@@ -208,7 +234,7 @@ def __generateRDF(doc: TE_Document, ontology: Ontology, newP: bool = False, newE
                     object = Literal(triple.object.surface_form, datatype=datatype)
 
         if(subject and predicate and object):
-            finalGraph.add((subject, predicate, object))
+            finalGraph.add((__hash_dbpedia_uri(subject), predicate, __hash_dbpedia_uri(object)))
         
     return finalGraph
 
@@ -220,6 +246,7 @@ def generate_rdf(inputs: Dict[str, Data], outputs: Dict[str, Data], ontology: On
         for file in os.listdir(dir_or_file):
             json_data = json.load(open(os.path.join(dir_or_file, file)))
             doc = TE_Document(**json_data)
+            print(f"doc: {doc}")
             for s, p, o in __generateRDF(doc, ontology, newP=newP, newE=newE):
                 graph.add(triple=(s, p, o))
     else:

@@ -1,4 +1,5 @@
 from typing import List, Dict, Any, Optional
+import itertools
 import json
 import random
 from kgpipe.common import KgPipe, Data, DataFormat, Registry
@@ -18,7 +19,9 @@ from param_opti.tasks.corenlp import corenlp_text_extraction_task
 from param_opti.tasks.genie import genie_text_extraction_task
 from param_opti.tasks.spotlight import spotlight_entity_linking_task
 from param_opti.tasks.matching_helpers import aggregate_matching_results_task
-
+from param_opti.tasks.text_helpers import aggregate_entity_linking_task, aggregate_relation_linking_task
+from param_opti.tasks.text_helpers import generate_rdf_from_text_results_task
+from param_opti.tasks.select_lib import select_first_value_task
 from kgpipe.generation.loaders import build_from_conf
 from pathlib import Path
 # for given tasks and config parameters, generate a pipeline (KGpipe)
@@ -30,6 +33,9 @@ if not tmp_base_dir.exists():
 RDF_SAMPLED_PIPELINE_CONFIGS_FIXTURE = Path(__file__).resolve().parent / "fixtures" / "rdf_sampled_pipeline_configs.json"
 _RDF_PIPELINE_CONFIG_SNAPSHOT_VERSION = 1
 
+TEXT_SAMPLED_PIPELINE_CONFIGS_FIXTURE = Path(__file__).resolve().parent / "fixtures" / "text_sampled_pipeline_configs.json"
+_TEXT_PIPELINE_CONFIG_SNAPSHOT_VERSION = 1
+
 
 class PipelineConfig(BaseModel):
     tasks: List[KgTask]
@@ -38,17 +44,17 @@ class PipelineConfig(BaseModel):
 RDF_SEARCH_SPACE = {
     "graph_alignment_label_alias_embedding_transformer_task": {
         "category": ["ontology_matching", "entity_matching", "aggregate_matching_results"],
-        "model_name": ["sentence-transformers/all-MiniLM-L6-v2", "sentence-transformers/all-mpnet-base-v2"],
+        "model_name": ["sentence-transformers/all-MiniLM-L6-v2", "sentence-transformers/all-mpnet-base-v2", "infloat/e5-base-v2"],
         "similarity_threshold": [0.5, 0.6, 0.7, 0.8, 0.9],
     },
     "relation_matcher_label_alias_embedding_transformer_task": {
         "category": ["ontology_matching"],
-        "model_name": ["sentence-transformers/all-MiniLM-L6-v2", "sentence-transformers/all-mpnet-base-v2"],
+        "model_name": ["sentence-transformers/all-MiniLM-L6-v2", "sentence-transformers/all-mpnet-base-v2", "infloat/e5-base-v2"],
         "similarity_threshold": [0.5, 0.6, 0.7, 0.8, 0.9],
     },
     "entity_matcher_label_alias_embedding_transformer_task": {
         "category": ["entity_matching"],
-        "model_name": ["sentence-transformers/all-MiniLM-L6-v2", "sentence-transformers/all-mpnet-base-v2"],
+        "model_name": ["sentence-transformers/all-MiniLM-L6-v2", "sentence-transformers/all-mpnet-base-v2", "infloat/e5-base-v2"],
         "similarity_threshold": [0.5, 0.6, 0.7, 0.8, 0.9],
     },
     "paris_ontology_matching_task": {
@@ -73,12 +79,12 @@ RDF_SEARCH_SPACE = {
     },
     "relation_linker_label_alias_embedding_transformer_task": {
         "category": ["entity_linking"],
-        "model_name": ["sentence-transformers/all-MiniLM-L6-v2", "sentence-transformers/all-mpnet-base-v2"],
+        "model_name": ["sentence-transformers/all-MiniLM-L6-v2", "sentence-transformers/all-mpnet-base-v2", "infloat/e5-base-v2"],
         "similarity_threshold": [0.5, 0.6, 0.7, 0.8, 0.9],
     },
     "entity_linker_label_alias_embedding_transformer_task": {
         "category": "entity_linking",
-        "model_name": ["sentence-transformers/all-MiniLM-L6-v2", "sentence-transformers/all-mpnet-base-v2"],
+        "model_name": ["sentence-transformers/all-MiniLM-L6-v2", "sentence-transformers/all-mpnet-base-v2", "infloat/e5-base-v2"],
         "similarity_threshold": [0.5, 0.6, 0.7, 0.8, 0.9],
     },
 }
@@ -98,15 +104,24 @@ TEXT_SEARCH_SPACE = {
     },
     "relation_linker_label_alias_embedding_transformer_task": {
         "category": ["relation_linking"],
-        "model_name": ["sentence-transformers/all-MiniLM-L6-v2", "sentence-transformers/all-mpnet-base-v2"],
+        "model_name": ["sentence-transformers/all-MiniLM-L6-v2", "sentence-transformers/all-mpnet-base-v2", "infloat/e5-base-v2"],
         "similarity_threshold": [0.5, 0.6, 0.7, 0.8, 0.9],
     },
     "entity_linker_label_alias_embedding_transformer_task": {
         "category": ["entity_linking"],
-        "model_name": ["sentence-transformers/all-MiniLM-L6-v2", "sentence-transformers/all-mpnet-base-v2"],
+        "model_name": ["sentence-transformers/all-MiniLM-L6-v2", "sentence-transformers/all-mpnet-base-v2", "infloat/e5-base-v2"],
         "similarity_threshold": [0.5, 0.6, 0.7, 0.8, 0.9],
     },
-    "fusion_first_value_task": {
+    "aggregate_entity_linking_task": {
+        "category": ["aggregate_entity_linking"],
+    },
+    "aggregate_relation_linking_task": {
+        "category": ["aggregate_relation_linking"],
+    },
+    "generate_rdf_from_text_results_task": {
+        "category": ["construct_rdf"],
+    },
+    "select_first_value_task": {
         "category": ["fusion"],
     },
 }
@@ -117,7 +132,10 @@ TEXT_TASK_DICT = {
     "spotlight_entity_linking_task": spotlight_entity_linking_task,
     "relation_linker_label_alias_embedding_transformer_task": relation_linker_label_alias_embedding_transformer_task,
     "entity_linker_label_alias_embedding_transformer_task": entity_linker_label_alias_embedding_transformer_task,
-    "fusion_first_value_task": fusion_first_value_task,
+    "select_first_value_task": select_first_value_task,
+    "aggregate_entity_linking_task": aggregate_entity_linking_task,
+    "aggregate_relation_linking_task": aggregate_relation_linking_task,
+    "generate_rdf_from_text_results_task": generate_rdf_from_text_results_task,
 }
 
 RDF_TASK_DICT = {
@@ -134,6 +152,8 @@ RDF_TASK_DICT = {
     # "fusion_union_task": fusion_union_task,
 }
 
+
+
 task_dict = {**TEXT_TASK_DICT, **RDF_TASK_DICT}
 
 for task_name, task in RDF_TASK_DICT.items():
@@ -145,6 +165,13 @@ class PipelineLayout(BaseModel):
     """
     allowed_task_categories: List[str]
 
+TEXT_PIPELINE_LAYOUT = PipelineLayout(
+    allowed_task_categories=["information_extraction", "entity_linking", "aggregate_entity_linking", "relation_linking", "aggregate_relation_linking", "construct_rdf", "fusion"]
+) 
+
+RDF_PIPELINE_LAYOUT = PipelineLayout(
+    allowed_task_categories=["ontology_matching", "entity_matching", "aggregate_matching_results", "fusion"]
+)
 
 def _task_categories_list(search_space: Dict[str, Dict[str, Any]], task_name: str) -> List[str]:
     raw = search_space.get(task_name, {}).get("category")
@@ -282,6 +309,17 @@ def load_rdf_sampled_pipeline_configs(path: Optional[Path] = None) -> List[Pipel
         raise ValueError(
             f"Unsupported rdf sampled configs snapshot version {raw.get('version')!r}; "
             f"expected {_RDF_PIPELINE_CONFIG_SNAPSHOT_VERSION}"
+        )
+    return [pipeline_config_from_snapshot(item) for item in raw["samples"]]
+
+
+def load_text_sampled_pipeline_configs(path: Optional[Path] = None) -> List[PipelineConfig]:
+    fixture_path = path or TEXT_SAMPLED_PIPELINE_CONFIGS_FIXTURE
+    raw = json.loads(fixture_path.read_text(encoding="utf-8"))
+    if raw.get("version") != _TEXT_PIPELINE_CONFIG_SNAPSHOT_VERSION:
+        raise ValueError(
+            f"Unsupported text sampled configs snapshot version {raw.get('version')!r}; "
+            f"expected {_TEXT_PIPELINE_CONFIG_SNAPSHOT_VERSION}"
         )
     return [pipeline_config_from_snapshot(item) for item in raw["samples"]]
 
@@ -432,6 +470,88 @@ def sample_config_catalog_for_task_combo(
 
     return PipelineConfig(tasks=tasks, config_catalog=config_catalog)
 
+def enumerate_exhaustive_pipeline_config_snapshots(
+    search_space: Dict[str, Dict[str, Any]],
+    pipeline_layout: PipelineLayout,
+) -> List[Dict[str, Any]]:
+    combos = enumerate_valid_task_combinations(search_space, pipeline_layout)
+
+    def _task_param_assignments(task_key: str) -> List[Dict[str, Any]]:
+        space = search_space.get(task_key, {})
+        param_space: Dict[str, List[Any]] = {k: v for k, v in space.items() if k != "category"}
+        if not param_space:
+            return [{}]
+        keys = list(param_space.keys())
+        values_lists = [param_space[k] for k in keys]
+        return [dict(zip(keys, values)) for values in itertools.product(*values_lists)]
+
+    all_snapshots: List[Dict[str, Any]] = []
+    total_expected = 0
+
+    for combo in combos:
+        per_task_assignments = [_task_param_assignments(task_key) for task_key in combo]
+
+        expected_for_combo = 1
+        for assignments in per_task_assignments:
+            expected_for_combo *= len(assignments)
+        total_expected += expected_for_combo
+
+        produced_for_combo = 0
+        print()
+        print("combo:", combo)
+        print("expected configs:", expected_for_combo)
+
+        for assignment_tuple in itertools.product(*per_task_assignments):
+            produced_for_combo += 1
+            if produced_for_combo % 100 == 1 or produced_for_combo == expected_for_combo:
+                print(f"config {produced_for_combo}/{expected_for_combo}")
+
+            tasks: List[KgTask] = []
+            config_catalog: Dict[str, ConfigurationProfile] = {}
+
+            for task_key, params in zip(combo, assignment_tuple):
+                task = task_dict[task_key]
+                tasks.append(task)
+
+                if not params:
+                    continue
+                if getattr(task, "config_spec", None) is None:
+                    continue
+
+                bindings: List[ParameterBinding] = []
+                name_parts: List[str] = []
+
+                # Iterate in search_space order for stable snapshots.
+                for config_name, _config_values in search_space[task_key].items():
+                    if config_name == "category":
+                        continue
+                    if config_name not in params:
+                        continue
+                    config_value = params[config_name]
+                    name_parts.append(f"{config_name}={config_value}")
+                    bindings.append(
+                        ParameterBinding(
+                            parameter=_get_param(task.config_spec, config_name),
+                            value=config_value,
+                        )
+                    )
+
+                config_catalog[task.name] = ConfigurationProfile(
+                    name=f"{task.name}_" + ",".join(name_parts),
+                    definition=task.config_spec,
+                    bindings=bindings,
+                )
+
+            pipeline_config = PipelineConfig(tasks=tasks, config_catalog=config_catalog)
+            all_snapshots.append(pipeline_config_to_snapshot(combo, pipeline_config))
+
+        assert produced_for_combo == expected_for_combo
+
+    print()
+    print("TOTAL expected configs:", total_expected)
+    print("TOTAL generated snapshots:", len(all_snapshots))
+    return all_snapshots
+
 
 
 def test_sample_valid_rdf_pipeline_config():
@@ -443,10 +563,7 @@ def test_sample_valid_rdf_pipeline_config():
 
 def test_enumerate_all_valid_rdf_task_combinations_no_config_sampling():
     print("enumerate_all_valid_rdf_task_combinations_no_config_sampling")
-    pipeline_layout = PipelineLayout(
-        allowed_task_categories=["ontology_matching", "entity_matching", "aggregate_matching_results", "fusion"]
-    )
-    combos = enumerate_valid_task_combinations(RDF_SEARCH_SPACE, pipeline_layout)
+    combos = enumerate_valid_task_combinations(RDF_SEARCH_SPACE, RDF_PIPELINE_LAYOUT)
 
     for combo in combos:
         print(combo)
@@ -461,17 +578,16 @@ def test_enumerate_all_valid_rdf_task_combinations_no_config_sampling():
     #     ("paris_graph_alignment_task", "fusion_first_value_task"),
     # }
 
-    # assert set(tuple(c) for c in combos) == expected
+   # assert set(tuple(c) for c in combos) == expected
+
+
 
 def test_enumerate_all_valid_rdf_task_combinations_with_config_sampling():
     print("enumerate_all_valid_rdf_task_combinations_with_config_sampling")
     n = 1
     rng = random.Random(0)
 
-    pipeline_layout = PipelineLayout(
-        allowed_task_categories=["ontology_matching", "entity_matching", "aggregate_matching_results", "fusion"]
-    )
-    combos = enumerate_valid_task_combinations(RDF_SEARCH_SPACE, pipeline_layout)
+    combos = enumerate_valid_task_combinations(RDF_SEARCH_SPACE, RDF_PIPELINE_LAYOUT)
 
     total_config_count = 0
     snapshots: List[Dict[str, Any]] = []
@@ -502,33 +618,25 @@ def test_enumerate_all_valid_rdf_task_combinations_with_config_sampling():
 
 
 def test_sample_valid_text_pipeline_config():
-    pipeline_layout = PipelineLayout(
-        allowed_task_categories=["information_extraction", "entity_linking", "relation_linking", "fusion"]
-    )
-    pipeline_config = sample_valid_pipeline_config(TEXT_SEARCH_SPACE, pipeline_layout)
+    pipeline_config = sample_valid_pipeline_config(TEXT_SEARCH_SPACE, TEXT_PIPELINE_LAYOUT)
     print_pipeline_config_short(pipeline_config)
 
 
 def test_enumerate_all_valid_text_task_combinations_no_config_sampling():
     print("enumerate_all_valid_text_task_combinations_no_config_sampling")
-    pipeline_layout = PipelineLayout(
-        allowed_task_categories=["information_extraction", "entity_linking", "relation_linking", "fusion"]
-    )
-    combos = enumerate_valid_task_combinations(TEXT_SEARCH_SPACE, pipeline_layout)
+    combos = enumerate_valid_task_combinations(TEXT_SEARCH_SPACE, TEXT_PIPELINE_LAYOUT)
     for combo in combos:
         print(combo)
 
 def test_enumerate_all_valid_text_task_combinations_with_config_sampling():
     print("enumerate_all_valid_text_task_combinations_with_config_sampling")
-    n = 5
+    n = 1
     rng = random.Random(0)
 
-    pipeline_layout = PipelineLayout(
-        allowed_task_categories=["information_extraction", "entity_linking", "relation_linking", "fusion"]
-    )
-    combos = enumerate_valid_task_combinations(TEXT_SEARCH_SPACE, pipeline_layout)
+    combos = enumerate_valid_task_combinations(TEXT_SEARCH_SPACE, TEXT_PIPELINE_LAYOUT)
 
     total_config_count = 0
+    snapshots: List[Dict[str, Any]] = []
 
     for combo in combos:
         print()
@@ -540,6 +648,35 @@ def test_enumerate_all_valid_text_task_combinations_with_config_sampling():
                 TEXT_SEARCH_SPACE, combo, rng=rng
             )
             print_pipeline_config_short(pipeline_config)
+            snapshots.append(pipeline_config_to_snapshot(combo, pipeline_config))
+
+    TEXT_SAMPLED_PIPELINE_CONFIGS_FIXTURE.parent.mkdir(parents=True, exist_ok=True)
+    TEXT_SAMPLED_PIPELINE_CONFIGS_FIXTURE.write_text(
+        json.dumps(
+            {"version": _TEXT_PIPELINE_CONFIG_SNAPSHOT_VERSION, "samples": snapshots},
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+def test_enumerate_all_valid_text_task_combinations_with_config_sampling_exhaustive():
+    print("enumerate_all_valid_text_task_combinations_with_config_sampling_exhaustive")
+    all_snapshots = enumerate_exhaustive_pipeline_config_snapshots(
+        TEXT_SEARCH_SPACE, TEXT_PIPELINE_LAYOUT
+    )
+    serialized = [json.dumps(s, sort_keys=True) for s in all_snapshots]
+    assert len(set(serialized)) == len(serialized)
+
+
+def test_enumerate_all_valid_rdf_task_combinations_with_config_sampling_exhaustive():
+    print("enumerate_all_valid_rdf_task_combinations_with_config_sampling_exhaustive")
+    all_snapshots = enumerate_exhaustive_pipeline_config_snapshots(
+        RDF_SEARCH_SPACE, RDF_PIPELINE_LAYOUT
+    )
+    serialized = [json.dumps(s, sort_keys=True) for s in all_snapshots]
+    assert len(set(serialized)) == len(serialized)
 
 
 

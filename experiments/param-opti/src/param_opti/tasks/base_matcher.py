@@ -19,6 +19,7 @@ def _embedding_config_params():
             allowed_values=[
                 "sentence-transformers/all-MiniLM-L6-v2",
                 "sentence-transformers/all-mpnet-base-v2",
+                "intfloat/e5-base-v2",
             ],
         ),
         Parameter(

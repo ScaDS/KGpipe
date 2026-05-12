@@ -8,10 +8,11 @@ from param_opti.tasks.genie import genie_text_extraction_task
 from param_opti.tasks.spotlight import spotlight_entity_linking_task
 from param_opti.tasks.text_helpers import aggregate_text_tasks_task, generate_rdf_from_text_results_task
 from param_opti.tasks.select_lib import select_first_value_task
-from qap.test_pipeline_config import (
+from qap.test_conf_pipelines import (
     PipelineConfig,
     _get_param,
     load_rdf_sampled_pipeline_configs,
+    load_text_sampled_pipeline_configs,
 )
 from pathlib import Path
 import pytest
@@ -20,7 +21,7 @@ import os
 from dotenv import load_dotenv
 load_dotenv()
 
-tmp_base_dir = Path("tmp")
+tmp_base_dir = Path("data/tmp/text_pipelines")
 if not tmp_base_dir.exists():
     tmp_base_dir.mkdir(parents=True, exist_ok=True)
 
@@ -84,14 +85,11 @@ def test_rdf_pipeline_from_saved_sampled_configs(config_idx):
 
     pipeline_config = configs[config_idx]
 
-    seed_path = tmp_base_dir / "seed_saved_sample.nt"
-    source_path = tmp_base_dir / "source_saved_sample.nt"
-    result_path = tmp_base_dir / f"result_saved_sample_config_idx_{config_idx}.nt"
-    tasks_tmp_dir = tmp_base_dir / f"tasks_tmp_saved_sample_config_idx_{config_idx}"
+    seed_path = Path("data/input_final/target_kg/graph.nt")
+    source_path = Path("data/input_final/rdf_source/graph.nt")
+    result_path = tmp_base_dir / f"rdf_result_saved_sample_config_idx_{config_idx}.nt"
+    tasks_tmp_dir = tmp_base_dir / f"rdf_tasks_tmp_saved_sample_config_idx_{config_idx}"
     tasks_tmp_dir.mkdir(parents=True, exist_ok=True)
-
-    seed_path.write_text("<http://example.org/s> <http://example.org/p> <http://example.org/o> .\n")
-    source_path.write_text("<http://example.org/s2> <http://example.org/p> <http://example.org/o> .\n")
 
     pipeline = KgPipe(
         tasks=pipeline_config.tasks,
@@ -108,7 +106,6 @@ def test_rdf_pipeline_from_saved_sampled_configs(config_idx):
     )
 
     pipeline.run(configCatalog=pipeline_config.config_catalog, stable_files_override=True)
-
 
 
 def get_default_text_pipeline_config() -> PipelineConfig:
@@ -168,3 +165,38 @@ def test_text_pipeline_from_default_config():
     pipeline.run(configCatalog=pipeline_config.config_catalog, stable_files_override=False)
 
 
+@pytest.mark.parametrize("config_idx", range(len(load_text_sampled_pipeline_configs())))
+def test_text_pipeline_from_saved_sampled_configs(config_idx):
+    """Runs KGpipe using PipelineConfigs materialized from the JSON fixture written by test_pipeline_config."""
+    configs = load_text_sampled_pipeline_configs()
+    assert configs, "fixtures/text_sampled_pipeline_configs.json is missing or empty; run test_enumerate_all_valid_text_task_combinations_with_config_sampling"
+
+    pipeline_config = configs[config_idx]
+
+    seed_path = Path("data/input_final/target_kg/graph.nt")
+    source_path = Path("data/input_final/txt_source/docs")
+    result_path = tmp_base_dir / f"text_result_saved_sample_config_idx_{config_idx}.nt"
+    tasks_tmp_dir = tmp_base_dir / f"text_tasks_tmp_saved_sample_config_idx_{config_idx}"
+    tasks_tmp_dir.mkdir(parents=True, exist_ok=True)
+
+    pipeline = KgPipe(
+        tasks=pipeline_config.tasks,
+        seed=Data(path=seed_path, format=DataFormat.RDF_NTRIPLES),
+        data_dir=tasks_tmp_dir,
+        name="test_text_pipeline_saved_sample",
+    )
+
+    print(f"Building pipeline... {config_idx}")
+    print("#######################")
+
+    pipeline.build(
+        stable_files=True,
+        configCatalog=pipeline_config.config_catalog,
+        source=Data(path=source_path, format=DataFormat.TEXT),
+        result=Data(path=result_path, format=DataFormat.RDF_NTRIPLES),
+    )
+
+    print(f"Running pipeline... {config_idx}")
+    print("#######################")
+
+    pipeline.run(configCatalog=pipeline_config.config_catalog, stable_files_override=False)

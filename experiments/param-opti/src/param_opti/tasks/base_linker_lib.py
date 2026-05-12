@@ -156,6 +156,7 @@ class AliasAndTransformerBasedRelationLinker:
     """
 
     def __init__(self, ontology_file, model_name: str = "all-MiniLM-L6-v2", threshold: float = 0.0):
+        print(f"Init AliasAndTransformerBasedRelationLinker with ontology file: {ontology_file} and model name: {model_name} and threshold: {threshold}")
         self.ontology = OntologyUtil.load_ontology_from_file(ontology_file)
         self.embedder = SentenceTransformerEmbedder(model_name=model_name)
         self.threshold = float(threshold)
@@ -175,6 +176,7 @@ class AliasAndTransformerBasedRelationLinker:
         for i, relation in enumerate(extracted_relations):
             best_idx = int(similarities[i].argmax())
             best_score = float(similarities[i][best_idx])
+            # print(f"Relation: {relation}, matched to: {self.ontology.properties[best_idx].uri}, label: {self.ontology.properties[best_idx].label}, Best Index: {best_idx}, Best Score: {best_score}")
             if best_score < self.threshold:
                 continue
             match = self.ontology.properties[best_idx]

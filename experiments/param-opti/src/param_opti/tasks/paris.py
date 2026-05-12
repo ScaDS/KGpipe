@@ -9,8 +9,27 @@ def paris_entity_alignment_function(inputs: TaskInput, outputs: TaskOutput, conf
     matches entities between two RDF graphs
     """
     # touch output file
-    print(f"paris_entity_alignment_function: {outputs['output'].path}")
-    outputs["output"].path.touch()
+    from param_opti.tasks.paris_lib import paris_exchange, paris_entity_matching
+    entity_matching_threshold = float(config.get_parameter_value("entity_matching_threshold"))
+    relation_matching_threshold = float(2) # todo skip all matches
+
+    # Ensure parent directory exists for the ER JSON output file
+    outputs["output"].path.parent.mkdir(parents=True, exist_ok=True)
+
+    # 1 produce matches in paris csv format
+    matching_dir = outputs["output"].path.parent / f"{outputs['output'].path.stem}_paris_out"
+    matching_output = {"output": Data(matching_dir, DataFormat.PARIS_CSV)}
+
+    # paris_entity_matching expects {"source": ..., "kg": ...}
+    paris_entity_matching({"source": inputs["source"], "kg": inputs["target"]}, matching_output)
+
+    # 2 convert paris output dir to er.json format (file)
+    paris_exchange(
+        matching_output["output"].path,
+        outputs["output"].path,
+        entity_matching_threshold,
+        relation_matching_threshold,
+    )
 
 paris_entity_alignment_task = KgTask(
     name="paris_entity_alignment",
@@ -71,7 +90,27 @@ def paris_ontology_matching_function(inputs: TaskInput, outputs: TaskOutput, con
     matches ontologies between two RDF graphs
     """
     # touch output file
-    outputs["output"].path.touch()
+    from param_opti.tasks.paris_lib import paris_exchange, paris_entity_matching
+    entity_matching_threshold = float(2) # todo skip all matches
+    ontology_matching_threshold = float(config.get_parameter_value("ontology_matching_threshold"))
+
+    # Ensure parent directory exists for the ER JSON output file
+    outputs["output"].path.parent.mkdir(parents=True, exist_ok=True)
+
+    # 1 produce matches in paris csv format
+    matching_dir = outputs["output"].path.parent / f"{outputs['output'].path.stem}_paris_out"
+    matching_output = {"output": Data(matching_dir, DataFormat.PARIS_CSV)}
+
+    # paris_entity_matching expects {"source": ..., "kg": ...}
+    paris_entity_matching({"source": inputs["source"], "kg": inputs["target"]}, matching_output)
+
+    # 2 convert paris output dir to er.json format (file)
+    paris_exchange(
+        matching_output["output"].path,
+        outputs["output"].path,
+        entity_matching_threshold,
+        ontology_matching_threshold,
+    )
 
 paris_ontology_matching_task = KgTask(
     name="paris_ontology_matching",

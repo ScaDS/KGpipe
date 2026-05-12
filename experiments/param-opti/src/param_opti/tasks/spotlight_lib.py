@@ -22,7 +22,7 @@ CONFIDENCE = 0.35
 HEADERS = {
     "Accept": "application/json"
 }
-
+DEFAULT_API_URL = "http://localhost:2222/rest/annotate"
 
 def api_request(url: str, text: str) -> Dict[str, Any]:
     """Make API request to DBpedia Spotlight."""
@@ -42,18 +42,12 @@ def api_request(url: str, text: str) -> Dict[str, Any]:
     return result
 
 
-@Registry.task(
-    input_spec={"input": DataFormat.TEXT},
-    output_spec={"output": DataFormat.SPOTLIGHT_JSON},
-    description="Link entities using DBpedia Spotlight API",
-    category=["TextProcessing", "EntityLinking"]
-)
 def dbpedia_spotlight_ner_nel(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     """Link entities using DBpedia Spotlight API."""
     input_data = inputs["input"]
     output_data = outputs["output"]
 
-    DBPEDIA_ANNOTATE_URL = os.getenv("DBPEDIA_ANNOTATE_URL")
+    DBPEDIA_ANNOTATE_URL = os.getenv("DBPEDIA_ANNOTATE_URL", DEFAULT_API_URL)
     if not DBPEDIA_ANNOTATE_URL:
         raise ValueError("Missing DBpedia ANnotate URL")
     
@@ -79,70 +73,15 @@ def dbpedia_spotlight_ner_nel(inputs: Dict[str, Data], outputs: Dict[str, Data])
             f.write(json.dumps(results))
 
 
-@Registry.task(
-    input_spec={"source": DataFormat.SPOTLIGHT_JSON},
-    output_spec={"output": DataFormat.TE_JSON},
-    description="Convert Spotlight JSON to TE JSON format",
-    category=["TextProcessing", "EntityLinking"]
-)
-def dbpedia_spotlight_exchange_filtered(inputs: Dict[str, Data], outputs: Dict[str, Data]):
+# @Registry.task(
+#     input_spec={"source": DataFormat.SPOTLIGHT_JSON},
+#     output_spec={"output": DataFormat.TE_JSON},
+#     description="Convert Spotlight JSON to TE JSON format, with seed filter",
+#     category=["TextProcessing", "EntityLinking"]
+# )
+def dbpedia_spotlight_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data], threshold: float = 0.5):
     """Convert Spotlight JSON to TE JSON format."""
-    input_path = inputs["source"].path
-    output_path = outputs["output"].path
-
-    
-
-    # create output folder
-    os.makedirs(os.path.normpath(output_path), exist_ok=True)
-
-    def __spotlightjson2tejson(data) -> Dict[str, Any]:
-        """Convert Spotlight JSON to TE Document format."""
-        links = []
-
-        for result in data.get('Resources', []):
-            link = {
-                "span": result.get('@surfaceForm', ''),
-                "mapping": result.get('@URI', ''),
-                "score": float(result.get('@similarityScore', 0.0)),
-                "link_type": "entity"
-            }
-            links.append(link)
-
-        text = data.get('@text', '')
-        return {"text": text, "links": links}
-
-    if os.path.isdir(input_path):
-        for file in os.listdir(input_path):
-            # Read input json
-            with open(os.path.join(input_path, file), 'r') as f:
-                data = json.load(f)
-                te_doc = __spotlightjson2tejson(data)
-                outfile = os.path.join(output_path, file)
-            
-                with open(outfile, 'w') as of:
-                    json.dump(te_doc, of)
-                # print(f"Converted {file} to {outfile}")
-                
-    else:
-        # Read input json
-        with open(input_path, 'r') as f:
-            data = json.load(f)
-            te_doc = __spotlightjson2tejson(data)
-            outfile = os.path.join(output_path, 'output.te.json')
-            with open(outfile, 'w') as of:
-                json.dump(te_doc, of)
-            # print(f"Converted {input_path} to {output_path}")
-
-
-@Registry.task(
-    input_spec={"source": DataFormat.SPOTLIGHT_JSON},
-    output_spec={"output": DataFormat.TE_JSON},
-    description="Convert Spotlight JSON to TE JSON format, with seed filter",
-    category=["TextProcessing", "EntityLinking"]
-)
-def dbpedia_spotlight_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
-    """Convert Spotlight JSON to TE JSON format."""
-    input_path = inputs["source"].path
+    input_path = inputs["input"].path
     output_path = outputs["output"].path
 
     # create output folder
@@ -153,6 +92,8 @@ def dbpedia_spotlight_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]
         links = []
 
         for result in data.get('Resources', []):
+            if float(result.get('@similarityScore', 0.0)) < threshold:
+                continue
             link = {
                 "span": result.get('@surfaceForm', ''),
                 "mapping": result.get('@URI', ''),
