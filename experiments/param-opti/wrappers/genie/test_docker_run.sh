@@ -1,0 +1,1 @@
+docker run -v $(pwd):$(pwd) genie genie.sh $(pwd)/test_1.txt $(pwd)/output_1.json

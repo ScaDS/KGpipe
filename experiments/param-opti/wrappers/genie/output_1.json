@@ -1,0 +1,26 @@
+[
+  [
+    {
+      "text": " <sub> Captain America <rel> publisher <obj> Marvel Comics <et>",
+      "log_prob": -0.4791736900806427
+    }
+  ],
+  [
+    {
+      "text": " <sub> Marvel Cinematic Universe <rel> production company <obj> Marvel Studios <et>",
+      "log_prob": -0.33403322100639343
+    }
+  ],
+  [
+    {
+      "text": " <sub> Captain America <rel> performer <obj> Chris Evans (actor) <et>",
+      "log_prob": -0.46612370014190674
+    }
+  ],
+  [
+    {
+      "text": " <sub> Captain America <rel> conflict <obj> World War II <et>",
+      "log_prob": -0.39299872517585754
+    }
+  ]
+]
