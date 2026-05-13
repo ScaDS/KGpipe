@@ -51,7 +51,7 @@ def eval_triple_alignment(tg: TripleGraph, config: TripleAlignmentConfig):
 # def eval_triple_alignment_by_label_embedding_soft_literals(method: Literal["exact", "fuzzy", "semantic"] = "exact"):
 #     pass
 
-class ReferenceTripleAlignmentMetric(Metric):
+class TripleAlignmentMetric(Metric):
     
     def compute(self, kg: KG, config: TripleAlignmentConfig):
         m: BCMeasurement = eval_triple_alignment(kg, config)
@@ -71,4 +71,4 @@ class ReferenceTripleAlignmentMetric(Metric):
 
 
 # Backward-compatibility alias (imported by `kgpipe_eval.metrics.__init__`).
-TripleAlignmentMetric = ReferenceTripleAlignmentMetric
+# TripleAlignmentMetric = TripleAlignmentMetric
