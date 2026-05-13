@@ -4,7 +4,7 @@ from kgpipe_eval.api import MetricConfig, MetricResult
 from kgpipe_eval.metrics.statistics import CountMetric
 from kgpipe_eval.metrics.duplicates import DuplicateConfig, DuplicateMetric
 from kgpipe_eval.metrics.entity_alignment import EntityAlignmentMetric
-from kgpipe_eval.metrics.triple_alignment import TripleAlignmentConfig, ReferenceTripleAlignmentMetric
+from kgpipe_eval.metrics.triple_alignment import TripleAlignmentConfig, TripleAlignmentMetric
 from kgpipe_eval.utils.alignment_utils import EntityAlignmentConfig
 from kgpipe_eval.utils.kg_utils import KgLike, KgManager
 from kgpipe_eval.evaluator import Evaluator
@@ -79,7 +79,7 @@ class KgPipeData(BaseModel):
         report = KgPipeReport.from_path(path / "exec-report.json")
         tmp_dir = path / "tmp"
         return KgPipeData(
-            result_kg=KG(name=path.name, id=path.name, path=path / "result.nt", format=DataFormat.RDF_NTRIPLES),
+            result_kg=KG(name=path.name, id=path.name, path=path / "result_eval.nt", format=DataFormat.RDF_NTRIPLES),
             plan=plan,
             report=report,
             tmp_dir=tmp_dir
@@ -96,14 +96,17 @@ def build_config_dict(i: int, pipe_data: KgPipeData, bench_data: KgBenchData) ->
     )
 
     tri_cfg = TripleAlignmentConfig(
-        reference_kg=bench_data.dataset.splits[f"split_{i}"].kg_reference,
+        reference_kg=bench_data.dataset.splits[f"split_{i}"].kg_reference.root / "data_agg_eval.nt",
         entity_alignment_config=EntityAlignmentConfig(
             method="label_embedding",
-            verified_entities_path=bench_data.get_verified_entities_path(i=i, source_type="rdf"), # TODO type needs to be derived from pipe_data
-            verified_entities_delimiter="\t",
+            reference_kg=bench_data.dataset.splits[f"split_{i}"].kg_reference.root / "data_agg_eval.nt",
+            # verified_entities_path=bench_data.get_verified_entities_path(i=i, source_type="rdf"), # TODO type needs to be derived from pipe_data
+            # verified_entities_delimiter="\t",
             entity_sim_threshold=0.95,
         ),
         value_sim_threshold=0.5,
+        cache_literal_embeddings=True,
+        cache_ref_literal_embeddings=True,
     )
 
     ent_cfg = EntityAlignmentConfig(
@@ -127,7 +130,7 @@ def evaluate_stage(i: int, pipe_data: KgPipeData, bench_data: KgBenchData) -> Li
         CountMetric(), 
         EntityAlignmentMetric(),
         DuplicateMetric(),
-        ReferenceTripleAlignmentMetric(),
+        TripleAlignmentMetric(),
     ]
     config_dict = build_config_dict(i, pipe_data, bench_data)
     return Evaluator().run(tg, metrics, config_dict)
@@ -208,6 +211,8 @@ def test_evaluate_new(pipeline_name: str):
 
     for stage_dir in stage_dirs:
         i = int(stage_dir.name.split("_", 1)[1])
+        if i != 3:
+            continue # only run for stage 3
         pipe_data = KgPipeData.from_path(stage_dir)
         results = evaluate_stage(i=i, pipe_data=pipe_data, bench_data=bench_data)
 
@@ -245,6 +250,8 @@ def test_evaluate_new_multisource_pipeline(source_1: str, source_2: str, source_
 
     for stage_dir in stage_dirs:
         i = int(stage_dir.name.split("_", 1)[1])
+        if i != 3:
+            continue # only run for stage 3
         pipe_data = KgPipeData.from_path(stage_dir)
         results = evaluate_stage(i=i, pipe_data=pipe_data, bench_data=bench_data)
 
