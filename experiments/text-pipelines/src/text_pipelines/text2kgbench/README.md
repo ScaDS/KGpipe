@@ -1,0 +1,79 @@
+## Usage
+
+### 1. Convert `.jsonl` files to `.txt`
+
+Use datasets from [text2kgbench](https://zenodo.org/records/7916716) and convert the `.jsonl` files into plain text files before running the extraction pipeline.
+
+Run `jsonl_to_txt.py`:
+
+```bash
+python jsonl_to_txt.py path/to/jsonl path/to/outputdir
+```
+
+
+---
+
+## 2. Run extraction pipelines
+
+After generating the `.txt` files, execute one of the available extraction pipelines.
+
+Run `run.py`:
+
+```bash id="fj0yq1"
+python run.py path/to/txts path/to/outputdir --pipeline corenlp
+```
+
+---
+
+## Available Pipelines
+
+| Pipeline               | Description                                 |
+| ---------------------- | ------------------------------------------- |
+| `corenlp`              | Stanford CoreNLP OpenIE extraction          |
+| `genie`                | GenIE extraction pipeline                   |
+| `corenlp_with_linking` | CoreNLP extraction + DBpedia entity linking |
+| `genie_with_linking`   | GenIE extraction + DBpedia entity linking   |
+
+---
+
+## Examples
+
+### CoreNLP
+
+```bash
+python run.py ./data/txt ./output --pipeline corenlp
+```
+
+### GenIE
+
+```bash
+python run.py ./data/txt ./output --pipeline genie
+```
+
+### CoreNLP with Entity Linking
+
+```bash
+python run.py ./data/txt ./output --pipeline corenlp_with_linking
+```
+
+### GenIE with Entity Linking
+
+```bash
+python run.py ./data/txt ./output --pipeline genie_with_linking
+```
+
+---
+
+## Workflow Overview
+
+```text
+.jsonl
+   ↓
+jsonl_to_txt.py
+   ↓
+.txt
+   ↓
+run.py
+   ↓
+Triples / Linked Entities / JSON Output
+```
