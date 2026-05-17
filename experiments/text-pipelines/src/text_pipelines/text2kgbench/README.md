@@ -19,7 +19,7 @@ After generating the `.txt` files, execute one of the available extraction pipel
 
 Run `run.py`:
 
-```bash id="fj0yq1"
+```bash
 python run.py path/to/txts path/to/outputdir --pipeline corenlp
 ```
 
@@ -28,7 +28,7 @@ python run.py path/to/txts path/to/outputdir --pipeline corenlp
 ## Available Pipelines
 
 | Pipeline               | Description                                 |
-| ---------------------- | ------------------------------------------- |
+|------------------------|---------------------------------------------|
 | `corenlp`              | Stanford CoreNLP OpenIE extraction          |
 | `genie`                | GenIE extraction pipeline                   |
 | `corenlp_with_linking` | CoreNLP extraction + DBpedia entity linking |
