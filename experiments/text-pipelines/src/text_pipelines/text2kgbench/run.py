@@ -1,5 +1,8 @@
 import argparse
 import os
+from pathlib import Path
+
+from dotenv import load_dotenv
 
 from kgpipe_tasks.text_processing import corenlp_openie_extraction, corenlp_exchange, label_alias_embedding_rl, \
     dbpedia_spotlight_ner_nel, dbpedia_spotlight_exchange
@@ -44,6 +47,10 @@ def run(input_path, output_path, pipeline):
 
     if pipeline not in pipelines:
         raise ValueError(f"Unknown pipeline: {pipeline}")
+
+    if pipeline.contains("linking"):
+        text_pipelines_folder_path = Path(__file__).parent.parent.parent.parent
+        load_dotenv(dotenv_path=text_pipelines_folder_path / ".env")
 
     text_pipes.run_pipe(
         str(input_path),
