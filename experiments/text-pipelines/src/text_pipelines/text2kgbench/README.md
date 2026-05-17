@@ -34,8 +34,10 @@ python run.py path/to/txts path/to/outputdir --pipeline corenlp
 | `corenlp_with_linking` | CoreNLP extraction + DBpedia entity linking |
 | `genie_with_linking`   | GenIE extraction + DBpedia entity linking   |
 
----
+If a pipeline with linking is used, DBPEDIA_ANNOTATE_URL is required in the [.env](./../../../env) file
+at the text-pipelines root
 
+---
 ## Examples
 
 ### CoreNLP
