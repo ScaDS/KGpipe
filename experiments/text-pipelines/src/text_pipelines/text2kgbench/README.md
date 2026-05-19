@@ -1,5 +1,16 @@
 ## Usage
 
+### 0. Convert `.json` ontology files to `.ttl` ontologies
+Use dbpedia ontologies from [text2kgbench](https://zenodo.org/records/7916716) (/data/dbpedia/webnlg/ontologies/)
+and convert them to `.ttl` ontologies to use them with this project
+
+Run `json_to_ttl.py`:
+```bash
+python json_to_ttl.py path/to/json path/to/output
+```
+
+---
+
 ### 1. Convert `.jsonl` files to `.txt`
 
 Use datasets from [text2kgbench](https://zenodo.org/records/7916716) and convert the `.jsonl` files into plain text files before running the extraction pipeline.
