@@ -9,7 +9,6 @@ discover
 from kgpipe.common import KgPipe, Data, DataFormat
 
 import tempfile
-import shutil
 
 def run_pipe(input_path: str, output_path: str, tasks: list):
     tmp_data_dir = tempfile.mkdtemp()
@@ -24,6 +23,3 @@ def run_pipe(input_path: str, output_path: str, tasks: list):
 
     pipe.build(source=input_data, result=output_data)
     pipe.run()
-
-    # remove tmp data dir
-    shutil.rmtree(tmp_data_dir)
