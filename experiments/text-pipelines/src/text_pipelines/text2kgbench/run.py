@@ -31,6 +31,7 @@ def run(input_path, output_path, pipeline):
             dbpedia_spotlight_ner_nel,
             dbpedia_spotlight_exchange,
             aggregate3_te_json
+        - construct_rdf_from_te_json_mappings_only
         ],
 
         "genie_with_linking": [
@@ -48,7 +49,7 @@ def run(input_path, output_path, pipeline):
     if pipeline not in pipelines:
         raise ValueError(f"Unknown pipeline: {pipeline}")
 
-    if pipeline.contains("linking"):
+    if "linking" in pipeline:
         text_pipelines_folder_path = Path(__file__).parent.parent.parent.parent
         load_dotenv(dotenv_path=text_pipelines_folder_path / ".env")
 
