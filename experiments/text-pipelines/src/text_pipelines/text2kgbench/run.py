@@ -14,7 +14,6 @@ from text_pipelines import text_pipes
 from text_pipelines.text_tasks import genie_task_docker, genie_exchange
 
 def run(input_path, output_path, seed_path, pipeline):
-    os.environ["ONTOLOGY_PATH"] = seed_path
     pipelines = {
         "corenlp": [
             corenlp_openie_extraction,
@@ -56,6 +55,7 @@ def run(input_path, output_path, seed_path, pipeline):
         text_pipelines_folder_path = Path(__file__).parent.parent.parent.parent
         load_dotenv(dotenv_path=text_pipelines_folder_path / ".env")
 
+        os.environ["ONTOLOGY_PATH"] = seed_path
         text_pipes.run_pipe(
             str(input_path),
             str(output_path),
@@ -65,6 +65,7 @@ def run(input_path, output_path, seed_path, pipeline):
             pipelines[pipeline]
         )
     else:
+        os.environ["ONTOLOGY_PATH"] = seed_path
         text_pipes.run_pipe(
             str(input_path),
             str(output_path),
