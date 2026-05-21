@@ -4,6 +4,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from kgpipe.common import DataFormat
 from kgpipe_tasks.construction.construct import construct_rdf_from_te_json_mappings_only
 from kgpipe_tasks.text_processing import corenlp_openie_extraction, corenlp_exchange, label_alias_embedding_rl, \
     dbpedia_spotlight_ner_nel, dbpedia_spotlight_exchange
@@ -55,13 +56,23 @@ def run(input_path, output_path, seed_path, pipeline):
         text_pipelines_folder_path = Path(__file__).parent.parent.parent.parent
         load_dotenv(dotenv_path=text_pipelines_folder_path / ".env")
 
-    text_pipes.run_pipe(
-        str(input_path),
-        str(output_path),
-        seed_path,
-        pipelines[pipeline]
-    )
-
+        text_pipes.run_pipe(
+            str(input_path),
+            str(output_path),
+            seed_path,
+            DataFormat.TEXT,
+            DataFormat.RDF_NTRIPLES,
+            pipelines[pipeline]
+        )
+    else:
+        text_pipes.run_pipe(
+            str(input_path),
+            str(output_path),
+            seed_path,
+            DataFormat.TEXT,
+            DataFormat.TE_JSON,
+            pipelines[pipeline]
+        )
     print(f"Done using '{pipeline}'! Output: {output_path}")
 
 

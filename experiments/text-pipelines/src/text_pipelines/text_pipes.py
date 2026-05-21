@@ -10,10 +10,10 @@ from kgpipe.common import KgPipe, Data, DataFormat
 
 import tempfile
 
-def run_pipe(input_path: str, output_path: str, seed_path: str, tasks: list):
+def run_pipe(input_path: str, output_path: str, seed_path: str, input_format, output_format, tasks: list):
     tmp_data_dir = tempfile.mkdtemp()
-    input_data = Data(path=input_path, format=DataFormat.TEXT)
-    output_data = Data(path=output_path, format=DataFormat.TE_JSON)
+    input_data = Data(path=input_path, format=input_format)
+    output_data = Data(path=output_path, format=output_format)
 
     seed_data = Data(path=seed_path, format=DataFormat.RDF_TTL)
 
