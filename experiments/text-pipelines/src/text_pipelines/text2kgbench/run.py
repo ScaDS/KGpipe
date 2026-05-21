@@ -4,6 +4,7 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
+from kgpipe_tasks.construction.construct import construct_rdf_from_te_json_mappings_only
 from kgpipe_tasks.text_processing import corenlp_openie_extraction, corenlp_exchange, label_alias_embedding_rl, \
     dbpedia_spotlight_ner_nel, dbpedia_spotlight_exchange
 from kgpipe_tasks.transform_interop import aggregate3_te_json
@@ -11,7 +12,7 @@ from kgpipe_tasks.transform_interop import aggregate3_te_json
 from text_pipelines import text_pipes
 from text_pipelines.text_tasks import genie_task_docker, genie_exchange
 
-def run(input_path, output_path, pipeline):
+def run(input_path, output_path, seed_path, pipeline):
 
     pipelines = {
         "corenlp": [
@@ -30,8 +31,8 @@ def run(input_path, output_path, pipeline):
             label_alias_embedding_rl,
             dbpedia_spotlight_ner_nel,
             dbpedia_spotlight_exchange,
-            aggregate3_te_json
-        - construct_rdf_from_te_json_mappings_only
+            aggregate3_te_json,
+            construct_rdf_from_te_json_mappings_only
         ],
 
         "genie_with_linking": [
@@ -40,7 +41,8 @@ def run(input_path, output_path, pipeline):
             label_alias_embedding_rl,
             dbpedia_spotlight_ner_nel,
             dbpedia_spotlight_exchange,
-            aggregate3_te_json
+            aggregate3_te_json,
+            construct_rdf_from_te_json_mappings_only
         ]
     }
 
@@ -56,6 +58,7 @@ def run(input_path, output_path, pipeline):
     text_pipes.run_pipe(
         str(input_path),
         str(output_path),
+        seed_path,
         pipelines[pipeline]
     )
 
@@ -78,6 +81,11 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
+        "seed",
+        help="Path to seed file"
+    )
+
+    parser.add_argument(
         "--pipeline",
         choices=[
             "corenlp",
@@ -91,4 +99,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    run(args.input_dir, args.output_dir, args.pipeline)
+    run(args.input_dir, args.output_dir, args.seed, args.pipeline)
