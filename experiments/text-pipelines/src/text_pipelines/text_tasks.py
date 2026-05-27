@@ -24,7 +24,7 @@ def process_io(input_path, output_path, process_file_fn, extension):
 
             output_file = os.path.join(
                 output_path,
-                os.path.splitext(filename)[0] + extension
+                filename
             )
 
             process_file_fn(input_file, output_file)
