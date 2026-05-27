@@ -24,7 +24,7 @@ def process_io(input_path, output_path, process_file_fn, extension):
 
             output_file = os.path.join(
                 output_path,
-                filename
+                filename + extension
             )
 
             process_file_fn(input_file, output_file)
@@ -377,7 +377,7 @@ def genie_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
         with open(output_file, "w", encoding="utf-8") as f:
             json.dump({"triples": triples, "chains": chains}, f, indent=2)
 
-    process_io(input_path, output_path, exchange_file, ".te.json")
+    process_io(input_path, output_path, exchange_file, ".json")
 
 @Registry.task(
     input_spec={"input": DataFormat.TE_JSON},
