@@ -39,6 +39,10 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest", "pytest-mock", "pytest-cov", "ruff", "black"]
+docs = [
+    "mkdocs-material",
+    "mkdocstrings[python]",
+]
 cpu = [
     "torch",
     "torchvision",

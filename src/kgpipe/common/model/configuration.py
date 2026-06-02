@@ -33,13 +33,13 @@ class Parameter(BaseModel):
     #   +allowed_values: any[*]?
     #   +min/max/unit: number?/number?/string?
     name: str
-    native_keys: List[str]
     datatype: ParameterType
-    default_value: str | int | float | bool
-    required: bool
+    default_value: str | int | float | bool = field(default_factory=lambda: None)
+    required: bool = False
+    native_keys: List[str] = field(default_factory=list)
     # scope: Scope # (training/inference/io/resources)
     # constraints
-    allowed_values: List[str | int | float | bool]
+    allowed_values: List[str | int | float | bool] = field(default_factory=list)
     minimum: Optional[float] = None
     maximum: Optional[float] = None
     unit: Optional[str] = None

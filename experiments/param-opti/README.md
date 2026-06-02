@@ -142,3 +142,8 @@ A `_summary.json` file is also generated with aggregate statistics.
 1. Task Assignment: Selecting
 2. Task Tunning
 3. 
+
+
+# Notes
+
+../../.venv/bin/pytest -s --show-capture=no src/qap/test_exec_pipelines.py -k "test_rdf_pipeline_from_saved_sampled_configs"

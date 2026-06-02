@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Protocol, Union, runtime_checkable, Optional, Tuple, Literal
+from collections import defaultdict
 
 from rdflib import RDF, Graph, RDFS
 from rdflib.term import Identifier, Literal, URIRef
@@ -120,6 +121,25 @@ class RdfLibTripleGraph(TripleGraph):
     def subjects(self) -> Iterable[Term]:
         g = self._graph()
         return g.subjects(unique=True)
+
+    def iter_sp_groups(self) -> Iterable[tuple[Term, Term, list[Term]]]:
+        """Yield (s, p, [o1, o2, ...]) for all subjects/predicates."""
+        g = self._graph()
+        by_sp: dict[tuple[Term, Term], list[Term]] = defaultdict(list)
+        for s, p, o in g.triples((None, None, None)):
+            by_sp[(s, p)].append(o)
+        for (s, p), objs in by_sp.items():
+            yield (s, p, objs)
+
+    def subject_predicate_pairs(self) -> Iterable[tuple[Term, Term]]:
+        """Yield (s, p) for all subjects/predicates."""
+        g = self._graph()
+        return g.subject_predicates(unique=True)
+
+    def objects(self, subject: Term, predicate: Term) -> Iterable[Term]:
+        """Yield (o) for all objects of (s, p)."""
+        g = self._graph()
+        return g.objects(subject, predicate)
 
     def entities(self) -> Iterable[Term]:
         return self.subjects() # TODO inlcude objects that are not subjects
