@@ -7,7 +7,7 @@ from kgpipe.common.models import Data, DataFormat, KgPipePlan, KgStageReport
 from kgpipe.generation.loaders import build_from_conf
 from kgpipe.datasets.multipart_multisource import Dataset
 
-from moviekg.datasets.pipe_out import PipeOut, StageOut
+from kgpipe.io.pipe_out import PipeOut, StageOut
 from moviekg.config import dataset, catalog
 
 
@@ -70,7 +70,12 @@ def run_helper(
     
     tmp_dir = stage_dir / "tmp"
     tmp_dir.mkdir(parents=True, exist_ok=True)
-    pipeline = build_from_conf(pipeline_conf, target_data, tmp_dir.as_posix())
+    pipeline = build_from_conf(
+        name=pipeline_name,
+        conf=pipeline_conf,
+        target_data=target_data,
+        data_dir=tmp_dir.as_posix(),
+    )
 
     stage_dir.mkdir(parents=True, exist_ok=True)
 

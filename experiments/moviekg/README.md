@@ -1,55 +1,63 @@
-# Inc Movie KG
+# MovieKG (KGpipe pipelines)
 
-Documentation and experiment code for incremental KG generation and evaluation.
+This directory contains **MovieKG pipeline definitions and execution helpers** for running incremental KG construction
+pipelines with KGpipe.
 
+Evaluation of the produced KGs is now handled in the **KGI-Bench** repository (Movie benchmark). See:
+- `KGI-Bench/docs/reproduce.md`
+- `KGI-Bench/docs/cli.md` (includes `kgibench evaluate --benchmark movie ...`)
 
-# Dataset Overview
+## What’s in here
 
-- 📊 [Benchmark Datasets](https://doi.org/10.5281/zenodo.17246357)
+- **Pipeline catalog**: `pipeline.conf` (pipeline variants and their task sequences)
+- **Execution helpers**: `src/moviekg/pipelines/` (pytest-driven runners + helpers)
+- **Environment templates**: `env`, `docker_env` (copy to `.env` / `docker.env` for local configuration)
 
-A benchmark derived from Wikipedia and DBpedia in the movie domain covering the three entities: `Film,Person,Company` described and connected by 23(+2) attributes.
-The dataset consists of the following.
+## Running pipelines (local)
 
-Four Splits and three different formats:
-- RDF: RDF from DBpedia, in the three namespaces for seed, reference and source data
-- JSON: json files built from the tree like subgraphs of each film
-- TEXT: abstract text of each film entity from wikipedia
+From `experiments/moviekg/`:
 
-Suplmenetary data:
-- reference entity matches: for entity matching eval (rdf, json)
-- reference entity links: for entity linking eval (text)
-- provannce mappings: for tracing json entity mappings
-- refernce key mappings: for tracing json to rdf schema matching
-
-Available in three sizes:
-- small 100 films: for development
-- medium 1,000 films: for testing
-- large 10,000 films: for benchmarking
-
-# Running
-
-It is possible to execute the experiemnt in a docker environment.
-Adapt the `docker.env` file 
-and choose the dataset size (small, medium, large)
-
-> LLM tasks are disabled by default to enable them add
-> make pipelines-llm as task in [moviekg_docker.sh](../../scripts/moviekg_docker.sh)
-
-Prepare
+```bash
+cp env .env
+make pipelines
 ```
+
+LLM variants:
+
+```bash
+make pipelines-llm
+```
+
+Per-pipeline targets are also available (see `Makefile`), e.g.:
+
+```bash
+make test-json-base
+make test-rdf-base
+make test-msp-all
+```
+
+## Running pipelines (Docker workflow)
+
+This uses the `Makefile` targets to build images + start services and run pipelines inside Docker.
+
+```bash
+cp docker_env docker.env
 make setup_docker
-```
-
-Execution of dataset stats, pipelines, evalaution, and paper content generation
-```
 make run_docker_small
 ```
 
-For more detailed information see also [reproduce.md](../../docs/reproduce.md) or [docs](../../docs/)
+> Note: LLM pipelines are typically disabled by default in Docker orchestration; enable them by adding the
+> `pipelines-llm` step to the orchestration script used in your setup.
 
-# Directory Structure
+## Dataset overview (high level)
 
-## Input Structure
+- Dataset release: `https://doi.org/10.5281/zenodo.17246357`
+- Sizes: `small` (100 films), `medium` (1k), `large` (10k)
+- Formats per split: RDF, JSON, TEXT (incremental splits with seed/reference/source)
+
+## Directory structure
+
+### Input structure (example)
 
 ```
 ├── film_100
@@ -84,12 +92,16 @@ For more detailed information see also [reproduce.md](../../docs/reproduce.md) o
 ├── film_1k[... trunc]
 ```
 
-## Output Structure
+### Output structure (example)
+
+Pipeline outputs are written under `$OUTPUT_DIR/$DATASET_SELECT/<pipeline_name>/stage_<n>/` and include:
+- `result.nt` (and optionally `result_eval.nt`)
+- `exec-plan.json`, `exec-report.json`
+- `tmp/` intermediate artifacts
 
 ```
 ├── small
-│   ├── all_metrics.csv
-│   ├── json_a
+│   ├── json_base
 │   │   ├── stage_1
 │   │   │   ├── exec-plan.json
 │   │   │   ├── exec-report.json
@@ -105,9 +117,6 @@ For more detailed information see also [reproduce.md](../../docs/reproduce.md) o
 │   │       ├── exec-report.json
 │   │       ├── result.nt
 │   │       └── tmp/
-│   ├── json_b[... trunc]
-│   ├── paper
-│   │   ├── test_fig....png
-│   │   └── test_tab.....png
+│   ├── json_alt[... trunc]
 └── medium[... trunc]
 ```

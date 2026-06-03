@@ -113,6 +113,15 @@ class RdfLibTripleGraph(TripleGraph):
         else:
             raise ValueError(f"Unsupported KG type: {type(self.kg)}")
 
+    def get_graph(self) -> Graph:
+        return self._graph()
+
+    def get_ontology_graph(self) -> Graph:
+        if isinstance(self.kg, KG):
+            return self.kg.get_ontology_graph()
+        else:
+            raise ValueError(f"Unsupported KG type: {type(self.kg)}")
+
     def triples(self, triple_pattern: TriplePattern) -> Iterable[Triple]:
         g = self._graph()
         # RDFLib yields (s, p, o) as Identifiers

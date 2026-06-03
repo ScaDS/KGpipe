@@ -1,12 +1,12 @@
 PIPELINE_CONFIG=pipeline.conf
-DATASET_SELECT=medium
+DATASET_SELECT=small
 
-ONTOLOGY_PATH=/home/marvin/project/KGpipe/experiments/moviekg/movie-ontology.ttl
-OUTPUT_DIR=/home/marvin/project/data/out/
+ONTOLOGY_PATH=./data/datasets/movie-ontology.ttl
+OUTPUT_DIR=./data/results/
 
-DATASET_SMALL=/home/marvin/project/data/final/film_100
-DATASET_MEDIUM=/home/marvin/project/data/final/film_1k
-DATASET_LARGE=/home/marvin/project/data/final/film_10k
+DATASET_SMALL=./data/datasets/film_100
+DATASET_MEDIUM=./data/datasets/film_1k
+DATASET_LARGE=./data/datasets/film_10k
 
 EMBEDDER=sentence-transformer
 DBPEDIA_ANNOTATE_URL='http://localhost:2222/rest/annotate'
@@ -17,5 +17,4 @@ KIARA_API_KEY=
 OLLAMA_TOKEN=
 OPENAI_TOKEN=
 LLM_ENDPOINT_URL=
-
 

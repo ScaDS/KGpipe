@@ -32,6 +32,7 @@ site_dir: site
 nav:
   - Home: index.md
   - Quickstart: quickstart.md
+  - KGI-Bench (benchmark site): /kgibench/
   - Concepts:
       - Tasks: tasks.md
       - Pipelines: pipelines.md
@@ -48,5 +49,5 @@ nav:
   - Experiments:
       - Reproduce MovieKG: reproduce.md
   - Other:
-      - Migration: migration.md
+      - Adoption (integrating existing pipelines): adoption.md
       - View/UI: view.md
