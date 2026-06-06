@@ -1,4 +1,4 @@
-# Entity Coverage Metric
+# Entity Coverage Metric (OLD)
 
 The Entity Coverage metric evaluates how well source entities are integrated into the target knowledge graph. It measures the overlap between expected source entities and the entities actually present in the generated knowledge graph.
 

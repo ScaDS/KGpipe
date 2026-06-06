@@ -9,6 +9,8 @@ import codecs
 from kgpipe_eval.metrics.statistics import CountMetric
 from kgpipe_eval.metrics.duplicates import DuplicateMetric
 from kgpipe_eval.metrics.entity_alignment import EntityAlignmentMetric
+from kgpipe_eval.metrics.triple_alignment import TripleAlignmentMetric
+from kgpipe_eval.metrics.consistency_violations import DisjointDomainMetric, DomainMetric, RangeMetric, RelationDirectionMetric, DatatypeMetric, DatatypeFormatMetric
 from kgpipe_eval.utils.kg_utils import KgManager
 from kgpipe_eval.utils.metric_utils import MeasurementKey, parse_eval_results, write_eval_csv
 from kgpipe_eval.config.manager import load_metric_configs, write_default_config_yaml
@@ -68,6 +70,13 @@ def _available_metric_instances() -> dict[str, Any]:
         "CountMetric": CountMetric(),
         "DuplicateMetric": DuplicateMetric(),
         "EntityAlignmentMetric": EntityAlignmentMetric(),
+        "TripleAlignmentMetric": TripleAlignmentMetric(),
+        "DisjointDomainMetric": DisjointDomainMetric(),
+        "DomainMetric": DomainMetric(),
+        "RangeMetric": RangeMetric(),
+        "RelationDirectionMetric": RelationDirectionMetric(),
+        "DatatypeMetric": DatatypeMetric(),
+        "DatatypeFormatMetric": DatatypeFormatMetric(),
     }
 
 def _normalize_key(k: str) -> str:
@@ -76,6 +85,35 @@ def _normalize_key(k: str) -> str:
 
 def _metric_key(metric: Any) -> str:
     return getattr(metric, "key", metric.__class__.__name__)
+
+
+def _metric_description(metric: Any) -> str:
+    cls = metric.__class__
+    desc = getattr(cls, "description", None)
+    if desc:
+        return str(desc).strip()
+    if cls.__doc__:
+        return cls.__doc__.strip().split("\n")[0]
+    compute_doc = cls.compute.__doc__
+    if compute_doc:
+        return compute_doc.strip().split("\n")[0]
+    return "—"
+
+
+def _render_available_metrics_table() -> None:
+    metrics = _available_metric_instances()
+    table = Table(title="Available metrics (eval-new)")
+    table.add_column("Name", style="cyan")
+    table.add_column("Description", style="green")
+
+    for name in sorted(metrics.keys()):
+        table.add_row(name, _metric_description(metrics[name]))
+
+    console.print(table)
+    console.print(
+        f"[dim]{len(metrics)} metric(s). "
+        "Pass one or more with `eval-new run -m <Name>`.[/dim]"
+    )
 
 
 def _build_confs_for_selected_metrics(
@@ -165,6 +203,14 @@ def eval_new_cmd() -> None:
     """
     Evaluation commands for the new metric framework.
     """
+
+
+@eval_new_cmd.command(name="list")
+def list_metrics_cmd() -> None:
+    """
+    List all metrics available to `eval-new run`.
+    """
+    _render_available_metrics_table()
 
 
 @eval_new_cmd.command(name="run")

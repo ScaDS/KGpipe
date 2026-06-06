@@ -139,22 +139,35 @@ kgpipe task <task_name> \
 
 Tip: if you get “Task not found”, run `kgpipe discover ...` first.
 
-## Run a minimal evaluation (Python API)
+## Run a minimal evaluation / metrics (Python API, new `kgpipe_eval`)
 
-KG evaluation is done via evaluators + metric names. See
-`experiments/examples/src/kgpipe_examples/eval_examples.py` for a working minimal example.
+KG evaluation is being migrated to the **new** `kgpipe_eval` package (recommended). A realistic integration-style
+example exists in:
 
-Example sketch (statistical metrics):
+- `experiments/moviekg/src/moviekg/evaluation/test_eval_refactor.py`
+
+Minimal example (basic statistics):
 
 ```python
-from kgpipe.common.model.kg import KG
-from kgpipe.common.model.default_catalog import BasicDataFormats
-from kgpipe.evaluation.aspects.statistical import StatisticalEvaluator, StatisticalConfig, EntityCountMetric
+from pathlib import Path
 
-kg = KG(id="my_kg", name="My KG", path="my_kg.nt", format=BasicDataFormats.RDF_NTRIPLES)
-results = StatisticalEvaluator().evaluate(
-    kg,
-    metrics=[EntityCountMetric().name],
-    config=StatisticalConfig(name="default"),
+from kgpipe.common.model.data import DataFormat
+from kgpipe.common.model.kg import KG
+
+from kgpipe_eval.evaluator import Evaluator
+from kgpipe_eval.metrics.statistics import CountMetric
+from kgpipe_eval.utils.kg_utils import KgManager
+
+kg = KG(
+    id="my_kg",
+    name="My KG",
+    path=Path("my_kg.nt"),
+    format=DataFormat.RDF_NTRIPLES,
 )
+
+tg = KgManager.load_kg(kg)
+results = Evaluator().run(tg, metrics=[CountMetric()])
+
+for r in results:
+    print(r.metric.key, r.summary)
 ```

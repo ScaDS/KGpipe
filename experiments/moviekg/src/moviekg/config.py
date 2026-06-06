@@ -43,22 +43,16 @@ OUTPUT_ROOT = Path(OUTPUT_DIR) / DATASET_SELECT
 
 
 pipeline_types = {
-    "rdf_a": "rdf",
-    "rdf_b": "rdf",
-    "text_a": "text",
-    "text_b": "text",
-    "json_a": "json",
-    "json_b": "json",
+    "rdf_base": "rdf",
+    "rdf_alt": "rdf",
+    "text_base": "text",
+    "text_alt": "text",
+    "json_base": "json",
+    "json_alt": "json",
 }
 
 llm_pipeline_types = {
-    "json_llm_mapping_v1": "json",
-    "rdf_llm_schema_align_v1": "rdf",
-    "text_llm_triple_extract_v1": "text",
-}
-
-ssp = {
-    "rdf": "rdf_a",
-    "json": "json_b",
-    "text": "text_a"
+    "json_llm": "json",
+    "rdf_llm": "rdf",
+    "text_llm": "text",
 }
