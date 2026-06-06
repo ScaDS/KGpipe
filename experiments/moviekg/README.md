@@ -4,8 +4,9 @@ This directory contains **MovieKG pipeline definitions and execution helpers** f
 pipelines with KGpipe.
 
 Evaluation of the produced KGs is now handled in the **KGI-Bench** repository (Movie benchmark). See:
-- `KGI-Bench/docs/reproduce.md`
-- `KGI-Bench/docs/cli.md` (includes `kgibench evaluate --benchmark movie ...`)
+- [KGI-Bench](https://github.com/ScaDS/KGI-Bench)
+- [KGI-Bench-Movie](https://github.com/ScaDS/KGI-Bench/tree/main/benchmarks/kgi-bench-movie)
+- [KGI-Bench/docs/cli.md](https://scads.github.io/KGI-Bench/#cli) (includes `kgibench evaluate --benchmark movie ...`)
 
 ## What’s in here
 
