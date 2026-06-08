@@ -1,7 +1,7 @@
-# Rep Experiments
+# Rep Experiments (Deprecated but working)
 
-Guidelines to run the [experiments](../experiments)
-- see also [moviekg](../experiments/moviekg/README.md)
+Guidelines to run the [experiments](https://github.com/ScaDS/KGpipe/tree/main/experiments)
+- see also [moviekg](https://github.com/ScaDS/KGpipe/blob/main/experiments/moviekg/README.md)
 
 ## Overview
 

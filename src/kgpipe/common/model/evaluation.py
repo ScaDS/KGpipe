@@ -1,28 +1,19 @@
 from __future__ import annotations
 
-import os
-import time
-import uuid
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
-from enum import Enum
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Mapping, Optional, Set, Tuple, Union, Type
-import json
+from typing import Any, Dict
 from uuid import uuid4
-import logging
-import shutil
-from rdflib import Graph
-from pydantic import BaseModel, field_validator
-from pydantic_core import core_schema
 
 from kgpipe.common.model.kg import KG
+
+# TODO move parts from kgpipe.evaluation.base to here
 
 class Metric(ABC):
     """Abstract base class for evaluation metrics."""
     
-    def __init__(self, name: str, description: Optional[str] = None):
+    def __init__(self, name: str, description: str | None = None):
         self.name = name
         self.description = description or name
     
@@ -47,7 +38,7 @@ class EvaluationReport:
     
     def __post_init__(self):
         if not self.id:
-            self.id = str(uuid.uuid4())
+            self.id = str(uuid4().hex)
     
     def add_metric(self, name: str, value: float) -> None:
         """Add a metric result to the report."""

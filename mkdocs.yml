@@ -1,0 +1,55 @@
+site_name: KGpipe
+site_description: Knowledge Graph pipeline evaluation framework
+
+# For GitHub Pages under /<repo>/
+use_directory_urls: true
+
+theme:
+  name: material
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - toc.integrate
+    - search.suggest
+    - search.highlight
+
+markdown_extensions:
+  - admonition
+  - toc:
+      permalink: true
+  - pymdownx.superfences
+  - pymdownx.details
+
+plugins:
+  - search
+
+docs_dir: docs
+site_dir: site
+
+nav:
+  - Home: index.md
+  - Quickstart: quickstart.md
+  - KGI-Bench (benchmark site): https://scads.github.io/KGI-Bench/
+  - Concepts:
+      - Tasks: tasks.md
+      - Pipelines: pipelines.md
+      - Configuration: configuration.md
+      - Parameters: parameters.md
+      - Meta KG: metakg.md
+  - Evaluation:
+      - Overview: evaluation.md
+      - Metrics index: metrics/metrics.md
+      - Entity coverage: metrics/entity_coverage.md
+      - Reference entity alignment: metrics/reference_entity_alignment.md
+      - Reference triple alignment: metrics/reference_triple_alignment.md
+      - Stats counts: metrics/stats_counts.md
+  - Experiments:
+      - Reproduce MovieKG: reproduce.md
+  - Other:
+      - Adoption (integrating existing pipelines): adoption.md
+      - View/UI: view.md
+      - Building docs: create-docs.md
+      - Migration (renamed): migration.md

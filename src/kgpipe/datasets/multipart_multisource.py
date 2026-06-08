@@ -90,8 +90,8 @@ class VerifiedMatches(BaseModel):
     def read_csv(self) -> List[MatchesRow]:
         return read_matches_csv(self.file)
 
-def read_entities_csv(path: Path) -> List[EntitiesRow]:
-    return [EntitiesRow(entity_id=row["entity_id"], entity_label=row["entity_label"], entity_type=row["entity_type"], dataset=row["dataset"]) for row in csv.DictReader(path.open("r"), delimiter="\t")]
+def read_entities_csv(path: Path, delimiter: str = "\t") -> List[EntitiesRow]:
+    return [EntitiesRow(entity_id=row["entity_id"], entity_label=row["entity_label"], entity_type=row["entity_type"], dataset=row["dataset"]) for row in csv.DictReader(path.open("r"), delimiter=delimiter)]
 
 class VerifiedEntities(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
@@ -215,13 +215,15 @@ class SplitIndex(BaseModel):
     #         raise ValueError(f"{self.entities_csv} must contain an 'entity_id' column; got {header}")
     #     return self
 
+# SourceType = Literal["rdf", "json", "text"]
+
 class Split(BaseModel):
     split_id: str
     root: Path
     index: SplitIndex
     kg_reference: Optional[KGBundle] = None
     kg_seed: Optional[KGBundle] = None
-    sources: Dict[str, SourceBundle]
+    sources: Dict[str, SourceBundle] # TODO SourceType
 
     def set_index(self, entities: List[EntitiesRow]):
         self.index.dir.mkdir(parents=True, exist_ok=True)
@@ -548,12 +550,16 @@ def load_dataset(root: Path) -> Dataset:
             if seed_dir.exists():
                 seed_data_dir = seed_dir / "data"
                 seed_meta_dir = seed_dir / "meta"
+                seed_meta = SourceMeta(root=seed_meta_dir)
+                ve = seed_meta_dir / "verified_entities.csv"
+                if ve.exists():
+                    seed_meta.entities = VerifiedEntities(file=ve)
                 seed_parts = list_parts(seed_data_dir, (".nt", ".ttl", ".nq"))
                 kg_seed = KGBundle(
                     kind="seed",
                     root=seed_dir,
                     data=SourceData(dir=seed_data_dir, parts=seed_parts),
-                    meta=SourceMeta(root=seed_meta_dir)
+                    meta=seed_meta
                 )
 
         # sources
