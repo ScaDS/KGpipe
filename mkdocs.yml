@@ -32,7 +32,7 @@ site_dir: site
 nav:
   - Home: index.md
   - Quickstart: quickstart.md
-  - KGI-Bench (benchmark site): /kgibench/
+  - KGI-Bench (benchmark site): https://scads.github.io/KGI-Bench/
   - Concepts:
       - Tasks: tasks.md
       - Pipelines: pipelines.md
