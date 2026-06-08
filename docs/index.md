@@ -34,7 +34,7 @@ cd experiments/examples
 - Define tasks: [Task specification](tasks.md)
 - Build and run pipelines: [Pipelines](pipelines.md)
 - Configure runs and task parameters: [Configuration](configuration.md) and [Parameters](parameters.md)
-- Evaluate generated KGs: [Evaluation](evaluation.md) and [Metrics](metrics/)
+- Evaluate generated KGs: [Evaluation](evaluation.md) and [Metrics](metrics/metrics.md)
 - Understand the internal “PipeKG”: [Meta KG](metakg.md)
 
 ## Other Links

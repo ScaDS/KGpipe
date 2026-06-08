@@ -51,3 +51,5 @@ nav:
   - Other:
       - Adoption (integrating existing pipelines): adoption.md
       - View/UI: view.md
+      - Building docs: create-docs.md
+      - Migration (renamed): migration.md
