@@ -1,6 +1,6 @@
 .PHONY:
 
-DATASET_URL := https://zenodo.org/record/17246358/files/inc_movie_kg_datasets.tar.gz?download=1
+ZENODO_RECORD := 17246357
 BASE_DIR := ./data
 
 # === Main ===
@@ -68,7 +68,9 @@ clean:
 
 $(BASE_DIR)/datasets.tar.gz:
 	@mkdir -p $(BASE_DIR)
-	@cd $(BASE_DIR) && wget $(DATASET_URL) -O datasets.tar.gz
+	@cd $(BASE_DIR) && wget "$$(curl -sL https://zenodo.org/api/records/$(ZENODO_RECORD) \
+	  | jq -r '.files[] | select(.key=="inc_movie_kg_datasets.tar.gz") | .links.self')" \
+	  -O datasets.tar.gz
 
 $(BASE_DIR)/datasets/.extracted: $(BASE_DIR)/datasets.tar.gz
 	@mkdir -p $(BASE_DIR)/datasets
@@ -83,10 +85,10 @@ datasets-eval:
 # === RDF ===
 
 test-rdf-base:
-	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k rdf_base
+	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k rdf_a
 
 test-rdf-alt:
-	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k rdf_alt
+	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k rdf_b
 
 test-rdf-llm:
 	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k rdf_llm
@@ -94,10 +96,10 @@ test-rdf-llm:
 # === JSON ===
 
 test-json-base:
-	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k json_base
+	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k json_a
 
 test-json-alt:
-	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k json_alt
+	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k json_b
 
 test-json-llm:
 	pytest -v -s src/moviekg/pipelines/test_inc_ssp.py -k json_llm
@@ -105,10 +107,10 @@ test-json-llm:
 # === TEXT ===
 
 test-text-base:
-	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k text_base
+	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k text_a
 
 test-text-alt:
-	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k text_alt
+	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k text_b
 
 test-text-llm:
 	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k text_llm

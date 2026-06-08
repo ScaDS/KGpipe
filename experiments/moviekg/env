@@ -1,7 +1,7 @@
 PIPELINE_CONFIG=pipeline.conf
 DATASET_SELECT=small
 
-ONTOLOGY_PATH=./data/datasets/movie-ontology.ttl
+ONTOLOGY_PATH=./data/datasets/film_10k/ontology.ttl
 OUTPUT_DIR=./data/results/
 
 DATASET_SMALL=./data/datasets/film_100
