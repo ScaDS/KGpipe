@@ -3,11 +3,11 @@ import json
 from pathlib import Path
 import pandas as pd
 from rdflib import RDFS, URIRef, Graph, RDF
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from kgpipe.util.embeddings.st_emb import get_model
 import numpy as np
-from kgpipe.datasets.multipart_multisource import read_entities_csv
-
+from kgpipe.datasets.multipart_multisource import read_entities_csv, EntitiesRow
+from typing import Any
 # model
 
 # entity dict
@@ -41,6 +41,7 @@ class BinaryClassificationResult:
     fp: int
     tn: int
     fn: int
+    details: dict[str, Any] = field(default_factory=dict)
     
     def accuracy(self) -> float:
         return (self.tp + self.tn) / (self.tp + self.tn + self.fp + self.fn)
@@ -63,6 +64,7 @@ class BinaryClassificationResult:
             "fp": self.fp,
             "tn": self.tn,
             "fn": self.fn,
+            "details": self.details,
             "accuracy": self.accuracy(),
             "precision": self.precision(),
             "recall": self.recall(),
@@ -102,7 +104,7 @@ def load_entity_dict_from_csv(path: Path, delimiter: str = ",") -> dict:
 
     return entity_dict
 
-def load_entity_dict(path: Path) -> dict:
+def load_entity_dict(path: Path) -> dict[str, EntitiesRow]:
     """
     """
     if path.name.endswith(".json"):
@@ -244,8 +246,9 @@ def evaluate_source_typed_entity_coverage(kg: KG, entity_dict_path: Path) -> Ent
     """
     checks expected & integrated source typed entity overlap using label embeddings
     """
-    model = get_model()
-    entity_dict = load_entity_dict(entity_dict_path)
+    model = get_model() # TODO this is not used here...
+    # TODO we need to substract the seed from the found entities...
+    entity_dict: dict[str, EntitiesRow] = load_entity_dict(entity_dict_path)
 
     
     expected_entity_label_type_pairs = []
@@ -270,15 +273,22 @@ def evaluate_source_typed_entity_coverage(kg: KG, entity_dict_path: Path) -> Ent
     found_eltp = set(found_entity_label_type_pairs)
     expected_eltp = set(expected_entity_label_type_pairs)
     
-    tp_set = found_eltp & expected_eltp
-    fp_set = found_eltp - expected_eltp
-    fn_set = expected_eltp - found_eltp
+    tp_set = found_eltp & expected_eltp # correct entity type pair
+    fp_set = found_eltp - expected_eltp # wrong entity type pair
+    fn_set = expected_eltp - found_eltp # missing entity type pair
 
     return BinaryClassificationResult(
         tp=len(tp_set),
         fp=len(fp_set),
         fn=len(fn_set),
-        tn=0
+        tn=0,
+        details={
+            "found_entity_label_type_pairs": found_entity_label_type_pairs,
+            "expected_entity_label_type_pairs": expected_entity_label_type_pairs,
+            "tp_set": len(tp_set),
+            "fp_set": len(fp_set),
+            "fn_set": len(fn_set)
+        }
     )
 
 def evaluate_reference_triple_alignment(kg: KG, reference_kg: KG) -> TripleAlignmentResult:

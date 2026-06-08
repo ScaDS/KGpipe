@@ -3,7 +3,7 @@ Core LLM client and base task functionality for data integration tasks.
 """
 
 import os
-from typing import Any, Dict, Generic, Optional, TypeVar
+from typing import Any, Dict, Generic, Optional, TypeVar, cast
 
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -92,7 +92,7 @@ class LLMClient:
                 )
 
             print(f"INFO: {self.api_type}_call_with_tool {type(schema_class)}")
-            dict_val, _model_val = tool_call(
+            dict_val, model_val = tool_call(
                 endpoint_url=endpoint,
                 api_key=self.token,
                 model_name=self.model_name,
@@ -101,10 +101,16 @@ class LLMClient:
                 system_prompt=system_prompt,
                 seed=self.seed,
             )
+            # Prefer returning the validated Pydantic instance when possible.
+            if isinstance(schema_class, type) and issubclass(schema_class, BaseModel):
+                if isinstance(model_val, BaseModel):
+                    return model_val
+                if isinstance(dict_val, dict):
+                    return cast(type[T], schema_class).model_validate(dict_val)
             return dict_val
 
         print(f"INFO: ollama_call with {type(schema_class)}")
-        return ollama_call(
+        raw_val = ollama_call(
             endpoint_url=self.endpoint_url,
             api_key=self.token,
             model_name=self.model_name,
@@ -113,6 +119,10 @@ class LLMClient:
             system_prompt=system_prompt,
             seed=self.seed,
         )
+        # Ollama path currently returns raw JSON; upgrade to a validated model when requested.
+        if isinstance(schema_class, type) and issubclass(schema_class, BaseModel) and isinstance(raw_val, dict):
+            return cast(type[T], schema_class).model_validate(raw_val)
+        return raw_val
 
 
 class BaseTask(Generic[T]):

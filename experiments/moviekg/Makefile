@@ -1,6 +1,6 @@
 .PHONY:
 
-DATASET_URL := https://zenodo.org/record/17246358/files/inc_movie_kg_datasets.tar.gz?download=1
+ZENODO_RECORD := 17246357
 BASE_DIR := ./data
 
 # === Main ===
@@ -15,13 +15,6 @@ pipelines:
 
 pipelines-llm:
 	pytest -v src/moviekg/pipelines/ -k "llm"
-
-evaluation:
-	pytest -v src/moviekg/evaluation/ -k "not llm"
-
-paper:
-	pytest -v src/moviekg/evaluation/test_inc_msp_evaluation.py -k concat;
-	pytest -v src/moviekg/paper/test_figtab.py;
 
 # === Docker ===
 
@@ -75,7 +68,9 @@ clean:
 
 $(BASE_DIR)/datasets.tar.gz:
 	@mkdir -p $(BASE_DIR)
-	@cd $(BASE_DIR) && wget $(DATASET_URL) -O datasets.tar.gz
+	@cd $(BASE_DIR) && wget "$$(curl -sL https://zenodo.org/api/records/$(ZENODO_RECORD) \
+	  | jq -r '.files[] | select(.key=="inc_movie_kg_datasets.tar.gz") | .links.self')" \
+	  -O datasets.tar.gz
 
 $(BASE_DIR)/datasets/.extracted: $(BASE_DIR)/datasets.tar.gz
 	@mkdir -p $(BASE_DIR)/datasets
@@ -87,98 +82,40 @@ download-datasets: $(BASE_DIR)/datasets/.extracted
 datasets-eval:
 	pytest -v src/moviekg/datasets/test_evaluate_film_data.py
 
-# === SSPs ===
-
-test-ssp-all:
-	time pytest -s -v src/moviekg/pipelines/test_inc_ssp.py
-
-eval-ssp-all:
-	time pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py
-
-test-ssp-classic:
-	time pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k "not llm_"
-
-test-ssp-llm:
-	time pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k "llm_"
-
-eval-ssp-llm:
-	time pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k "llm_"
-
 # === RDF ===
 
-test-rdf-a:
+test-rdf-base:
 	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k rdf_a
 
-eval-rdf-a:
-	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k rdf_a
-
-test-rdf-b:
+test-rdf-alt:
 	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k rdf_b
 
-eval-rdf-b:
-	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k rdf_b
-
-test-rdf-c:
+test-rdf-llm:
 	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k rdf_llm
-
-eval-rdf-c:
-	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k rdf_llm
 
 # === JSON ===
 
-test-json-a:
+test-json-base:
 	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k json_a
 
-eval-json-a:
-	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k json_a
-
-test-json-b:
+test-json-alt:
 	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k json_b
 
-eval-json-b:
-	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k json_b
-
-test-json-c:
+test-json-llm:
 	pytest -v -s src/moviekg/pipelines/test_inc_ssp.py -k json_llm
-
-eval-json-c:
-	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k json_llm
 
 # === TEXT ===
 
-test-text-a:
+test-text-base:
 	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k text_a
 
-eval-text-a:
-	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k text_a
-
-test-text-b:
+test-text-alt:
 	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k text_b
 
-eval-text-b:
-	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k text_b
-
-test-text-c:
+test-text-llm:
 	pytest -s -v src/moviekg/pipelines/test_inc_ssp.py -k text_llm
-
-eval-text-c:
-	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k text_llm
 
 # === MSPs ===
 
 test-msp-all:
 	pytest -s -v src/moviekg/pipelines/test_inc_msp.py
-
-eval-msp-all:
-	pytest -s -v src/moviekg/evaluation/test_inc_msp_evaluation.py
-
-eval-msp-rjt:
-	pytest -s -v src/moviekg/evaluation/test_inc_msp_evaluation.py -k rdf-json-text
-
-# === Paper ===
-
-concatenate-metrics:
-	pytest -s -v src/moviekg/evaluation/test_inc_ssp_evaluation.py -k test_concatenate_long_table_rows
-
-paper-figtab:
-	pytest -s -v src/moviekg/paper/test_figtab.py

@@ -1,2 +1,7 @@
 output/
 repos/
+output_qap_mock/
+testdata/
+tmp/
+data/
+data

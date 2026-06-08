@@ -422,8 +422,14 @@ class SourceTypedEntityCoverageMetric(Metric):
 
         result = evaluate_source_typed_entity_coverage(kg, verified_source_entities_path)
 
+        # log details to file
+        with open("source_typed_entity_coverage_details.json", "w") as f:
+            json.dump(result.__dict__(), f)
+
         return MetricResult(
             name=self.name,
+            kg=kg,
+            metric=self,
             value=result.f1_score(),
             normalized_score=result.f1_score(),
             details=result.__dict__(),
@@ -714,6 +720,8 @@ class ReferenceEvaluator(AspectEvaluator):
                 print(traceback.format_exc())
                 error_result = MetricResult(
                     name=metric.name,
+                    kg=kg,
+                    metric=metric,
                     value=0.0,
                     normalized_score=0.0,
                     details={"error": str(e)},

@@ -19,6 +19,7 @@ def pipe_example():
     tmp_data_dir = tempfile.mkdtemp()
     input_data = Data(path=os.path.join(tmp_data_dir, "input.special_in"), format=ExtendedFormats.SPECIAL_IN)
     output_data = Data(path=os.path.join(tmp_data_dir, "output.special_kg"), format=ExtendedFormats.SPECIAL_KG)
+    input_data.path.touch()
     
     tasks = [pipe_task_python, pipe_task_docker, pipe_task_remote]
 

@@ -174,3 +174,6 @@ class TestParameterVisualizer:
         path = viz.plot_embedding_scatter()
         assert path.exists()
 
+
+
+
