@@ -13,6 +13,6 @@ RUN --mount=type=cache,target=/root/.cache/uv \
 
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv pip install -e .
+    uv pip install -e ".[ml,cpu]"
 
 ENTRYPOINT ["kgpipe"]
