@@ -50,7 +50,25 @@ at the text-pipelines root
 
 ---
 
-### 3. Evaluate extraction results
+### 3. Convert ground truth triples to N-Triples
+
+Before evaluating, convert the JSON-lines ground truth file into N-Triples format so it can be used as a reference KG.
+
+Run `groundtruth_to_nt.py`:
+
+```bash
+python groundtruth_to_nt.py path/to/triples.jsonl path/to/ontology.ttl path/to/output.nt
+```
+
+| Argument        | Description                                      |
+|-----------------|--------------------------------------------------|
+| `data_file`     | Path to the JSON-lines ground truth triple file  |
+| `ontology_file` | Path to the RDF/OWL ontology file                |
+| `output_file`   | Output `.nt` file                                |
+
+---
+
+### 4. Evaluate extraction results
 
 After running a pipeline, evaluate the output knowledge graph against a reference KG.
 
@@ -106,6 +124,12 @@ python run.py ./data/txt ./output --pipeline corenlp_with_linking
 python run.py ./data/txt ./output --pipeline genie_with_linking
 ```
 
+### Ground Truth Conversion
+
+```bash
+python groundtruth_to_nt.py ./data/triples.jsonl ./data/ontology.ttl ./data/reference.nt
+```
+
 ### Evaluation
 
 ```bash
@@ -120,17 +144,15 @@ python evaluate.py \
 ## Workflow Overview
 
 ```text
-.jsonl
-   ↓
-jsonl_to_txt.py
-   ↓
-.txt
-   ↓
-run.py
-   ↓
-Triples / Linked Entities / JSON Output
-   ↓
-evaluate.py
-   ↓
-eval_results.json
+.jsonl (ground truth)          .jsonl (dataset)
+        ↓                              ↓
+groundtruth_to_nt.py          jsonl_to_txt.py
+        ↓                              ↓
+  reference.nt                       .txt
+        │                              ↓
+        │                           run.py
+        │                              ↓
+        └──────────► evaluate.py ◄─── kg.nt
+                          ↓
+                   eval_results.json
 ```
