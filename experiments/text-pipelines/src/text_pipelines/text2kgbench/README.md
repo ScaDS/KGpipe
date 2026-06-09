@@ -49,6 +49,37 @@ If a pipeline with linking is used, DBPEDIA_ANNOTATE_URL is required in the [.en
 at the text-pipelines root
 
 ---
+
+### 3. Evaluate extraction results
+
+After running a pipeline, evaluate the output knowledge graph against a reference KG.
+
+Run `evaluate.py`:
+
+```bash
+python evaluate.py \
+  --kg-path path/to/kg.nt \
+  --reference-kg path/to/reference.nt \
+  --output-dir path/to/results/
+```
+
+| Argument        | Description                                          |
+|-----------------|------------------------------------------------------|
+| `--kg-path`     | Path to the extracted knowledge graph file           |
+| `--reference-kg`| Path to the reference knowledge graph for comparison |
+| `--output-dir`  | Directory where `eval_results.json` will be written  |
+
+The evaluation computes the following metrics and writes them to `eval_results.json`:
+
+| Metric                   | Description                                            |
+|--------------------------|--------------------------------------------------------|
+| `CountMetric`            | Counts entities and triples in the KG                  |
+| `EntityAlignmentMetric`  | Aligns entities to the reference KG via label embedding|
+| `DuplicateMetric`        | Detects duplicate entities                             |
+| `TripleAlignmentMetric`  | Aligns triples against the reference KG                |
+
+---
+
 ## Examples
 
 ### CoreNLP
@@ -75,6 +106,15 @@ python run.py ./data/txt ./output --pipeline corenlp_with_linking
 python run.py ./data/txt ./output --pipeline genie_with_linking
 ```
 
+### Evaluation
+
+```bash
+python evaluate.py \
+  --kg-path ./output/kg.nt \
+  --reference-kg ./data/reference.nt \
+  --output-dir ./output/eval/
+```
+
 ---
 
 ## Workflow Overview
@@ -89,4 +129,8 @@ jsonl_to_txt.py
 run.py
    ↓
 Triples / Linked Entities / JSON Output
+   ↓
+evaluate.py
+   ↓
+eval_results.json
 ```
