@@ -342,7 +342,7 @@ def genie_task_docker(inputs: TaskInput, outputs: TaskOutput):
 
 @Registry.task(
     input_spec={"input": DataFormat.TEXT},
-    output_spec={"output": DataFormat.JSON},
+    output_spec={"output": DataFormat.TE_JSON},
 )
 def rebel_task_docker(inputs: TaskInput, outputs: TaskOutput):
     """
