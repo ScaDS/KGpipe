@@ -101,7 +101,7 @@ def run(input_path, output_path):
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
 
-        with open(output_path + ".te.json", "w", encoding="utf-8") as f:
+        with open(output_path + ".json", "w", encoding="utf-8") as f:
             json.dump({"triples": triples, "chains": []}, f, indent=2)
 
 
