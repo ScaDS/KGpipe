@@ -340,6 +340,36 @@ def genie_task_docker(inputs: TaskInput, outputs: TaskOutput):
     result = client()
     print(f"GenIE completed: {result}")
 
+@Registry.task(
+    input_spec={"input": DataFormat.TEXT},
+    output_spec={"output": DataFormat.JSON},
+)
+def rebel_task_docker(inputs: TaskInput, outputs: TaskOutput):
+    """
+    REBEL information extraction task that runs in a Docker container.
+
+    Args:
+        inputs: Dictionary mapping input names to Data objects
+        outputs: Dictionary mapping output names to Data objects
+    """
+
+    all_data = list(inputs.values()) + list(outputs.values())
+    volumes, host_to_container = get_docker_volume_bindings(all_data)
+
+    source_path = remap_data_path_for_container(inputs["input"], host_to_container)
+    output_path = remap_data_path_for_container(outputs["output"], host_to_container)
+
+    client = docker_client(
+        image="rebel:latest",
+        command=["rebel.sh",
+                 str(source_path.path),
+                 str(output_path.path)],
+        volumes=volumes,
+    )
+
+    result = client()
+    print(f"REBEL completed: {result}")
+
 
 @Registry.task(
     input_spec={"input": DataFormat.JSON},

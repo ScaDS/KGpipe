@@ -11,7 +11,7 @@ from kgpipe_tasks.text_processing import corenlp_openie_extraction, corenlp_exch
 from kgpipe_tasks.transform_interop import aggregate3_te_json
 
 from text_pipelines import text_pipes
-from text_pipelines.text_tasks import genie_task_docker, genie_exchange
+from text_pipelines.text_tasks import genie_task_docker, genie_exchange, rebel_task_docker
 
 def run(input_path, output_path, seed_path, pipeline):
     pipelines = {
@@ -38,6 +38,15 @@ def run(input_path, output_path, seed_path, pipeline):
         "genie_with_linking": [
             genie_task_docker,
             genie_exchange,
+            label_alias_embedding_rl,
+            dbpedia_spotlight_ner_nel,
+            dbpedia_spotlight_exchange,
+            aggregate3_te_json,
+            construct_rdf_from_te_json_mappings_only
+        ],
+
+        "rebel_with_linking": [
+            rebel_task_docker,
             label_alias_embedding_rl,
             dbpedia_spotlight_ner_nel,
             dbpedia_spotlight_exchange,
@@ -103,7 +112,8 @@ if __name__ == "__main__":
             "corenlp",
             "genie",
             "corenlp_with_linking",
-            "genie_with_linking"
+            "genie_with_linking",
+            "rebel_with_linking"
         ],
         default="corenlp",
         help="Select which pipeline to use"
