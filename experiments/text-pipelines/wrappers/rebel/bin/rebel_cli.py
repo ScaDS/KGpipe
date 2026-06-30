@@ -1,6 +1,6 @@
+import json
 import sys
 import os
-import re
 
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
@@ -20,36 +20,49 @@ def main():
 
 
 def extract_triples(text):
-    triplets = []
-    relation, subject, relation, object_ = '', '', '', ''
-    text = text.strip()
-    current = 'x'
-    for token in text.replace("<s>", "").replace("<pad>", "").replace("</s>", "").split():
-        if token == "<triplet>":
-            current = 't'
-            if relation != '':
-                triplets.append({'head': subject.strip(), 'type': relation.strip(), 'tail': object_.strip()})
-                relation = ''
-            subject = ''
-        elif token == "<subj>":
-            current = 's'
-            if relation != '':
-                triplets.append({'head': subject.strip(), 'type': relation.strip(), 'tail': object_.strip()})
-            object_ = ''
-        elif token == "<obj>":
-            current = 'o'
-            relation = ''
-        else:
-            if current == 't':
-                subject += ' ' + token
-            elif current == 's':
-                object_ += ' ' + token
-            elif current == 'o':
-                relation += ' ' + token
-    if subject != '' and relation != '' and object_ != '':
-        triplets.append({'head': subject.strip(), 'type': relation.strip(), 'tail': object_.strip()})
-    return triplets
+    triples = []
 
+    subject, predicate, object_ = '', '', ''
+    current = None
+
+    text = text.strip()
+    tokens = text.replace("<s>", "").replace("<pad>", "").replace("</s>", "").split()
+
+    for token in tokens:
+        if token == "<triplet>":
+            current = "t"
+
+            if subject and predicate and object_:
+                triples.append({
+                    "subject": {"surface_form": subject.strip()},
+                    "predicate": {"surface_form": predicate.strip()},
+                    "object": {"surface_form": object_.strip()}
+                })
+
+            subject, predicate, object_ = '', '', ''
+
+        elif token == "<subj>":
+            current = "s"
+
+        elif token == "<obj>":
+            current = "o"
+
+        else:
+            if current == "t":
+                subject += " " + token
+            elif current == "o":
+                object_ += " " + token
+            elif current == "s":
+                predicate += " " + token
+
+    if subject and predicate and object_:
+        triples.append({
+            "subject": {"surface_form": subject.strip()},
+            "predicate": {"surface_form": predicate.strip()},
+            "object": {"surface_form": object_.strip()}
+        })
+
+    return triples
 
 def run(input_path, output_path):
     model_name = "Babelscape/rebel-large"
@@ -88,8 +101,8 @@ def run(input_path, output_path):
         if output_dir:
             os.makedirs(output_dir, exist_ok=True)
 
-        with open(output_path, "w", encoding="utf-8") as f:
-            f.write(str(triples))
+        with open(output_path + ".te.json", "w", encoding="utf-8") as f:
+            json.dump({"triples": triples, "chains": []}, f, indent=2)
 
 
 if __name__ == "__main__":
