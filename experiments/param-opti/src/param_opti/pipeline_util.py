@@ -1,5 +1,0 @@
-
-
-
-# check current implementation state
-
