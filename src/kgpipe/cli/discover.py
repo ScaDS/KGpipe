@@ -16,13 +16,72 @@ from kgpipe.common.discovery import (
     discover_entry_points,
     discover_local_modules,
     get_registered_tasks,
-    get_registered_pipelines,
-    get_registered_metrics,
-    get_registered_evaluators,
 )
 
 # Initialize Rich console for pretty output
 console = Console()
+
+
+def _function_path(func) -> str:
+    return f"{func.__module__}.{func.__qualname__}"
+
+
+def _component_name(factory) -> str:
+    try:
+        obj = factory()
+        return getattr(obj, "name", factory.__name__)
+    except Exception:
+        return factory.__name__
+
+
+def _show_component_table(title: str, items: list[tuple[str, str]]) -> None:
+    if not items:
+        return
+
+    table = Table(title=title)
+    table.add_column("Name", style="cyan")
+    table.add_column("Function Path", style="green")
+
+    for name, path in sorted(items, key=lambda item: item[0].lower()):
+        table.add_row(name, path)
+
+    console.print(table)
+    console.print()
+
+
+def _show_discovered_components() -> None:
+    """Display discovered components with names and function paths."""
+    from kgpipe.common.registry import Registry
+
+    tasks = get_registered_tasks()
+    pipelines = Registry.list("pipeline")
+    metrics = Registry.list("metric")
+    evaluators = Registry.list("evaluator")
+
+    console.print()
+    console.print("[bold blue]Discovered Components:[/bold blue]")
+    console.print(
+        f"Tasks: {len(tasks)}, Pipelines: {len(pipelines)}, "
+        f"Metrics: {len(metrics)}, Evaluators: {len(evaluators)}"
+    )
+    console.print()
+
+    _show_component_table(
+        "Tasks",
+        [(task.name, _function_path(task.function)) for task in tasks],
+    )
+    _show_component_table(
+        "Pipelines",
+        [(_component_name(factory), _function_path(factory)) for factory in pipelines],
+    )
+    _show_component_table(
+        "Metrics",
+        [(_component_name(factory), _function_path(factory)) for factory in metrics],
+    )
+    _show_component_table(
+        "Evaluators",
+        [(_component_name(factory), _function_path(factory)) for factory in evaluators],
+    )
 
 
 def discover_package(package_name: str) -> bool:
@@ -85,7 +144,7 @@ def discover_module_path(module_path: str) -> bool:
     "module_paths",
     multiple=True,
     type=click.Path(exists=True),
-    help="Path(s) to module directory or file to discover",
+    help="Path(s) to module directory or file to discover (searches recursively)",
 )
 @click.option(
     "--all",
@@ -170,22 +229,5 @@ def discover_cmd(
     
     # Show discovered components if requested
     if show_results:
-        console.print()
-        console.print("[bold blue]Discovered Components:[/bold blue]")
-        
-        tasks = get_registered_tasks()
-        pipelines = get_registered_pipelines()
-        metrics = get_registered_metrics()
-        evaluators = get_registered_evaluators()
-        
-        table = Table(title="Registered Components")
-        table.add_column("Type", style="cyan")
-        table.add_column("Count", style="green")
-        
-        table.add_row("Tasks", str(len(tasks)))
-        table.add_row("Pipelines", str(len(pipelines)))
-        table.add_row("Metrics", str(len(metrics)))
-        table.add_row("Evaluators", str(len(evaluators)))
-        
-        console.print(table)
+        _show_discovered_components()
 

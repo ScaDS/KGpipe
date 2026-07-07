@@ -21,6 +21,7 @@ from .clean import clean_cmd
 from .task import task_cmd
 from .discover import discover_cmd
 from .eval_new import eval_new_cmd
+from .exec import exec_cmd
 # from .rank import rank_cmd
 # Initialize Rich console for pretty output
 console = Console()
@@ -83,6 +84,7 @@ cli.add_command(clean_cmd)
 cli.add_command(task_cmd)
 cli.add_command(discover_cmd)
 cli.add_command(eval_new_cmd)
+cli.add_command(exec_cmd)
 # cli.add_command(rank_cmd)
 
 if __name__ == "__main__":
