@@ -1,0 +1,253 @@
+from __future__ import annotations
+
+import random
+from typing import Any, Dict, List, Optional, Sequence, Set
+
+from kgpipe_search.configuration import (
+    build_pipeline_config_for_task_combo,
+    enumerate_valid_task_combinations,
+    pipeline_config_snapshot_key,
+    sample_valid_pipeline_config,
+)
+from kgpipe_search.definitions import PipelineConfig, PipelineLayout
+
+
+def random_initialization(
+    search_space: Dict[str, Dict[str, Any]],
+    pipeline_layout: PipelineLayout,
+    *,
+    budget: int,
+    rng: Optional[random.Random] = None,
+) -> List[PipelineConfig]:
+    """Sample `budget` unique valid pipeline configurations uniformly at random."""
+    if budget <= 0:
+        return []
+
+    draw = rng or random.Random()
+    configs: List[PipelineConfig] = []
+    seen: Set[str] = set()
+    attempts = 0
+    max_attempts = max(1000, budget * 200)
+
+    while len(configs) < budget and attempts < max_attempts:
+        attempts += 1
+        candidate = sample_valid_pipeline_config(search_space, pipeline_layout, rng=draw)
+        key = pipeline_config_snapshot_key(candidate, search_space)
+        if key in seen:
+            continue
+        seen.add(key)
+        configs.append(candidate)
+
+    if len(configs) < budget:
+        raise RuntimeError(
+            f"Failed to sample {budget} unique initial configs (got {len(configs)})."
+        )
+
+    return configs
+
+
+def implementation_aware_initialization(
+    search_space: Dict[str, Dict[str, Any]],
+    pipeline_layout: PipelineLayout,
+    *,
+    budget: int,
+    y: int = 1,
+    rng: Optional[random.Random] = None,
+) -> List[PipelineConfig]:
+    """
+    Implementation-aware initialization.
+
+    Enumerate (or sample) valid implementation assignments (task combinations) and,
+    for each such assignment, generate `y` configurations by sampling parameters.
+    """
+    if budget <= 0:
+        return []
+    if y <= 0:
+        raise ValueError("y must be >= 1")
+
+    draw = rng or random.Random()
+    all_combos = enumerate_valid_task_combinations(search_space, pipeline_layout)
+    if not all_combos:
+        raise ValueError("No valid implementation assignments found.")
+
+    max_combos = max(1, budget // y)
+    combos: Sequence[List[str]]
+    if len(all_combos) <= max_combos:
+        combos = all_combos
+    else:
+        combos = draw.sample(all_combos, k=max_combos)
+
+    configs: List[PipelineConfig] = []
+    seen: Set[str] = set()
+
+    for combo in combos:
+        for _ in range(y):
+            if len(configs) >= budget:
+                break
+            candidate = build_pipeline_config_for_task_combo(
+                search_space,
+                combo,
+                rng=draw,
+                template=None,
+            )
+            key = pipeline_config_snapshot_key(candidate, search_space)
+            if key in seen:
+                continue
+            seen.add(key)
+            configs.append(candidate)
+
+        if len(configs) >= budget:
+            break
+
+    if len(configs) < budget:
+        remaining = budget - len(configs)
+        filler = random_initialization(
+            search_space,
+            pipeline_layout,
+            budget=remaining,
+            rng=draw,
+        )
+        for candidate in filler:
+            key = pipeline_config_snapshot_key(candidate, search_space)
+            if key in seen:
+                continue
+            seen.add(key)
+            configs.append(candidate)
+            if len(configs) >= budget:
+                break
+
+    if len(configs) < budget:
+        raise RuntimeError(
+            f"Failed to generate {budget} unique initial configs (got {len(configs)})."
+        )
+
+    return configs
+
+from __future__ import annotations
+
+import random
+from typing import Any, Dict, List, Optional, Sequence, Set
+
+from kgpipe_search.configuration import (
+    build_pipeline_config_for_task_combo,
+    enumerate_valid_task_combinations,
+    pipeline_config_snapshot_key,
+    sample_valid_pipeline_config,
+)
+from kgpipe_search.definitions import PipelineConfig, PipelineLayout
+
+
+def random_initialization(
+    search_space: Dict[str, Dict[str, Any]],
+    pipeline_layout: PipelineLayout,
+    *,
+    budget: int,
+    rng: Optional[random.Random] = None,
+) -> List[PipelineConfig]:
+    """Sample `budget` unique valid pipeline configurations uniformly at random."""
+    if budget <= 0:
+        return []
+
+    draw = rng or random.Random()
+    configs: List[PipelineConfig] = []
+    seen: Set[str] = set()
+    attempts = 0
+    max_attempts = max(1000, budget * 200)
+
+    while len(configs) < budget and attempts < max_attempts:
+        attempts += 1
+        candidate = sample_valid_pipeline_config(search_space, pipeline_layout, rng=draw)
+        key = pipeline_config_snapshot_key(candidate, search_space)
+        if key in seen:
+            continue
+        seen.add(key)
+        configs.append(candidate)
+
+    if len(configs) < budget:
+        raise RuntimeError(
+            f"Failed to sample {budget} unique initial configs (got {len(configs)})."
+        )
+
+    return configs
+
+
+def implementation_aware_initialization(
+    search_space: Dict[str, Dict[str, Any]],
+    pipeline_layout: PipelineLayout,
+    *,
+    budget: int,
+    y: int = 1,
+    rng: Optional[random.Random] = None,
+) -> List[PipelineConfig]:
+    """
+    Implementation-aware initialization from the paper.
+
+    Enumerate (or sample) valid implementation assignments (task combinations) and,
+    for each such assignment, generate `y` configurations by sampling parameters.
+    """
+    if budget <= 0:
+        return []
+    if y <= 0:
+        raise ValueError("y must be >= 1")
+
+    draw = rng or random.Random()
+    all_combos = enumerate_valid_task_combinations(search_space, pipeline_layout)
+    if not all_combos:
+        raise ValueError("No valid implementation assignments found.")
+
+    # Determine how many implementation assignments we can cover.
+    max_combos = max(1, budget // y)
+    combos: Sequence[List[str]]
+    if len(all_combos) <= max_combos:
+        combos = all_combos
+    else:
+        # Sample without replacement.
+        combos = draw.sample(all_combos, k=max_combos)
+
+    configs: List[PipelineConfig] = []
+    seen: Set[str] = set()
+
+    for combo in combos:
+        for _ in range(y):
+            if len(configs) >= budget:
+                break
+            candidate = build_pipeline_config_for_task_combo(
+                search_space,
+                combo,
+                rng=draw,
+                template=None,
+            )
+            key = pipeline_config_snapshot_key(candidate, search_space)
+            if key in seen:
+                continue
+            seen.add(key)
+            configs.append(candidate)
+
+        if len(configs) >= budget:
+            break
+
+    # If we still have budget left (due to duplicates), fill with random unique samples.
+    if len(configs) < budget:
+        remaining = budget - len(configs)
+        filler = random_initialization(
+            search_space,
+            pipeline_layout,
+            budget=remaining,
+            rng=draw,
+        )
+        for candidate in filler:
+            key = pipeline_config_snapshot_key(candidate, search_space)
+            if key in seen:
+                continue
+            seen.add(key)
+            configs.append(candidate)
+            if len(configs) >= budget:
+                break
+
+    if len(configs) < budget:
+        raise RuntimeError(
+            f"Failed to generate {budget} unique initial configs (got {len(configs)})."
+        )
+
+    return configs
+
