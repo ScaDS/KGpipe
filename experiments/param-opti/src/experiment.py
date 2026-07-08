@@ -2,19 +2,21 @@
 """
 Run and evaluate pipeline configs from fixture files.
 
-Example:
+Example (quick test with the small sampled fixture, 6 RDF / 4 text configs):
     python experiment.py \\
         --seed data/bench/.../seed/data.nt \\
         --source data/bench/.../sources/rdf/data.nt \\
         --reference data/bench/.../reference/data_agg.nt \\
-        --ontology data/bench/.../ontology.ttl \\
-        --pipeline-type rdf \\
-        --configs exhaustive
+        --ontology data/bench/.../ontology.ttl
+
+Full exhaustive run (all task/parameter permutations):
+    python experiment.py ... --configs exhaustive
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import sys
@@ -30,15 +32,11 @@ from kgpipe_search.configuration import (
     load_rdf_sampled_pipeline_configs,
     load_text_exhaustive_pipeline_configs,
     load_text_sampled_pipeline_configs,
-    pipeline_config_snapshot_key,
+    pipeline_config_to_snapshot,
     print_pipeline_config_short,
     task_keys_from_pipeline_config,
 )
-from kgpipe_search.definitions import (
-    PipelineConfig,
-    RDF_SEARCH_SPACE,
-    TEXT_SEARCH_SPACE,
-)
+from kgpipe_search.definitions import PipelineConfig
 from kgpipe_search.evaluation import evaluate_pipeline
 
 
@@ -88,6 +86,18 @@ def _set_ontology_env(ontology_path: Optional[Path]) -> None:
     if not ontology_path.exists():
         raise FileNotFoundError(f"Ontology file not found: {ontology_path}")
     os.environ["ONTOLOGY_PATH"] = str(ontology_path.resolve())
+
+
+def _config_hash(snapshot: Dict[str, Any]) -> str:
+    canonical = json.dumps(snapshot, sort_keys=True)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _write_config_snapshot(config_path: Path, snapshot: Dict[str, Any]) -> None:
+    config_path.write_text(
+        json.dumps(snapshot, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
 
 
 def _validate_input_path(path: Path, label: str) -> Path:
@@ -203,7 +213,6 @@ def run_all_configs(
 ) -> List[Dict[str, Any]]:
     _set_ontology_env(ontology_path)
 
-    search_space = RDF_SEARCH_SPACE if pipeline_type == "rdf" else TEXT_SEARCH_SPACE
     run_pipeline = run_rdf_pipeline if pipeline_type == "rdf" else run_text_pipeline
 
     pipeline_configs = _load_pipeline_configs(
@@ -225,19 +234,24 @@ def run_all_configs(
     print(f"output_dir: {output_dir}")
 
     for offset, pipeline_config in enumerate(selected, start=start):
-        run_name = f"config_{offset:04d}"
-        result_path = output_dir / f"{run_name}.nt"
-        tasks_tmp_dir = output_dir / f"{run_name}_tasks_tmp"
-        config_key = pipeline_config_snapshot_key(pipeline_config, search_space)
         task_keys = task_keys_from_pipeline_config(pipeline_config)
+        snapshot = pipeline_config_to_snapshot(task_keys, pipeline_config)
+        config_hash = _config_hash(snapshot)
 
-        print(f"\n=== config {offset + 1}/{len(pipeline_configs)} ({run_name}) ===")
+        result_path = output_dir / f"{config_hash}.nt"
+        config_path = output_dir / f"{config_hash}.json"
+        tasks_tmp_dir = output_dir / f"{config_hash}_tasks_tmp"
+        run_name = config_hash
+
+        print(f"\n=== config {offset + 1}/{len(pipeline_configs)} ({config_hash}) ===")
         print_pipeline_config_short(pipeline_config)
+
+        _write_config_snapshot(config_path, snapshot)
 
         entry: Dict[str, Any] = {
             "config_idx": offset,
-            "task_keys": task_keys,
-            "config_key": config_key,
+            "config_hash": config_hash,
+            "config_path": str(config_path),
             "result_path": str(result_path),
             "status": "ok",
         }
@@ -283,7 +297,7 @@ def run_all_configs(
             json.dumps(payload, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )
-        print(f"\nWrote results to {results_path}")
+        print(f"\nWrote scores to {results_path}")
 
     succeeded = sum(1 for item in run_results if item["status"] == "ok")
     print(f"\nFinished: {succeeded}/{len(run_results)} succeeded")
@@ -323,8 +337,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--configs",
         choices=["sampled", "exhaustive"],
-        default="exhaustive",
-        help="Which fixture set to execute",
+        default="sampled",
+        help=(
+            "Which fixture set to execute: "
+            "'sampled' = small fixture for quick tests (default), "
+            "'exhaustive' = all task/parameter permutations"
+        ),
     )
     parser.add_argument(
         "--configs-fixture",
@@ -348,7 +366,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--results",
         type=Path,
         default=None,
-        help="Optional path to write a JSON summary of all runs",
+        help="Path to write a single JSON summary of all run scores (default: <output-dir>/results.json)",
     )
     return parser
 
@@ -381,7 +399,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         configs_fixture=args.configs_fixture,
         start=args.start,
         limit=args.limit,
-        results_path=args.results,
+        results_path=args.results or (args.output_dir / "results.json"),
     )
 
     failed = sum(1 for item in run_results if item["status"] != "ok")
