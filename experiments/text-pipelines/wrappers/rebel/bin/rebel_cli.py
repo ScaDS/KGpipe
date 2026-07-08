@@ -22,44 +22,53 @@ def main():
 def extract_triples(text):
     triples = []
 
-    subject, predicate, object_ = '', '', ''
-    current = None
+    tokens = (
+        text.replace("<s>", "")
+            .replace("</s>", "")
+            .replace("<pad>", "")
+            .strip()
+            .split()
+    )
 
-    text = text.strip()
-    tokens = text.replace("<s>", "").replace("<pad>", "").replace("</s>", "").split()
+    subject = ""
+    obj = ""
+    predicate = ""
+
+    state = None
 
     for token in tokens:
         if token == "<triplet>":
-            current = "t"
-
-            if subject and predicate and object_:
+            if subject and predicate and obj:
                 triples.append({
                     "subject": {"surface_form": subject.strip()},
                     "predicate": {"surface_form": predicate.strip()},
-                    "object": {"surface_form": object_.strip()}
+                    "object": {"surface_form": obj.strip()},
                 })
 
-            subject, predicate, object_ = '', '', ''
+            subject = ""
+            obj = ""
+            predicate = ""
+            state = "subject"
 
         elif token == "<subj>":
-            current = "s"
+            state = "object"
 
         elif token == "<obj>":
-            current = "o"
+            state = "predicate"
 
         else:
-            if current == "t":
+            if state == "subject":
                 subject += " " + token
-            elif current == "o":
-                object_ += " " + token
-            elif current == "s":
+            elif state == "object":
+                obj += " " + token
+            elif state == "predicate":
                 predicate += " " + token
 
-    if subject and predicate and object_:
+    if subject and predicate and obj:
         triples.append({
             "subject": {"surface_form": subject.strip()},
             "predicate": {"surface_form": predicate.strip()},
-            "object": {"surface_form": object_.strip()}
+            "object": {"surface_form": obj.strip()},
         })
 
     return triples
