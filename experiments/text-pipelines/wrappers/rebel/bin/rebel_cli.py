@@ -31,26 +31,35 @@ def extract_triples(text):
     )
 
     subject = ""
-    obj = ""
+    object_ = ""
     predicate = ""
 
     state = None
 
     for token in tokens:
         if token == "<triplet>":
-            if subject and predicate and obj:
+            if subject and object_ and predicate:
                 triples.append({
                     "subject": {"surface_form": subject.strip()},
                     "predicate": {"surface_form": predicate.strip()},
-                    "object": {"surface_form": obj.strip()},
+                    "object": {"surface_form": object_.strip()}
                 })
 
             subject = ""
-            obj = ""
+            object_ = ""
             predicate = ""
             state = "subject"
 
         elif token == "<subj>":
+            if subject and object_ and predicate:
+                triples.append({
+                    "subject": {"surface_form": subject.strip()},
+                    "predicate": {"surface_form": predicate.strip()},
+                    "object": {"surface_form": object_.strip()}
+                })
+                object_ = ""
+                predicate = ""
+
             state = "object"
 
         elif token == "<obj>":
@@ -60,15 +69,15 @@ def extract_triples(text):
             if state == "subject":
                 subject += " " + token
             elif state == "object":
-                obj += " " + token
+                object_ += " " + token
             elif state == "predicate":
                 predicate += " " + token
 
-    if subject and predicate and obj:
+    if subject and object_ and predicate:
         triples.append({
             "subject": {"surface_form": subject.strip()},
             "predicate": {"surface_form": predicate.strip()},
-            "object": {"surface_form": obj.strip()},
+            "object": {"surface_form": object_.strip()}
         })
 
     return triples
