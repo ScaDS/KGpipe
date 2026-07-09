@@ -113,6 +113,8 @@ class PipeKG:
             SYS_KG.create_relation(type=KGPIPE_NS.output, source=entity_id, target=output_spec)
         for realizes_task in implementation.realizesTask:
             SYS_KG.create_relation(type=KGPIPE_NS.realisesTask, source=entity_id, target=realizes_task)
+        for tool in implementation.usesTool:
+            SYS_KG.create_relation(type=KGPIPE_NS.usesTool, source=entity_id, target=tool)
         if implementation.config_spec:
             SYS_KG.create_relation(type=KGPIPE_NS.config_spec, source=entity_id, target=implementation.config_spec)
         return ImplementationEntityId(entity_id)
