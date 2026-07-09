@@ -3,17 +3,15 @@
 Run and evaluate pipeline configs from fixture files.
 
 Example (quick test with the small sampled fixture, 6 RDF / 4 text configs):
-    python experiment.py \\
-        --seed data/bench/.../seed/data.nt \\
-        --source data/bench/.../sources/rdf/data.nt \\
-        --reference data/bench/.../reference/data_agg.nt \\
+    python experiment.py \
+        --seed data/bench/.../seed/data.nt \
+        --source data/bench/.../sources/rdf/data.nt \
+        --reference data/bench/.../reference/data_agg.nt \
         --ontology data/bench/.../ontology.ttl
 
 Full exhaustive run (all task/parameter permutations):
     python experiment.py ... --configs exhaustive
 """
-
-from __future__ import annotations
 
 import argparse
 import hashlib
@@ -91,6 +89,32 @@ def _set_ontology_env(ontology_path: Optional[Path]) -> None:
 def _config_hash(snapshot: Dict[str, Any]) -> str:
     canonical = json.dumps(snapshot, sort_keys=True)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def _tasks_tmp_dir(
+    *,
+    output_dir: Path,
+    config_hash: str,
+    task_keys: List[str],
+    scope: str,
+) -> Path:
+    """
+    Decide where per-task temporary files live.
+
+    - config: one tmp dir per config hash (default, current behavior)
+    - pipeline: reuse tmp dir for configs with identical task list (enables cache reuse across params)
+    - shared: reuse a single tmp dir for all configs
+    """
+
+    if scope == "config":
+        return output_dir / f"{config_hash}_tasks_tmp"
+    if scope == "shared":
+        return output_dir / "shared_tasks_tmp"
+    if scope == "pipeline":
+        canonical = json.dumps(task_keys, sort_keys=False)
+        pipeline_hash = hashlib.sha256(canonical.encode("utf-8")).hexdigest()[:12]
+        return output_dir / f"pipeline_{pipeline_hash}_tasks_tmp"
+    raise ValueError(f"Unsupported tasks tmp dir scope {scope!r}")
 
 
 def _write_config_snapshot(config_path: Path, snapshot: Dict[str, Any]) -> None:
@@ -210,6 +234,7 @@ def run_all_configs(
     start: int,
     limit: Optional[int],
     results_path: Optional[Path],
+    tasks_tmp_scope: str,
 ) -> List[Dict[str, Any]]:
     _set_ontology_env(ontology_path)
 
@@ -232,6 +257,7 @@ def run_all_configs(
     print(f"source: {source_path}")
     print(f"reference: {reference_path}")
     print(f"output_dir: {output_dir}")
+    print(f"tasks_tmp_scope: {tasks_tmp_scope}")
 
     for offset, pipeline_config in enumerate(selected, start=start):
         task_keys = task_keys_from_pipeline_config(pipeline_config)
@@ -240,7 +266,12 @@ def run_all_configs(
 
         result_path = output_dir / f"{config_hash}.nt"
         config_path = output_dir / f"{config_hash}.json"
-        tasks_tmp_dir = output_dir / f"{config_hash}_tasks_tmp"
+        tasks_tmp_dir = _tasks_tmp_dir(
+            output_dir=output_dir,
+            config_hash=config_hash,
+            task_keys=task_keys,
+            scope=tasks_tmp_scope,
+        )
         run_name = config_hash
 
         print(f"\n=== config {offset + 1}/{len(pipeline_configs)} ({config_hash}) ===")
@@ -253,6 +284,7 @@ def run_all_configs(
             "config_hash": config_hash,
             "config_path": str(config_path),
             "result_path": str(result_path),
+            "tasks_tmp_dir": str(tasks_tmp_dir),
             "status": "ok",
         }
 
@@ -291,6 +323,7 @@ def run_all_configs(
             "output_dir": str(output_dir),
             "start": start,
             "limit": limit,
+            "tasks_tmp_scope": tasks_tmp_scope,
             "results": run_results,
         }
         results_path.write_text(
@@ -368,6 +401,17 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="Path to write a single JSON summary of all run scores (default: <output-dir>/results.json)",
     )
+    parser.add_argument(
+        "--tasks-tmp-scope",
+        choices=["config", "pipeline", "shared"],
+        default="config",
+        help=(
+            "How to name/reuse the per-run tasks tmp dir: "
+            "'config' = one tmp dir per config hash (default), "
+            "'pipeline' = reuse tmp dir for configs with identical task list, "
+            "'shared' = reuse one tmp dir for all configs"
+        ),
+    )
     return parser
 
 
@@ -400,6 +444,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         start=args.start,
         limit=args.limit,
         results_path=args.results or (args.output_dir / "results.json"),
+        tasks_tmp_scope=args.tasks_tmp_scope,
     )
 
     failed = sum(1 for item in run_results if item["status"] != "ok")
