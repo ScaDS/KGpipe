@@ -21,11 +21,17 @@ class PipelineConfig(BaseModel):
 RDF_SAMPLED_PIPELINE_CONFIGS_FIXTURE = Path(__file__).resolve().parent.parent / "data" / "fixtures" / "rdf_sampled_pipeline_configs.json"
 _RDF_PIPELINE_CONFIG_SNAPSHOT_VERSION = 1
 
+RDF_UNIQUE_SAMPLED_PIPELINE_CONFIGS_FIXTURE = Path(__file__).resolve().parent.parent / "data" / "fixtures" / "rdf_unique_sampled_pipeline_configs.json"
+_RDF_UNIQUE_PIPELINE_CONFIG_SNAPSHOT_VERSION = 1
+
 RDF_EXHAUSTIVE_PIPELINE_CONFIGS_FIXTURE = Path(__file__).resolve().parent.parent / "data" / "fixtures" / "rdf_exhaustive_pipeline_configs.json"
 _RDF_EXHAUSTIVE_PIPELINE_CONFIG_SNAPSHOT_VERSION = 1
 
 TEXT_SAMPLED_PIPELINE_CONFIGS_FIXTURE = Path(__file__).resolve().parent.parent / "data" / "fixtures" / "text_sampled_pipeline_configs.json"
 _TEXT_PIPELINE_CONFIG_SNAPSHOT_VERSION = 1
+
+TEXT_UNIQUE_SAMPLED_PIPELINE_CONFIGS_FIXTURE = Path(__file__).resolve().parent.parent / "data" / "fixtures" / "text_unique_sampled_pipeline_configs.json"
+_TEXT_UNIQUE_PIPELINE_CONFIG_SNAPSHOT_VERSION = 1
 
 TEXT_EXHAUSTIVE_PIPELINE_CONFIGS_FIXTURE = Path(__file__).resolve().parent.parent / "data" / "fixtures" / "text_exhaustive_pipeline_configs.json"
 _TEXT_EXHAUSTIVE_PIPELINE_CONFIG_SNAPSHOT_VERSION = 1

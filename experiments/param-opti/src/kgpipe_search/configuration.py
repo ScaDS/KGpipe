@@ -5,12 +5,16 @@ from kgpipe_search.definitions import (
     PipelineLayout,
     PipelineConfig,
     RDF_SAMPLED_PIPELINE_CONFIGS_FIXTURE,
+    RDF_UNIQUE_SAMPLED_PIPELINE_CONFIGS_FIXTURE,
     RDF_EXHAUSTIVE_PIPELINE_CONFIGS_FIXTURE,
     TEXT_SAMPLED_PIPELINE_CONFIGS_FIXTURE,
+    TEXT_UNIQUE_SAMPLED_PIPELINE_CONFIGS_FIXTURE,
     TEXT_EXHAUSTIVE_PIPELINE_CONFIGS_FIXTURE,
     _RDF_PIPELINE_CONFIG_SNAPSHOT_VERSION,
+    _RDF_UNIQUE_PIPELINE_CONFIG_SNAPSHOT_VERSION,
     _RDF_EXHAUSTIVE_PIPELINE_CONFIG_SNAPSHOT_VERSION,
     _TEXT_PIPELINE_CONFIG_SNAPSHOT_VERSION,
+    _TEXT_UNIQUE_PIPELINE_CONFIG_SNAPSHOT_VERSION,
     _TEXT_EXHAUSTIVE_PIPELINE_CONFIG_SNAPSHOT_VERSION,
 )
 import json
@@ -167,6 +171,28 @@ def load_text_sampled_pipeline_configs(path: Optional[Path] = None) -> List[Pipe
         raise ValueError(
             f"Unsupported text sampled configs snapshot version {raw.get('version')!r}; "
             f"expected {_TEXT_PIPELINE_CONFIG_SNAPSHOT_VERSION}"
+        )
+    return [pipeline_config_from_snapshot(item) for item in raw["samples"]]
+
+
+def load_rdf_unique_sampled_pipeline_configs(path: Optional[Path] = None) -> List[PipelineConfig]:
+    fixture_path = path or RDF_UNIQUE_SAMPLED_PIPELINE_CONFIGS_FIXTURE
+    raw = json.loads(fixture_path.read_text(encoding="utf-8"))
+    if raw.get("version") != _RDF_UNIQUE_PIPELINE_CONFIG_SNAPSHOT_VERSION:
+        raise ValueError(
+            f"Unsupported rdf unique sampled configs snapshot version {raw.get('version')!r}; "
+            f"expected {_RDF_UNIQUE_PIPELINE_CONFIG_SNAPSHOT_VERSION}"
+        )
+    return [pipeline_config_from_snapshot(item) for item in raw["samples"]]
+
+
+def load_text_unique_sampled_pipeline_configs(path: Optional[Path] = None) -> List[PipelineConfig]:
+    fixture_path = path or TEXT_UNIQUE_SAMPLED_PIPELINE_CONFIGS_FIXTURE
+    raw = json.loads(fixture_path.read_text(encoding="utf-8"))
+    if raw.get("version") != _TEXT_UNIQUE_PIPELINE_CONFIG_SNAPSHOT_VERSION:
+        raise ValueError(
+            f"Unsupported text unique sampled configs snapshot version {raw.get('version')!r}; "
+            f"expected {_TEXT_UNIQUE_PIPELINE_CONFIG_SNAPSHOT_VERSION}"
         )
     return [pipeline_config_from_snapshot(item) for item in raw["samples"]]
 
@@ -460,26 +486,144 @@ def sample_config_catalog_for_task_combo(
 
     return PipelineConfig(tasks=tasks, config_catalog=config_catalog)
 
+def _task_param_assignments(
+    search_space: Dict[str, Dict[str, Any]], task_key: str
+) -> List[Dict[str, Any]]:
+    space = search_space.get(task_key, {})
+    param_space: Dict[str, List[Any]] = {k: v for k, v in space.items() if k != "category"}
+    if not param_space:
+        return [{}]
+    keys = list(param_space.keys())
+    values_lists = [param_space[k] for k in keys]
+    return [dict(zip(keys, values)) for values in itertools.product(*values_lists)]
+
+
+def _pipeline_config_for_combo_and_params(
+    search_space: Dict[str, Dict[str, Any]],
+    combo: List[str],
+    assignment_tuple: tuple[Dict[str, Any], ...],
+) -> PipelineConfig:
+    tasks: List[KgTask] = []
+    config_catalog: Dict[str, ConfigurationProfile] = {}
+
+    for task_key, params in zip(combo, assignment_tuple):
+        task = task_dict[task_key]
+        tasks.append(task)
+
+        if not params:
+            continue
+        if getattr(task, "config_spec", None) is None:
+            continue
+
+        bindings: List[ParameterBinding] = []
+        name_parts: List[str] = []
+
+        # Iterate in search_space order for stable snapshots.
+        for config_name, _config_values in search_space[task_key].items():
+            if config_name == "category":
+                continue
+            if config_name not in params:
+                continue
+            config_value = params[config_name]
+            name_parts.append(f"{config_name}={config_value}")
+            bindings.append(
+                ParameterBinding(
+                    parameter=_get_param(task.config_spec, config_name),
+                    value=config_value,
+                )
+            )
+
+        config_catalog[task.name] = ConfigurationProfile(
+            name=f"{task.name}_" + ",".join(name_parts),
+            definition=task.config_spec,
+            bindings=bindings,
+        )
+
+    return PipelineConfig(tasks=tasks, config_catalog=config_catalog)
+
+
+def enumerate_snapshots_for_task_combo(
+    search_space: Dict[str, Dict[str, Any]],
+    combo: List[str],
+) -> List[Dict[str, Any]]:
+    per_task_assignments = [
+        _task_param_assignments(search_space, task_key) for task_key in combo
+    ]
+    snapshots: List[Dict[str, Any]] = []
+    for assignment_tuple in itertools.product(*per_task_assignments):
+        pipeline_config = _pipeline_config_for_combo_and_params(
+            search_space, combo, assignment_tuple
+        )
+        snapshots.append(pipeline_config_to_snapshot(combo, pipeline_config))
+    return snapshots
+
+
+def sample_unique_pipeline_config_snapshots_per_combo(
+    search_space: Dict[str, Dict[str, Any]],
+    pipeline_layout: PipelineLayout,
+    *,
+    n: int,
+    rng: random.Random,
+) -> tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    """
+    Sample up to n unique profile snapshots per valid task combo.
+
+    When a combo has fewer than n distinct profile assignments, all available
+    profiles are returned for that combo.
+    """
+    if n < 1:
+        raise ValueError(f"n must be >= 1, got {n}")
+
+    combos = enumerate_valid_task_combinations(search_space, pipeline_layout)
+    snapshots: List[Dict[str, Any]] = []
+    combo_stats: List[Dict[str, Any]] = []
+
+    for combo in combos:
+        available_snapshots = enumerate_snapshots_for_task_combo(search_space, combo)
+        serialized = [json.dumps(s, sort_keys=True) for s in available_snapshots]
+        if len(set(serialized)) != len(serialized):
+            raise ValueError(f"Duplicate profile snapshots for combo {combo!r}")
+
+        sample_count = min(n, len(available_snapshots))
+        picked = (
+            rng.sample(available_snapshots, k=sample_count)
+            if sample_count > 0
+            else []
+        )
+        snapshots.extend(picked)
+        combo_stats.append(
+            {
+                "task_keys": combo,
+                "available_profiles": len(available_snapshots),
+                "requested": n,
+                "sampled": sample_count,
+                "exhausted": sample_count < n,
+            }
+        )
+
+    stats: Dict[str, Any] = {
+        "requested_n": n,
+        "total_combos": len(combos),
+        "total_snapshots": len(snapshots),
+        "combos_exhausted": sum(1 for row in combo_stats if row["exhausted"]),
+        "combos": combo_stats,
+    }
+    return snapshots, stats
+
+
 def enumerate_exhaustive_pipeline_config_snapshots(
     search_space: Dict[str, Dict[str, Any]],
     pipeline_layout: PipelineLayout,
 ) -> List[Dict[str, Any]]:
     combos = enumerate_valid_task_combinations(search_space, pipeline_layout)
 
-    def _task_param_assignments(task_key: str) -> List[Dict[str, Any]]:
-        space = search_space.get(task_key, {})
-        param_space: Dict[str, List[Any]] = {k: v for k, v in space.items() if k != "category"}
-        if not param_space:
-            return [{}]
-        keys = list(param_space.keys())
-        values_lists = [param_space[k] for k in keys]
-        return [dict(zip(keys, values)) for values in itertools.product(*values_lists)]
-
     all_snapshots: List[Dict[str, Any]] = []
     total_expected = 0
 
     for combo in combos:
-        per_task_assignments = [_task_param_assignments(task_key) for task_key in combo]
+        per_task_assignments = [
+            _task_param_assignments(search_space, task_key) for task_key in combo
+        ]
 
         expected_for_combo = 1
         for assignments in per_task_assignments:
@@ -496,43 +640,9 @@ def enumerate_exhaustive_pipeline_config_snapshots(
             if produced_for_combo % 100 == 1 or produced_for_combo == expected_for_combo:
                 print(f"config {produced_for_combo}/{expected_for_combo}")
 
-            tasks: List[KgTask] = []
-            config_catalog: Dict[str, ConfigurationProfile] = {}
-
-            for task_key, params in zip(combo, assignment_tuple):
-                task = task_dict[task_key]
-                tasks.append(task)
-
-                if not params:
-                    continue
-                if getattr(task, "config_spec", None) is None:
-                    continue
-
-                bindings: List[ParameterBinding] = []
-                name_parts: List[str] = []
-
-                # Iterate in search_space order for stable snapshots.
-                for config_name, _config_values in search_space[task_key].items():
-                    if config_name == "category":
-                        continue
-                    if config_name not in params:
-                        continue
-                    config_value = params[config_name]
-                    name_parts.append(f"{config_name}={config_value}")
-                    bindings.append(
-                        ParameterBinding(
-                            parameter=_get_param(task.config_spec, config_name),
-                            value=config_value,
-                        )
-                    )
-
-                config_catalog[task.name] = ConfigurationProfile(
-                    name=f"{task.name}_" + ",".join(name_parts),
-                    definition=task.config_spec,
-                    bindings=bindings,
-                )
-
-            pipeline_config = PipelineConfig(tasks=tasks, config_catalog=config_catalog)
+            pipeline_config = _pipeline_config_for_combo_and_params(
+                search_space, combo, assignment_tuple
+            )
             all_snapshots.append(pipeline_config_to_snapshot(combo, pipeline_config))
 
         assert produced_for_combo == expected_for_combo

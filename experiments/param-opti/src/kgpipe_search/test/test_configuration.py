@@ -2,11 +2,14 @@ from kgpipe_search.definitions import PipelineLayout, RDF_SEARCH_SPACE, RDF_PIPE
 from kgpipe_search.configuration import (
     sample_valid_pipeline_config, 
     enumerate_valid_task_combinations, sample_config_catalog_for_task_combo, enumerate_exhaustive_pipeline_config_snapshots, pipeline_config_to_snapshot,
-    print_pipeline_config_short
+    print_pipeline_config_short,
+    sample_unique_pipeline_config_snapshots_per_combo,
 )
 from kgpipe_search.definitions import RDF_SAMPLED_PIPELINE_CONFIGS_FIXTURE, _RDF_PIPELINE_CONFIG_SNAPSHOT_VERSION
+from kgpipe_search.definitions import RDF_UNIQUE_SAMPLED_PIPELINE_CONFIGS_FIXTURE, _RDF_UNIQUE_PIPELINE_CONFIG_SNAPSHOT_VERSION
 from kgpipe_search.definitions import RDF_EXHAUSTIVE_PIPELINE_CONFIGS_FIXTURE, _RDF_EXHAUSTIVE_PIPELINE_CONFIG_SNAPSHOT_VERSION
 from kgpipe_search.definitions import TEXT_SAMPLED_PIPELINE_CONFIGS_FIXTURE, _TEXT_PIPELINE_CONFIG_SNAPSHOT_VERSION
+from kgpipe_search.definitions import TEXT_UNIQUE_SAMPLED_PIPELINE_CONFIGS_FIXTURE, _TEXT_UNIQUE_PIPELINE_CONFIG_SNAPSHOT_VERSION
 from kgpipe_search.definitions import TEXT_EXHAUSTIVE_PIPELINE_CONFIGS_FIXTURE, _TEXT_EXHAUSTIVE_PIPELINE_CONFIG_SNAPSHOT_VERSION
 import json
 
@@ -40,6 +43,22 @@ def test_enumerate_all_valid_rdf_task_combinations_no_config_sampling():
 import random
 from typing import List, Dict, Any
 
+
+def _print_unique_sampling_stats(stats: Dict[str, Any]) -> None:
+    print()
+    print("unique sampling statistics")
+    print(f"requested n per combo: {stats['requested_n']}")
+    print(f"total combos: {stats['total_combos']}")
+    print(f"total snapshots: {stats['total_snapshots']}")
+    print(f"combos exhausted before n: {stats['combos_exhausted']}")
+    for row in stats["combos"]:
+        status = "EXHAUSTED" if row["exhausted"] else "ok"
+        print(
+            f"  {row['task_keys']}: sampled {row['sampled']}/{row['requested']} "
+            f"(available {row['available_profiles']}) [{status}]"
+        )
+
+
 def test_enumerate_all_valid_rdf_task_combinations_with_config_sampling():
     print("enumerate_all_valid_rdf_task_combinations_with_config_sampling")
     n = 1
@@ -67,6 +86,35 @@ def test_enumerate_all_valid_rdf_task_combinations_with_config_sampling():
     RDF_SAMPLED_PIPELINE_CONFIGS_FIXTURE.write_text(
         json.dumps(
             {"version": _RDF_PIPELINE_CONFIG_SNAPSHOT_VERSION, "samples": snapshots},
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
+def test_enumerate_all_valid_rdf_task_combinations_with_unique_config_sampling():
+    print("enumerate_all_valid_rdf_task_combinations_with_unique_config_sampling")
+    n = 10
+    rng = random.Random(0)
+
+    snapshots, stats = sample_unique_pipeline_config_snapshots_per_combo(
+        RDF_SEARCH_SPACE, RDF_PIPELINE_LAYOUT, n=n, rng=rng
+    )
+    _print_unique_sampling_stats(stats)
+
+    for combo_row in stats["combos"]:
+        combo_task_keys = combo_row["task_keys"]
+        combo_snapshots = [s for s in snapshots if s["task_keys"] == combo_task_keys]
+        serialized = [json.dumps(s, sort_keys=True) for s in combo_snapshots]
+        assert len(set(serialized)) == len(serialized)
+        assert len(serialized) == combo_row["sampled"]
+
+    RDF_UNIQUE_SAMPLED_PIPELINE_CONFIGS_FIXTURE.parent.mkdir(parents=True, exist_ok=True)
+    RDF_UNIQUE_SAMPLED_PIPELINE_CONFIGS_FIXTURE.write_text(
+        json.dumps(
+            {"version": _RDF_UNIQUE_PIPELINE_CONFIG_SNAPSHOT_VERSION, "samples": snapshots},
             indent=2,
             sort_keys=True,
         )
@@ -118,6 +166,36 @@ def test_enumerate_all_valid_text_task_combinations_with_config_sampling():
         + "\n",
         encoding="utf-8",
     )
+
+
+def test_enumerate_all_valid_text_task_combinations_with_unique_config_sampling():
+    print("enumerate_all_valid_text_task_combinations_with_unique_config_sampling")
+    n = 3
+    rng = random.Random(0)
+
+    snapshots, stats = sample_unique_pipeline_config_snapshots_per_combo(
+        TEXT_SEARCH_SPACE, TEXT_PIPELINE_LAYOUT, n=n, rng=rng
+    )
+    _print_unique_sampling_stats(stats)
+
+    for combo_row in stats["combos"]:
+        combo_task_keys = combo_row["task_keys"]
+        combo_snapshots = [s for s in snapshots if s["task_keys"] == combo_task_keys]
+        serialized = [json.dumps(s, sort_keys=True) for s in combo_snapshots]
+        assert len(set(serialized)) == len(serialized)
+        assert len(serialized) == combo_row["sampled"]
+
+    TEXT_UNIQUE_SAMPLED_PIPELINE_CONFIGS_FIXTURE.parent.mkdir(parents=True, exist_ok=True)
+    TEXT_UNIQUE_SAMPLED_PIPELINE_CONFIGS_FIXTURE.write_text(
+        json.dumps(
+            {"version": _TEXT_UNIQUE_PIPELINE_CONFIG_SNAPSHOT_VERSION, "samples": snapshots},
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
 
 def test_enumerate_all_valid_text_task_combinations_with_config_sampling_exhaustive():
     print("enumerate_all_valid_text_task_combinations_with_config_sampling_exhaustive")
