@@ -5,8 +5,6 @@ Implementation lives in `kgpipe_search/strategies/` to keep algorithms modular.
 This module preserves the historical function names used by existing tests/scripts.
 """
 
-from __future__ import annotations
-
 import random
 from typing import Any, Dict
 
@@ -43,7 +41,7 @@ def random_search(
     evaluate_fn: EvaluateFn,
     search_space: Dict[str, Dict[str, Any]],
     pipeline_layout: PipelineLayout,
-    rng: random.Random | None = None,
+    rng: Any = None,
 ) -> SearchRun:
     return run_random(
         budget=budget,
@@ -65,7 +63,7 @@ def qgns_search(
     y: int = 1,
     k: int = 3,
     rho: float = 0.2,
-    rng: random.Random | None = None,
+    rng: Any = None,
 ) -> SearchRun:
     return run_qgns(
         budget=budget,
@@ -93,7 +91,7 @@ def hnr_search(
     init_strategy: str = "implementation_aware",
     y: int = 1,
     rho: float = 0.2,
-    rng: random.Random | None = None,
+    rng: Any = None,
 ) -> SearchRun:
     return run_hnr(
         budget=budget,
@@ -116,7 +114,7 @@ def neighborhood_optimization(
     *,
     k: int = 3,
     rho: float = 0.2,
-    rng: random.Random | None = None,
+    rng: Any = None,
     **kwargs: Any,
 ) -> SearchRun:
     """
@@ -149,7 +147,7 @@ def bayesian_optimization(
     y: int = 1,
     pool_size: int = 32,
     beta: float = 0.5,
-    rng: random.Random | None = None,
+    rng: Any = None,
     **kwargs: Any,
 ) -> SearchRun:
     del kwargs
