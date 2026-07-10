@@ -5,9 +5,9 @@ from kgpipe.common.models import KgTask, DataFormat
 # from kgpipe.common.graph.systemgraph import PipeKG
 from kgpipe.common.graph.definitions import MetricEntity, TaskEntity
 from kgpipe.common.model.configuration import ConfigurationDefinition
-from kgpipe.common.graph.mapper import implementation_to_entity
+from kgpipe.common.graph.mapper import sync_task_to_systemgraph
 
-# TODO add also to system graph
+# TODO add also metrics to system graph
 
 class Registry:
     """
@@ -62,6 +62,7 @@ class Registry:
     @classmethod
     def add_task(cls, name: str, task: KgTask):
         cls._registry[f"task:{task.name}"] = task
+        sync_task_to_systemgraph(task)
 
     @classmethod
     def task(
@@ -77,8 +78,6 @@ class Registry:
             if getattr(t, "_trace_task_run", False):
                 setattr(task, "trace_task_run", True)
             cls._registry[f"task:{t.__name__.lower()}"] = task
-            # implementation_to_entity(task)
-            # PipeKG.add_implementation(implementation_to_entity(task))
             return task
         return decorator
 

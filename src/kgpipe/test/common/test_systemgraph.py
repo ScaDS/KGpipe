@@ -1,5 +1,6 @@
 from uuid import uuid4
 
+from kgpipe.common.discovery import discover_entry_points, get_registered_tasks
 from kgpipe.common.graph.definitions import (
     DataEntity,
     DataSpecEntity,
@@ -42,6 +43,17 @@ def test_core_layer_tool_and_implementation():
     assert found_implementation.version == "1.0.0"
     assert task_id in found_implementation.realizesTask
     assert tool_id in found_implementation.usesTool
+
+
+def test_resolve_data_spec_formats_returns_linked_data_type_format():
+    data_type_id = PipeKG.add_data_type(
+        DataTypeEntity(format="nt", data_schema="nt")
+    )
+    spec_id = PipeKG.add_data_spec(
+        DataSpecEntity(name=_uid("input"), data_type=data_type_id)
+    )
+
+    assert PipeKG.resolve_data_spec_formats([spec_id]) == ["nt"]
 
 
 def test_data_layer_type_spec_and_entity():
@@ -118,3 +130,17 @@ def test_run_layer_add_task_run():
     )
 
     assert task_run_id
+
+
+def test_discovered_tasks_sync_to_systemgraph():
+    discover_entry_points()
+
+    paris_impl = PipeKG.find_implementation("paris_entity_matching")
+    assert len(paris_impl) == 1
+    assert paris_impl[0].name == "paris_entity_matching"
+    assert len(paris_impl[0].input_spec) >= 1
+    assert len(paris_impl[0].output_spec) >= 1
+
+    registered_names = {task.name for task in get_registered_tasks()}
+    synced_names = {impl.name for impl in PipeKG.find_implementation()}
+    assert registered_names.issubset(synced_names)

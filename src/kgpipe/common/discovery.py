@@ -15,6 +15,7 @@ import logging
 
 from .registry import Registry
 from .models import KgTask
+from kgpipe.common.graph.mapper import sync_task_to_systemgraph
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +44,18 @@ def discover_entry_points() -> None:
     # Discover from other installed packages (future)
     discover_installed_packages()
     
+    sync_registry_to_systemgraph()
+
     logger.info("Entry-point discovery completed")
+
+
+def sync_registry_to_systemgraph() -> None:
+    """Sync all registered tasks from the in-memory registry into PipeKG."""
+    for task in get_registered_tasks():
+        try:
+            sync_task_to_systemgraph(task)
+        except Exception as e:
+            logger.error(f"Error syncing task {task.name} to system graph: {e}")
 
 
 def discover_kgpipe_tasks() -> None:

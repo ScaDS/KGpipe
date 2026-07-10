@@ -120,6 +120,15 @@ class PipeKG:
         return ImplementationEntityId(entity_id)
 
     @staticmethod
+    def has_implementation(name: str) -> bool:
+        """Check whether an implementation with the given name exists."""
+        entities = SYS_KG.find_entities(
+            types=[str(KGPIPE_NS.Implementation)],
+            properties={str(KGPIPE_NS.name): name},
+        )
+        return len(entities) > 0
+
+    @staticmethod
     def find_implementation(
         name: Optional[str] = None,
         # version: Optional[str] = None,
@@ -128,9 +137,10 @@ class PipeKG:
         # realizes_task: Optional[List[str]] = None,
         # has_parameter: Optional[List[str]] = None,
     ) -> List[ImplementationEntity]:
-        entities: List[KGEntity] = SYS_KG.find_entities(
-            types=[str(KGPIPE_NS.Implementation)],
-        )
+        find_kwargs: dict[str, Any] = {"types": [str(KGPIPE_NS.Implementation)]}
+        if name is not None:
+            find_kwargs["properties"] = {str(KGPIPE_NS.name): name}
+        entities: List[KGEntity] = SYS_KG.find_entities(**find_kwargs)
         implementations = [ImplementationEntity(
             uri=entity.id,
             name=entity.get_property_value(str(KGPIPE_NS.name))[0],
@@ -142,8 +152,6 @@ class PipeKG:
             usesTool=[ToolEntityId(neighbor.id) for neighbor in SYS_KG.get_neighbors(entity.id, str(KGPIPE_NS.usesTool))],
             # config_spec=ConfigSpecEntityId(entity.get_property(KGPIPE_NS.config_spec)) if entity.get_property(KGPIPE_NS.config_spec) else None,
         ) for entity in entities]
-        if name is not None:
-            implementations = [impl for impl in implementations if impl.name == name]
         return implementations
 
     ### Data Layer Entities ###
@@ -350,5 +358,27 @@ class PipeKG:
                     return [str(v) for v in parsed]
             return [text]
         return [str(value)]
+
+    @staticmethod
+    def resolve_data_spec_formats(data_spec_ids: List[DataSpecEntityId]) -> List[str]:
+        """Resolve DataSpec entity IDs to connectable format strings."""
+        formats: list[str] = []
+        seen: set[str] = set()
+        for data_spec_id in data_spec_ids:
+            fmt = PipeKG._resolve_data_spec_format(data_spec_id)
+            if fmt is not None and fmt not in seen:
+                seen.add(fmt)
+                formats.append(fmt)
+        return sorted(formats)
+
+    @staticmethod
+    def _resolve_data_spec_format(data_spec_id: DataSpecEntityId) -> Optional[str]:
+        data_types = SYS_KG.get_neighbors(str(data_spec_id), str(KGPIPE_NS.data_type))
+        if not data_types:
+            return None
+        fmt = PipeKG._prop_value(data_types[0].properties, str(KGPIPE_NS.format), "format")
+        if fmt is None:
+            fmt = PipeKG._prop_value(data_types[0].properties, str(KGPIPE_NS.schema), "schema")
+        return str(fmt) if fmt is not None else None
 
 

@@ -36,6 +36,8 @@ from kgpipe.common.graph.definitions import (
 
 from typing import TYPE_CHECKING
 
+_SYNCED_TASKS: dict[str, ImplementationEntityId] = {}
+
 if TYPE_CHECKING:
     from kgpipe.common.model import (
         DataFormat,
@@ -116,6 +118,22 @@ def config_spec_to_entity(config_spec: "ConfigurationDefinition", implementation
         parameters=parameter_entities,
     )
     return PipeKG.add_config_spec(config_spec_entity)
+
+def sync_task_to_systemgraph(task: "KgTask") -> ImplementationEntityId:
+    """Register a KgTask in PipeKG if it is not already present."""
+    cached = _SYNCED_TASKS.get(task.name)
+    if cached is not None:
+        return cached
+
+    if PipeKG.has_implementation(task.name):
+        impl_id = ImplementationEntityId(config.PIPEKG_PREFIX + encode_string(task.name))
+        _SYNCED_TASKS[task.name] = impl_id
+        return impl_id
+
+    impl_id = implementation_to_entity(task)
+    _SYNCED_TASKS[task.name] = impl_id
+    return impl_id
+
 
 def implementation_to_entity(implementation: "KgTask") -> ImplementationEntityId:
 
