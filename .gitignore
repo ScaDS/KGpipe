@@ -7,7 +7,6 @@ out/
 *.mmd
 *.db
 
-uv.lock
 .metals/
 .vscode/
 data/

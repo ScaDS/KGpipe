@@ -20,7 +20,7 @@ from kgpipe_search.strategies.initialization import (
 Observation = Tuple[float, PipelineConfig]
 EvaluateFn = Callable[[PipelineConfig], float]
 
-SearchStrategy = Literal["random", "qgns", "hnr", "bayesian"]
+SearchStrategy = Literal["random", "implementation_aware", "qgns", "hnr", "bayesian"]
 
 
 @dataclass
@@ -324,6 +324,71 @@ def run_random(
         decisions.append("sample")
 
     return SearchRun(strategy="random", history=history, budget=budget, decisions=decisions)
+
+
+def run_implementation_aware(
+    *,
+    budget: int,
+    evaluate_fn: EvaluateFn,
+    search_space: Dict[str, Dict[str, Any]],
+    pipeline_layout: PipelineLayout,
+    y: int = 1,
+    rng: Optional[random.Random] = None,
+) -> SearchRun:
+    """
+    Evaluate `budget` configs from implementation-aware initialization.
+
+    Task combinations are covered systematically (`y` random parameter samples per combo).
+    Any remaining budget is filled with uniform random valid configs.
+    """
+    if budget <= 0:
+        return SearchRun(
+            strategy="implementation_aware",
+            history=[],
+            budget=0,
+            decisions=[],
+        )
+
+    draw = rng or random.Random()
+    history: List[Observation] = []
+    decisions: List[str] = []
+    evaluated_keys: Set[str] = set()
+
+    init_set = implementation_aware_initialization(
+        search_space,
+        pipeline_layout,
+        budget=budget,
+        y=y,
+        rng=draw,
+    )
+
+    for cfg in init_set:
+        if len(history) >= budget:
+            break
+        key = pipeline_config_snapshot_key(cfg, search_space)
+        if key in evaluated_keys:
+            continue
+        score = evaluate_fn(cfg)
+        history.append((score, cfg))
+        evaluated_keys.add(key)
+        decisions.append("init(implementation_aware)")
+
+    while len(history) < budget:
+        candidate = sample_unevaluated_config(
+            draw, search_space, pipeline_layout, evaluated_keys
+        )
+        key = pipeline_config_snapshot_key(candidate, search_space)
+        score = evaluate_fn(candidate)
+        history.append((score, candidate))
+        evaluated_keys.add(key)
+        decisions.append("sample")
+
+    return SearchRun(
+        strategy="implementation_aware",
+        history=history,
+        budget=budget,
+        decisions=decisions,
+    )
 
 
 def run_qgns(

@@ -15,6 +15,7 @@ class PipelineConfig(BaseModel):
     tasks: List[KgTask]
     config_catalog: Dict[str, ConfigurationProfile]
     result_path: Optional[Path] = None
+    seed_path: Optional[Path] = None
 
 
 

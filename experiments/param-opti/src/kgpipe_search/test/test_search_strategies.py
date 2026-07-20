@@ -1,8 +1,10 @@
 import random
 
+from kgpipe_search.configuration import enumerate_valid_task_combinations
 from kgpipe_search.definitions import RDF_PIPELINE_LAYOUT, RDF_SEARCH_SPACE
 from kgpipe_search.evaluation import dummy_evaluate_pipeline
-from kgpipe_search.search import hnr_search, qgns_search
+from kgpipe_search.search import hnr_search, implementation_aware_search, qgns_search
+from kgpipe_search.strategies.initialization import implementation_aware_initialization
 
 
 def _assert_valid(run) -> None:
@@ -63,4 +65,31 @@ def test_dummy_evaluate_pipeline_hnr():
         rng=random.Random(4),
     )
     _assert_valid(run)
+
+
+def test_dummy_evaluate_pipeline_implementation_aware_search():
+    run = implementation_aware_search(
+        budget=10,
+        y=1,
+        evaluate_fn=dummy_evaluate_pipeline,
+        search_space=RDF_SEARCH_SPACE,
+        pipeline_layout=RDF_PIPELINE_LAYOUT,
+        rng=random.Random(5),
+    )
+    _assert_valid(run)
+    assert any(str(d).startswith("init(implementation_aware)") for d in run.decisions)
+
+
+def test_implementation_aware_init_can_exceed_task_combo_count():
+    combos = enumerate_valid_task_combinations(RDF_SEARCH_SPACE, RDF_PIPELINE_LAYOUT)
+    init_budget = len(combos) + 1
+
+    configs = implementation_aware_initialization(
+        RDF_SEARCH_SPACE,
+        RDF_PIPELINE_LAYOUT,
+        budget=init_budget,
+        y=1,
+        rng=random.Random(0),
+    )
+    assert len(configs) == init_budget
 

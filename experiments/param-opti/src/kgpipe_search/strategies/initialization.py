@@ -10,6 +10,38 @@ from kgpipe_search.configuration import (
 from kgpipe_search.definitions import PipelineConfig, PipelineLayout
 
 
+def _try_add_unique_config(
+    configs: List[PipelineConfig],
+    seen: Set[str],
+    candidate: PipelineConfig,
+    search_space: Dict[str, Dict[str, Any]],
+) -> bool:
+    key = pipeline_config_snapshot_key(candidate, search_space)
+    if key in seen:
+        return False
+    seen.add(key)
+    configs.append(candidate)
+    return True
+
+
+def _fill_unique_configs(
+    *,
+    configs: List[PipelineConfig],
+    seen: Set[str],
+    search_space: Dict[str, Dict[str, Any]],
+    pipeline_layout: PipelineLayout,
+    budget: int,
+    rng: random.Random,
+    max_attempts_factor: int = 200,
+) -> None:
+    attempts = 0
+    max_attempts = max(1000, max(1, budget - len(configs)) * max_attempts_factor)
+    while len(configs) < budget and attempts < max_attempts:
+        attempts += 1
+        candidate = sample_valid_pipeline_config(search_space, pipeline_layout, rng=rng)
+        _try_add_unique_config(configs, seen, candidate, search_space)
+
+
 def random_initialization(
     search_space: Dict[str, Dict[str, Any]],
     pipeline_layout: PipelineLayout,
@@ -79,44 +111,42 @@ def implementation_aware_initialization(
     seen: Set[str] = set()
 
     for combo in combos:
-        for _ in range(y):
-            if len(configs) >= budget:
-                break
+        added_for_combo = 0
+        attempts = 0
+        max_attempts = max(100, y * 50)
+        while (
+            added_for_combo < y
+            and len(configs) < budget
+            and attempts < max_attempts
+        ):
+            attempts += 1
             candidate = build_pipeline_config_for_task_combo(
                 search_space,
                 combo,
                 rng=draw,
                 template=None,
             )
-            key = pipeline_config_snapshot_key(candidate, search_space)
-            if key in seen:
-                continue
-            seen.add(key)
-            configs.append(candidate)
+            if _try_add_unique_config(configs, seen, candidate, search_space):
+                added_for_combo += 1
 
         if len(configs) >= budget:
             break
 
     if len(configs) < budget:
-        remaining = budget - len(configs)
-        filler = random_initialization(
-            search_space,
-            pipeline_layout,
-            budget=remaining,
+        _fill_unique_configs(
+            configs=configs,
+            seen=seen,
+            search_space=search_space,
+            pipeline_layout=pipeline_layout,
+            budget=budget,
             rng=draw,
         )
-        for candidate in filler:
-            key = pipeline_config_snapshot_key(candidate, search_space)
-            if key in seen:
-                continue
-            seen.add(key)
-            configs.append(candidate)
-            if len(configs) >= budget:
-                break
 
     if len(configs) < budget:
         raise RuntimeError(
-            f"Failed to generate {budget} unique initial configs (got {len(configs)})."
+            f"Failed to generate {budget} unique initial configs (got {len(configs)}). "
+            f"The search space has {len(all_combos)} implementation assignment(s); "
+            "try lowering init_budget."
         )
 
     return configs

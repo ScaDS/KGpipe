@@ -15,7 +15,7 @@ import json
 import math
 import random
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional, Sequence, Tuple
+from typing import Any, Dict, List, NamedTuple, Optional, Sequence, Set, Tuple
 
 # Optional integration with the existing kgpipe_search strategies.
 try:
@@ -60,6 +60,7 @@ def _load_score_by_snapshot_key(
     results_path: Path,
     entry_by_hash: Dict[str, Dict[str, Any]],
     score_by_hash: Dict[str, float],
+    output_dir: Optional[str] = None,
 ) -> Dict[str, float]:
     """
     Map config snapshots (serialized canonical JSON) -> score.
@@ -70,7 +71,9 @@ def _load_score_by_snapshot_key(
         score = score_by_hash.get(h)
         if score is None:
             continue
-        snapshot_path = _resolve_snapshot_path(results_path, entry.get("config_path"))
+        snapshot_path = _resolve_snapshot_path(
+            results_path, entry.get("config_path"), output_dir=output_dir
+        )
         if snapshot_path is None:
             continue
         try:
@@ -99,11 +102,14 @@ class OfflineCacheOracle:
         self.hits += 1
         return float(score)
 
-def _load_cache(results_path: Path) -> Tuple[Dict[str, float], Dict[str, Dict[str, Any]]]:
+def _load_cache(
+    results_path: Path,
+) -> Tuple[Dict[str, float], Dict[str, Dict[str, Any]], Optional[str]]:
     """
     Returns:
       score_by_hash: config_hash -> final_score (only status == ok)
       entry_by_hash: config_hash -> raw results entry (all statuses)
+      output_dir: experiment output directory from results payload, if present
     """
     payload = _read_json(results_path)
     results = payload.get("results")
@@ -125,17 +131,46 @@ def _load_cache(results_path: Path) -> Tuple[Dict[str, float], Dict[str, Dict[st
             if isinstance(evaluation, dict) and isinstance(evaluation.get("final_score"), (int, float)):
                 score_by_hash[h] = float(evaluation["final_score"])
 
-    return score_by_hash, entry_by_hash
+    output_dir = payload.get("output_dir")
+    if not isinstance(output_dir, str):
+        output_dir = None
+
+    return score_by_hash, entry_by_hash, output_dir
 
 
-def _resolve_snapshot_path(results_path: Path, raw_path: Optional[str]) -> Optional[Path]:
+def _resolve_snapshot_path(
+    results_path: Path,
+    raw_path: Optional[str],
+    *,
+    output_dir: Optional[str] = None,
+) -> Optional[Path]:
     if not raw_path:
         return None
+
     p = Path(raw_path)
+    candidates: List[Path] = []
+
     if p.is_absolute():
-        return p if p.exists() else None
-    candidate = results_path.parent / p
-    return candidate if candidate.exists() else None
+        candidates.append(p)
+    else:
+        # Paths in results.json are relative to the cwd used when running experiment.py.
+        candidates.append(Path.cwd() / p)
+        candidates.append(results_path.parent / p)
+        candidates.append(results_path.parent / p.name)
+        if output_dir:
+            candidates.append(Path.cwd() / output_dir / p.name)
+            if results_path.parent.name == Path(output_dir).name:
+                candidates.append(results_path.parent / p.name)
+
+    seen: Set[str] = set()
+    for candidate in candidates:
+        key = str(candidate)
+        if key in seen:
+            continue
+        seen.add(key)
+        if candidate.exists():
+            return candidate
+    return None
 
 
 def _load_candidates(
@@ -143,10 +178,13 @@ def _load_candidates(
     results_path: Path,
     entry_by_hash: Dict[str, Dict[str, Any]],
     include_missing_snapshots: bool,
+    output_dir: Optional[str] = None,
 ) -> List[Candidate]:
     candidates: List[Candidate] = []
     for h, entry in entry_by_hash.items():
-        snapshot_path = _resolve_snapshot_path(results_path, entry.get("config_path"))
+        snapshot_path = _resolve_snapshot_path(
+            results_path, entry.get("config_path"), output_dir=output_dir
+        )
         if snapshot_path is None and not include_missing_snapshots:
             continue
 
@@ -429,7 +467,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     if not results_path.exists():
         raise SystemExit(f"results.json not found: {results_path}")
 
-    score_by_hash, entry_by_hash = _load_cache(results_path)
+    score_by_hash, entry_by_hash, output_dir = _load_cache(results_path)
 
     rng = random.Random(args.seed)
 
@@ -444,6 +482,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             results_path=results_path,
             entry_by_hash=entry_by_hash,
             score_by_hash=score_by_hash,
+            output_dir=output_dir,
         )
         if not score_by_key:
             raise SystemExit(
@@ -533,6 +572,7 @@ def main(argv: Optional[List[str]] = None) -> int:
             results_path=results_path,
             entry_by_hash=entry_by_hash,
             include_missing_snapshots=bool(args.include_missing_snapshots),
+            output_dir=output_dir,
         )
         if not candidates:
             raise SystemExit("No candidates found (check results.json and config_path files).")

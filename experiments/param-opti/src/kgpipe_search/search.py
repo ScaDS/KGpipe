@@ -18,6 +18,7 @@ from kgpipe_search.strategies.strategies import (
     SearchRun,
     run_bayesian,
     run_hnr,
+    run_implementation_aware,
     run_qgns,
     run_random,
 )
@@ -28,6 +29,7 @@ __all__ = [
     "random_initialization",
     "implementation_aware_initialization",
     "random_search",
+    "implementation_aware_search",
     "neighborhood_optimization",
     "qgns_search",
     "hnr_search",
@@ -48,6 +50,25 @@ def random_search(
         evaluate_fn=evaluate_fn,
         search_space=search_space,
         pipeline_layout=pipeline_layout,
+        rng=rng,
+    )
+
+
+def implementation_aware_search(
+    *,
+    budget: int,
+    evaluate_fn: EvaluateFn,
+    search_space: Dict[str, Dict[str, Any]],
+    pipeline_layout: PipelineLayout,
+    y: int = 1,
+    rng: Any = None,
+) -> SearchRun:
+    return run_implementation_aware(
+        budget=budget,
+        evaluate_fn=evaluate_fn,
+        search_space=search_space,
+        pipeline_layout=pipeline_layout,
+        y=y,
         rng=rng,
     )
 

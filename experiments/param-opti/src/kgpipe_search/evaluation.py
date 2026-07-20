@@ -2,6 +2,7 @@ from kgpipe_eval.evaluator import Evaluator
 from kgpipe_eval.utils.kg_utils import KgLike, KgManager
 from kgpipe_eval.utils.score_utils import aggregate_scores_from_json, aggregate_scores_from_results
 from kgpipe_search.definitions import PipelineConfig
+import os
 
 aggregation_config = {
   "subgroups": {
@@ -35,9 +36,10 @@ aggregation_config = {
   "final": {
     "aggregation": "weighted_mean",
     "weights": {
-      "coverage": 0.5,
-      "correctness": 0.5,
-    #   "cleanliness": 0.2
+      "coverage": 0.3333,
+      "correctness": 0.3333,
+      "consistency": 0.3333
+      # "cleanliness": 0.3333
     }
   }
 }
@@ -51,8 +53,22 @@ def test_aggregate_results():
             print(f'    {m.metric}.{m.measurement} = {m.value:.6f}')
 
 def evaluate_pipeline(pipeline_config: PipelineConfig, result_kg: KgLike, reference_kg: KgLike):
+    from kgpipe_eval.metrics.statistics import CountMetric
     from kgpipe_eval.metrics.triple_alignment import TripleAlignmentMetric, TripleAlignmentConfig
     from kgpipe_eval.metrics.entity_alignment import EntityAlignmentMetric, EntityAlignmentConfig
+    from kgpipe_eval.metrics.consistency_violations import ConsistencyViolationsConfig,DisjointDomainMetric, DomainMetric, RangeMetric, DatatypeFormatMetric, DatatypeMetric, RelationDirectionMetric
+
+    from kgpipe_eval.utils.kg_utils import KgManager
+
+    source_seed_path: KgLike = os.getenv("SOURCE_SEED_PATH")
+    source_seed_graph = KgManager.load_kg(source_seed_path)
+    result_graph = KgManager.load_kg(result_kg)
+    result_no_seed_graph = KgManager.substract_kg(result_graph, source_seed_graph)
+
+    consistency_violations_config = ConsistencyViolationsConfig(
+        reference_kg=None,
+        ontology_path=os.getenv("ONTOLOGY_PATH")
+    )
 
     entity_alignment_config = EntityAlignmentConfig(
         method="label_embedding",
@@ -69,14 +85,20 @@ def evaluate_pipeline(pipeline_config: PipelineConfig, result_kg: KgLike, refere
         cache_literal_embeddings=True
     )
 
-    result_graph = KgManager.load_kg(result_kg)
     try:
-        results = Evaluator().run(result_graph, [TripleAlignmentMetric(), EntityAlignmentMetric()], {
+        results = Evaluator().run(result_no_seed_graph, [TripleAlignmentMetric(), EntityAlignmentMetric(), CountMetric(), DisjointDomainMetric(), DomainMetric(), RangeMetric(), DatatypeFormatMetric(), DatatypeMetric(), RelationDirectionMetric()], {
             "TripleAlignmentMetric": triple_alignment_config,
-            "EntityAlignmentMetric": entity_alignment_config
+            "EntityAlignmentMetric": entity_alignment_config,
+            "DisjointDomainMetric": consistency_violations_config,
+            "DomainMetric": consistency_violations_config,
+            "RangeMetric": consistency_violations_config,
+            "DatatypeFormatMetric": consistency_violations_config,
+            "DatatypeMetric": consistency_violations_config,
+            "RelationDirectionMetric": consistency_violations_config
         })
     finally:
         KgManager.unload_kg(result_graph)
+        KgManager.unload_kg(result_no_seed_graph)
 
     return aggregate_scores_from_results(results, aggregation_config)
 
