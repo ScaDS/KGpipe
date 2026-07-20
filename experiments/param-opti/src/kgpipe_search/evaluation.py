@@ -20,12 +20,17 @@ aggregation_config = {
       ],
       "aggregation": "mean"
     },
-    # "consistency": {
-    #   "measurements": [
-    #     {"metric": "ConsistencyMetric", "measurement": "consistency_score"}
-    #   ],
-    #   "aggregation": "mean"
-    # },
+    "consistency": {
+      "measurements": [
+        "DisjointDomainMetric.normalized_score",
+        "DomainMetric.normalized_score",
+        "RangeMetric.normalized_score",
+        "DatatypeFormatMetric.normalized_score",
+        "DatatypeMetric.normalized_score",
+        "RelationDirectionMetric.normalized_score"
+      ],
+      "aggregation": "mean"
+    },
     # "cleanliness": {
     #   "measurements": [
     #     {"metric": "DuplicateMetric", "measurement": "duplicates_ratio", "transform": "invert"}
