@@ -20,7 +20,7 @@ from kgpipe_search.strategies.initialization import (
 Observation = Tuple[float, PipelineConfig]
 EvaluateFn = Callable[[PipelineConfig], float]
 
-SearchStrategy = Literal["random", "implementation_aware", "qgns", "hnr", "bayesian"]
+SearchStrategy = Literal["random", "implementation_aware", "qgns", "hnr", "bayesian", "llm"]
 
 
 @dataclass
