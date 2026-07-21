@@ -1,6 +1,10 @@
 from kgpipe_eval.evaluator import Evaluator
 from kgpipe_eval.utils.kg_utils import KgLike, KgManager
-from kgpipe_eval.utils.score_utils import aggregate_scores_from_json, aggregate_scores_from_results
+from kgpipe_eval.utils.score_utils import (
+    AggregateScore,
+    aggregate_scores_from_json,
+    aggregate_scores_from_results,
+)
 from kgpipe_search.definitions import PipelineConfig
 import os
 
@@ -69,6 +73,12 @@ def evaluate_pipeline(pipeline_config: PipelineConfig, result_kg: KgLike, refere
     source_seed_graph = KgManager.load_kg(source_seed_path)
     result_graph = KgManager.load_kg(result_kg)
     result_no_seed_graph = KgManager.substract_kg(result_graph, source_seed_graph)
+
+    # Empty after seed subtract: alignment encode/dot and some consistency metrics break.
+    if len(result_no_seed_graph.get_graph()) == 0:
+        KgManager.unload_kg(result_graph)
+        KgManager.unload_kg(result_no_seed_graph)
+        return AggregateScore(final_score=0.0)
 
     consistency_violations_config = ConsistencyViolationsConfig(
         reference_kg=None,

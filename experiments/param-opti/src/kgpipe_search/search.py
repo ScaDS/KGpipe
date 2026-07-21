@@ -13,6 +13,7 @@ from kgpipe_search.strategies.initialization import (
     implementation_aware_initialization,
     random_initialization,
 )
+from kgpipe_search.strategies.llm_strategy import run_llm
 from kgpipe_search.strategies.strategies import (
     EvaluateFn,
     SearchRun,
@@ -34,6 +35,7 @@ __all__ = [
     "qgns_search",
     "hnr_search",
     "bayesian_optimization",
+    "llm_search",
 ]
 
 
@@ -153,6 +155,27 @@ def neighborhood_optimization(
         init_strategy="random",
         k=k,
         rho=rho,
+        rng=rng,
+    )
+
+
+def llm_search(
+    *,
+    budget: int,
+    evaluate_fn: EvaluateFn,
+    search_space: Dict[str, Dict[str, Any]],
+    pipeline_layout: PipelineLayout,
+    max_retries: int = 3,
+    client: Any = None,
+    rng: Any = None,
+) -> SearchRun:
+    return run_llm(
+        budget=budget,
+        evaluate_fn=evaluate_fn,
+        search_space=search_space,
+        pipeline_layout=pipeline_layout,
+        max_retries=max_retries,
+        client=client,
         rng=rng,
     )
 

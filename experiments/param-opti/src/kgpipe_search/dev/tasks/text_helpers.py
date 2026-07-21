@@ -19,36 +19,87 @@ from rdflib import Graph, Literal, RDF, RDFS, URIRef, XSD
 logger = logging.getLogger(__name__)
 
 
+def _file_stem_key(filename: str) -> str:
+    """Basename without extensions, e.g. 'hash.te.json' -> 'hash'."""
+    return filename.split(".", 1)[0]
 
-def __aggregate_x_te_json(input_paths: List[Path], output_path: Path):
 
+def _index_dir_by_stem(dir_path: Path) -> Dict[str, Path]:
+    """Map stem -> file path for files in a directory (first match wins)."""
+    by_stem: Dict[str, Path] = {}
+    for entry in dir_path.iterdir():
+        if entry.is_file():
+            stem = _file_stem_key(entry.name)
+            if stem not in by_stem:
+                by_stem[stem] = entry
+    return by_stem
+
+
+def __aggregate_x_te_json(
+    input_paths: List[Path],
+    output_path: Path,
+    match_by_stem: bool = False,
+):
+    """
+    Merge TE_Document JSON from files or directories.
+
+    When all inputs are directories and ``match_by_stem`` is True, files are
+    paired by stem (name before the first ``.``), so e.g.
+    ``hash.te.json`` and ``hash.txt.json`` are merged even though the
+    full filenames differ.
+    """
     if len(input_paths) == 0:
         raise Exception("No input paths provided")
-    if not all(os.path.exists(path) for path in input_paths):
+    if not all(path.exists() for path in input_paths):
         raise Exception("All input paths must exist")
 
-    path_is_dir_list = [os.path.isdir(path) for path in input_paths]
+    path_is_dir_list = [path.is_dir() for path in input_paths]
     if all(path_is_dir_list):
-        os.makedirs(output_path, exist_ok=True)
-        for file in os.listdir(input_paths[0]):
-            sub_file_paths = [Path(os.path.join(path, file)) for path in input_paths]
-            file_exists = [os.path.exists(path) for path in sub_file_paths]
-            if all(file_exists):
-                __aggregate_x_te_json(sub_file_paths, Path(os.path.join(output_path, file))) 
-            else:
-                logger.warning(f"File {file} does not exist in all input paths")
-                filtered_sub_file_paths = [path for path in sub_file_paths if os.path.exists(path)]
-                __aggregate_x_te_json(filtered_sub_file_paths, Path(os.path.join(output_path, file))) 
-    elif not all(path_is_dir_list):
+        output_path.mkdir(parents=True, exist_ok=True)
+
+        if match_by_stem:
+            stem_indexes = [_index_dir_by_stem(path) for path in input_paths]
+            for stem, primary_file in stem_indexes[0].items():
+                matched = [idx[stem] for idx in stem_indexes if stem in idx]
+                if len(matched) < len(input_paths):
+                    logger.warning(
+                        f"Stem '{stem}' does not exist in all input paths "
+                        f"(found in {len(matched)}/{len(input_paths)})"
+                    )
+                # Keep the first directory's filename for the output
+                __aggregate_x_te_json(
+                    matched,
+                    output_path / primary_file.name,
+                    match_by_stem=match_by_stem,
+                )
+        else:
+            for file in input_paths[0].iterdir():
+                if not file.is_file():
+                    continue
+                sub_file_paths = [path / file.name for path in input_paths]
+                existing = [p for p in sub_file_paths if p.exists()]
+                if len(existing) < len(input_paths):
+                    logger.warning(
+                        f"File {file.name} does not exist in all input paths"
+                    )
+                __aggregate_x_te_json(
+                    existing,
+                    output_path / file.name,
+                    match_by_stem=match_by_stem,
+                )
+    elif not any(path_is_dir_list):
         merged_doc = TE_Document()
         for file in input_paths:
-            doc = TE_Document(**json.load(open(file)))
+            with open(file) as f:
+                doc = TE_Document(**json.load(f))
             merged_doc.chains += doc.chains
             merged_doc.links += doc.links
             merged_doc.triples += doc.triples
         with open(output_path, "w") as f:
             f.write(merged_doc.model_dump_json())
-        logger.info(f"Aggregated {", ".join([str(path) for path in input_paths])} to {output_path}")
+        logger.info(
+            f"Aggregated {', '.join(str(p) for p in input_paths)} to {output_path}"
+        )
     else:
         raise Exception("All inputs must be either directories or files")
 
@@ -64,7 +115,11 @@ def __aggregate_x_te_json(input_paths: List[Path], output_path: Path):
 
 
 def aggregate3_text_tasks_task_function(inputs: Dict[str, Data], outputs: Dict[str, Data]):
-    __aggregate_x_te_json([inputs["json1"].path, inputs["json2"].path, inputs["json3"].path], outputs["output"].path)
+    __aggregate_x_te_json(
+        [inputs["json1"].path, inputs["json2"].path, inputs["json3"].path],
+        outputs["output"].path,
+        match_by_stem=True,
+    )
 
 aggregate_text_tasks_task = KgTask(
     name="aggregate_text_tasks_task",
@@ -74,7 +129,11 @@ aggregate_text_tasks_task = KgTask(
 )
 
 def aggregate2_text_tasks_task_function(inputs: Dict[str, Data], outputs: Dict[str, Data]):
-    __aggregate_x_te_json([inputs["json1"].path, inputs["json2"].path], outputs["output"].path)
+    __aggregate_x_te_json(
+        [inputs["json1"].path, inputs["json2"].path],
+        outputs["output"].path,
+        match_by_stem=True,
+    )
 
 aggregate_entity_linking_task = KgTask(
     name="aggregate_entity_linking_task",

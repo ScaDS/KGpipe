@@ -46,6 +46,7 @@ from kgpipe_search.search import (
     bayesian_optimization,
     hnr_search,
     implementation_aware_search,
+    llm_search,
     qgns_search,
     random_search,
 )
@@ -54,7 +55,7 @@ from kgpipe_search.strategies.strategies import SearchRun
 import execute as pipeline_execute
 
 PipelineType = Literal["rdf", "text"]
-SearchStrategyName = Literal["random", "implementation_aware", "qgns", "hnr", "bayesian"]
+SearchStrategyName = Literal["random", "implementation_aware", "qgns", "hnr", "bayesian", "llm"]
 TasksTmpScope = Literal["config", "pipeline", "shared"]
 InitStrategy = Literal["random", "implementation_aware"]
 
@@ -81,6 +82,7 @@ def _run_search(
     rho: float,
     pool_size: int,
     beta: float,
+    llm_max_retries: int,
     rng: random.Random,
 ) -> SearchRun:
     common = {
@@ -128,6 +130,12 @@ def _run_search(
             beta=beta,
         )
 
+    if strategy == "llm":
+        return llm_search(
+            **common,
+            max_retries=llm_max_retries,
+        )
+
     raise ValueError(f"Unknown search strategy {strategy!r}")
 
 
@@ -148,6 +156,7 @@ def run_search_experiment(
     rho: float,
     pool_size: int,
     beta: float,
+    llm_max_retries: int,
     rng_seed: int,
     tasks_tmp_scope: TasksTmpScope,
     results_path: Optional[Path],
@@ -280,6 +289,7 @@ def run_search_experiment(
         rho=rho,
         pool_size=pool_size,
         beta=beta,
+        llm_max_retries=llm_max_retries,
         rng=rng,
     )
 
@@ -387,7 +397,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--strategy",
-        choices=["random", "implementation_aware", "qgns", "hnr", "bayesian"],
+        choices=["random", "implementation_aware", "qgns", "hnr", "bayesian", "llm"],
         default="random",
         help=(
             "Search strategy to use. "
@@ -432,6 +442,12 @@ def build_parser() -> argparse.ArgumentParser:
         type=float,
         default=0.5,
         help="Acquisition beta for Bayesian optimization",
+    )
+    parser.add_argument(
+        "--llm-max-retries",
+        type=int,
+        default=3,
+        help="Validation retries per LLM proposal when using --strategy llm",
     )
     parser.add_argument(
         "--rng-seed",
@@ -499,6 +515,7 @@ def main(argv: Optional[List[str]] = None) -> int:
         rho=args.rho,
         pool_size=args.pool_size,
         beta=args.beta,
+        llm_max_retries=args.llm_max_retries,
         rng_seed=args.rng_seed,
         tasks_tmp_scope=args.tasks_tmp_scope,
         results_path=args.results,
