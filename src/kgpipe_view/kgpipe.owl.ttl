@@ -36,6 +36,8 @@
 
 :Parameter a owl:Class, :ParameterLayer .
 :ParameterBinding a owl:Class, :ParameterLayer .
+:ConfigSpec a owl:Class, :ParameterLayer .
+:ConfigBinding a owl:Class, :ParameterLayer .
 
 #################################################################
 # Object Properties
@@ -153,12 +155,16 @@
 #  rdfs:range  :Schema .
 
 ### Parameters
-:hasParameter a owl:ObjectProperty ;
+:config_spec a owl:ObjectProperty ;
   rdfs:domain :Implementation ;
+  rdfs:range  :ConfigSpec .
+
+:hasParameter a owl:ObjectProperty ;
+  rdfs:domain :ConfigSpec ;
   rdfs:range  :Parameter .
 
 :hasParameterBinding a owl:ObjectProperty ;
-  rdfs:domain :TaskRun ;
+  rdfs:domain :ConfigBinding ;
   rdfs:range  :ParameterBinding .
 
 :bindsParameter a owl:ObjectProperty ;

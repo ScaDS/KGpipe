@@ -95,16 +95,17 @@ def data_to_entity(data: "KgData") -> DataEntityId:
     return PipeKG.add_data_entity(data_entity)
 
 def parameter_to_entity(parameter: "Parameter") -> ParameterEntityId:
+    datatype = parameter.datatype.value if hasattr(parameter.datatype, "value") else str(parameter.datatype)
     parameter_entity = ParameterEntity(
         key=parameter.name,
-        alias_keys=parameter.native_keys,
-        datatype=parameter.datatype,
-        required=parameter.required,
+        alias_keys=tuple(parameter.native_keys or []),
+        datatype=datatype,
+        required=bool(parameter.required),
         default_value=parameter.default_value,
-        allowed_values=parameter.allowed_values,
-        # minimum=parameter.minimum,
-        # maximum=parameter.maximum,
-        # unit=parameter.unit,
+        allowed_values=tuple(parameter.allowed_values or []),
+        minimum=parameter.minimum,
+        maximum=parameter.maximum,
+        unit=parameter.unit,
     )
     return PipeKG.add_parameter(parameter_entity)
 
@@ -112,21 +113,40 @@ def parameter_to_entity(parameter: "Parameter") -> ParameterEntityId:
 def config_spec_to_entity(config_spec: "ConfigurationDefinition", implementation_name: str = "") -> ConfigSpecEntityId:
     if config_spec is None:
         return None
-    parameter_entities = [parameter_to_entity(parameter) for parameter in config_spec.parameters]
+    parameter_entities = tuple(
+        parameter_to_entity(parameter) for parameter in config_spec.parameters
+    )
     config_spec_entity = ConfigSpecEntity(
         name=config_spec.name,
+        description=config_spec.description,
         parameters=parameter_entities,
     )
     return PipeKG.add_config_spec(config_spec_entity)
 
 def sync_task_to_systemgraph(task: "KgTask") -> ImplementationEntityId:
-    """Register a KgTask in PipeKG if it is not already present."""
+    """Register a KgTask in PipeKG if it is not already present.
+
+    If the implementation already exists but has no config_spec while the runtime
+    task declares one, attach the missing ConfigSpec relation.
+    """
     cached = _SYNCED_TASKS.get(task.name)
     if cached is not None:
         return cached
 
     if PipeKG.has_implementation(task.name):
         impl_id = ImplementationEntityId(config.PIPEKG_PREFIX + encode_string(task.name))
+        if task.config_spec is not None:
+            existing = PipeKG.find_implementation(task.name)
+            if existing and existing[0].config_spec is None:
+                config_spec_id = config_spec_to_entity(task.config_spec, task.name)
+                if config_spec_id is not None:
+                    from kgpipe.common.graph.systemgraph import SYS_KG
+                    from kgpipe.common.graph.definitions import KGPIPE_NS
+                    SYS_KG.create_relation(
+                        type=KGPIPE_NS.config_spec,
+                        source=str(impl_id),
+                        target=config_spec_id,
+                    )
         _SYNCED_TASKS[task.name] = impl_id
         return impl_id
 

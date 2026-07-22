@@ -50,14 +50,48 @@ def pipe_task_remote(inputs: TaskInput, outputs: TaskOutput):
         parameters=[
             Parameter(
                 name="some_parameter",
-                native_keys=["some_parameter"],
+                native_keys=["some_parameter", "--some-parameter"],
                 datatype=ParameterType.string,
                 default_value="default",
                 required=False,
-                allowed_values=[]
-            )
-        ]
-    )
+                allowed_values=[],
+            ),
+            Parameter(
+                name="enabled",
+                native_keys=["enabled", "--enabled"],
+                datatype=ParameterType.boolean,
+                default_value=True,
+                required=False,
+            ),
+            Parameter(
+                name="max_iterations",
+                native_keys=["max_iterations", "--max-iterations"],
+                datatype=ParameterType.integer,
+                default_value=10,
+                required=False,
+                minimum=1,
+                maximum=100,
+            ),
+            Parameter(
+                name="threshold",
+                native_keys=["threshold", "--threshold"],
+                datatype=ParameterType.number,
+                default_value=0.5,
+                required=True,
+                minimum=0.0,
+                maximum=1.0,
+                unit="ratio",
+            ),
+            Parameter(
+                name="matching_strategy",
+                native_keys=["matching_strategy", "--strategy"],
+                datatype=ParameterType.enum,
+                default_value="exact",
+                required=True,
+                allowed_values=["exact", "fuzzy", "embedding"],
+            ),
+        ],
+    ),
 )
 def pipe_task_with_config(inputs: TaskInput, outputs: TaskOutput, config: ConfigurationProfile):
     # print config

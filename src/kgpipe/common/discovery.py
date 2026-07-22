@@ -37,6 +37,9 @@ def discover_entry_points() -> None:
 
     # Discover from kgpipe_llm
     discover_kgpipe_llm()
+
+    # Discover from kgpipe_examples (demo / tutorial tasks)
+    discover_kgpipe_examples()
     
     # Discover evaluation components
     discover_evaluation_components()
@@ -87,6 +90,17 @@ def discover_kgpipe_llm() -> None:
     except Exception as e:
         logger.error(f"Error discovering kgpipe_llm: {e}")
 
+
+def discover_kgpipe_examples() -> None:
+    """Discover and register example tasks (including config-spec demos)."""
+    try:
+        import kgpipe_examples.task_examples  # noqa: F401
+
+        logger.info("Successfully discovered kgpipe_examples components")
+    except ImportError as e:
+        logger.warning(f"kgpipe_examples not available: {e}")
+    except Exception as e:
+        logger.error(f"Error discovering kgpipe_examples: {e}")
 def discover_evaluation_components() -> None:
     """Discover and register evaluation components."""
     try:

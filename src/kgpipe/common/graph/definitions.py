@@ -147,17 +147,14 @@ class ParameterEntity(BaseModel):
     ### datatype properties ###
     key: str
     # NOTE: these entities are used as `lru_cache` keys; must be hashable.
-    alias_keys: tuple[str, ...]
+    alias_keys: tuple[str, ...] = ()
     datatype: str
-    required: bool
-    default_value: str | int | float | bool
-    allowed_values: tuple[str | int | float | bool, ...]
-    # description: Optional[str] = None
-    # scope: Scope # (training/inference/io/resources)
-    # constraints
-    # minimum: Optional[float] = None
-    # maximum: Optional[float] = None
-    # unit: Optional[str] = None
+    required: bool = False
+    default_value: Optional[str | int | float | bool] = None
+    allowed_values: tuple[str | int | float | bool, ...] = ()
+    minimum: Optional[float] = None
+    maximum: Optional[float] = None
+    unit: Optional[str] = None
 
 ParameterBindingEntityId = KGId
 class ParameterBindingEntity(BaseModel):
@@ -170,9 +167,10 @@ class ConfigSpecEntity(BaseModel):
     uri: Optional[str] = None
     ### datatype properties ###
     name: str
+    description: Optional[str] = None
     ### object properties ###
     # NOTE: these entities are used as `lru_cache` keys; must be hashable.
-    parameters: tuple[ParameterEntityId, ...]
+    parameters: tuple[ParameterEntityId, ...] = ()
 
 ConfigBindingEntityId = KGId
 class ConfigBindingEntity(BaseModel):

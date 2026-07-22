@@ -141,17 +141,38 @@ class PipeKG:
         if name is not None:
             find_kwargs["properties"] = {str(KGPIPE_NS.name): name}
         entities: List[KGEntity] = SYS_KG.find_entities(**find_kwargs)
-        implementations = [ImplementationEntity(
-            uri=entity.id,
-            name=entity.get_property_value(str(KGPIPE_NS.name))[0],
-            version=entity.get_property_value(str(KGPIPE_NS.version))[0],
-            input_spec=[DataSpecEntityId(neighbor.id) for neighbor in SYS_KG.get_neighbors(entity.id, str(KGPIPE_NS.input))],
-            output_spec=[DataSpecEntityId(neighbor.id) for neighbor in SYS_KG.get_neighbors(entity.id, str(KGPIPE_NS.output))],
-            realizesTask=[TaskEntityId(neighbor.id) for neighbor in SYS_KG.get_neighbors(entity.id, str(KGPIPE_NS.realisesTask))],
-            # hasParameter=[ParameterEntityId(neighbor.id) for neighbor in entity.get_neighbors(KGPIPE_NS.hasParameter)],
-            usesTool=[ToolEntityId(neighbor.id) for neighbor in SYS_KG.get_neighbors(entity.id, str(KGPIPE_NS.usesTool))],
-            # config_spec=ConfigSpecEntityId(entity.get_property(KGPIPE_NS.config_spec)) if entity.get_property(KGPIPE_NS.config_spec) else None,
-        ) for entity in entities]
+        implementations = []
+        for entity in entities:
+            config_neighbors = SYS_KG.get_neighbors(entity.id, str(KGPIPE_NS.config_spec))
+            config_spec_id = (
+                ConfigSpecEntityId(config_neighbors[0].id) if config_neighbors else None
+            )
+            name_vals = entity.get_property_value(str(KGPIPE_NS.name))
+            version_vals = entity.get_property_value(str(KGPIPE_NS.version))
+            implementations.append(
+                ImplementationEntity(
+                    uri=entity.id,
+                    name=name_vals[0] if name_vals else "",
+                    version=version_vals[0] if version_vals else "",
+                    input_spec=[
+                        DataSpecEntityId(neighbor.id)
+                        for neighbor in SYS_KG.get_neighbors(entity.id, str(KGPIPE_NS.input))
+                    ],
+                    output_spec=[
+                        DataSpecEntityId(neighbor.id)
+                        for neighbor in SYS_KG.get_neighbors(entity.id, str(KGPIPE_NS.output))
+                    ],
+                    realizesTask=[
+                        TaskEntityId(neighbor.id)
+                        for neighbor in SYS_KG.get_neighbors(entity.id, str(KGPIPE_NS.realisesTask))
+                    ],
+                    usesTool=[
+                        ToolEntityId(neighbor.id)
+                        for neighbor in SYS_KG.get_neighbors(entity.id, str(KGPIPE_NS.usesTool))
+                    ],
+                    config_spec=config_spec_id,
+                )
+            )
         return implementations
 
     ### Data Layer Entities ###
@@ -241,25 +262,82 @@ class PipeKG:
         payload = json.dumps(parameter.model_dump(mode="json"), sort_keys=True, separators=(",", ":"))
         stable_hash = hashlib.sha256(payload.encode("utf-8")).hexdigest()[:16]  # short suffix
         entity_id = config.PIPEKG_PREFIX + encode_string(parameter.key) + "_" + stable_hash
+        properties: dict[str, Any] = {
+            KGPIPE_NS.key: parameter.key,
+            KGPIPE_NS.alias_keys: list(parameter.alias_keys),
+            KGPIPE_NS.datatype: parameter.datatype,
+            KGPIPE_NS.required: parameter.required,
+            KGPIPE_NS.allowed_values: list(parameter.allowed_values),
+        }
+        if parameter.default_value is not None:
+            properties[KGPIPE_NS.default_value] = parameter.default_value
+        if parameter.minimum is not None:
+            properties[KGPIPE_NS.minimum] = parameter.minimum
+        if parameter.maximum is not None:
+            properties[KGPIPE_NS.maximum] = parameter.maximum
+        if parameter.unit is not None:
+            properties[KGPIPE_NS.unit] = parameter.unit
         SYS_KG.create_entity(
             id=entity_id,
             types=[KGPIPE_NS.Parameter],
-            properties={
-                KGPIPE_NS.key: parameter.key,
-                KGPIPE_NS.alias_keys: parameter.alias_keys,
-                KGPIPE_NS.datatype: parameter.datatype,
-                KGPIPE_NS.required: parameter.required,
-                KGPIPE_NS.default_value: parameter.default_value,
-                KGPIPE_NS.allowed_values: parameter.allowed_values,
-                # KGPIPE_NS.minimum: parameter.minimum,
-                # KGPIPE_NS.maximum: parameter.maximum,
-                # KGPIPE_NS.unit: parameter.unit,
-            },
+            properties=properties,
         )
         return ParameterEntityId(entity_id)
 
-    def find_parameter(name: str):
-        pass
+    @staticmethod
+    def find_parameter(
+        key: Optional[str] = None,
+        uri: Optional[str] = None,
+    ) -> List[ParameterEntity]:
+        if uri is not None:
+            entity = SYS_KG.read_entity(str(uri))
+            entities = [entity] if entity is not None else []
+        else:
+            find_kwargs: dict[str, Any] = {"types": [str(KGPIPE_NS.Parameter)]}
+            if key is not None:
+                find_kwargs["properties"] = {str(KGPIPE_NS.key): key}
+            entities = SYS_KG.find_entities(**find_kwargs)
+
+        parameters: List[ParameterEntity] = []
+        for entity in entities:
+            if entity is None:
+                continue
+            parameters.append(PipeKG._parameter_from_entity(entity))
+        return parameters
+
+    @staticmethod
+    def _parameter_from_entity(entity: KGEntity) -> ParameterEntity:
+        props = entity.properties
+        datatype_raw = PipeKG._prop_value(props, str(KGPIPE_NS.datatype), "datatype")
+        datatype = str(datatype_raw) if datatype_raw is not None else "string"
+        if datatype.startswith("ParameterType."):
+            datatype = datatype.split(".", 1)[1]
+
+        key_raw = PipeKG._prop_value(props, str(KGPIPE_NS.key), "key")
+        required_raw = PipeKG._prop_value(props, str(KGPIPE_NS.required), "required")
+        default_raw = PipeKG._prop_value(props, str(KGPIPE_NS.default_value), "default_value")
+        alias_raw = PipeKG._prop_value(props, str(KGPIPE_NS.alias_keys), "alias_keys")
+        allowed_raw = PipeKG._prop_value(props, str(KGPIPE_NS.allowed_values), "allowed_values")
+        minimum_raw = PipeKG._prop_value(props, str(KGPIPE_NS.minimum), "minimum")
+        maximum_raw = PipeKG._prop_value(props, str(KGPIPE_NS.maximum), "maximum")
+        unit_raw = PipeKG._prop_value(props, str(KGPIPE_NS.unit), "unit")
+
+        return ParameterEntity(
+            uri=entity.id,
+            key=str(key_raw) if key_raw is not None else "",
+            alias_keys=tuple(PipeKG._to_list(alias_raw)),
+            datatype=datatype,
+            required=PipeKG._to_bool(required_raw),
+            default_value=PipeKG._coerce_scalar(default_raw),
+            allowed_values=tuple(
+                v
+                for v in (PipeKG._coerce_scalar(item) for item in PipeKG._to_list(allowed_raw))
+                if v is not None
+            ),
+            minimum=PipeKG._to_float(minimum_raw),
+            maximum=PipeKG._to_float(maximum_raw),
+            unit=str(unit_raw) if unit_raw is not None else None,
+        )
     
     @staticmethod
     def add_parameter_binding(parameter_binding: ParameterBindingEntity):
@@ -283,20 +361,84 @@ class PipeKG:
     @functools.lru_cache
     def add_config_spec(config_spec: ConfigSpecEntity):
         entity_id = config.PIPEKG_PREFIX + encode_string(config_spec.name)
+        properties: dict[str, Any] = {
+            KGPIPE_NS.name: config_spec.name,
+        }
+        if config_spec.description is not None:
+            properties[KGPIPE_NS.description] = config_spec.description
         SYS_KG.create_entity(
             id=entity_id,
             types=[KGPIPE_NS.ConfigSpec],
-            properties={
-                KGPIPE_NS.name: config_spec.name,
-            },
+            properties=properties,
         )
         for parameter in config_spec.parameters:
             SYS_KG.create_relation(type=KGPIPE_NS.hasParameter, source=entity_id, target=parameter)
         return ConfigSpecEntityId(entity_id)
 
+    @staticmethod
+    def find_config_spec(
+        name: Optional[str] = None,
+        uri: Optional[str] = None,
+    ) -> List[ConfigSpecEntity]:
+        if uri is not None:
+            entity = SYS_KG.read_entity(str(uri))
+            entities = [entity] if entity is not None else []
+        else:
+            find_kwargs: dict[str, Any] = {"types": [str(KGPIPE_NS.ConfigSpec)]}
+            if name is not None:
+                find_kwargs["properties"] = {str(KGPIPE_NS.name): name}
+            entities = SYS_KG.find_entities(**find_kwargs)
 
-    def find_config_spec(name: str):
-        pass
+        specs: List[ConfigSpecEntity] = []
+        for entity in entities:
+            if entity is None:
+                continue
+            name_vals = entity.get_property_value(str(KGPIPE_NS.name))
+            description = PipeKG._prop_value(
+                entity.properties, str(KGPIPE_NS.description), "description"
+            )
+            param_ids = tuple(
+                ParameterEntityId(neighbor.id)
+                for neighbor in SYS_KG.get_neighbors(entity.id, str(KGPIPE_NS.hasParameter))
+            )
+            specs.append(
+                ConfigSpecEntity(
+                    uri=entity.id,
+                    name=name_vals[0] if name_vals else "",
+                    description=str(description) if description is not None else None,
+                    parameters=param_ids,
+                )
+            )
+        return specs
+
+    @staticmethod
+    def resolve_config_spec(
+        config_spec_id: Optional[ConfigSpecEntityId],
+    ) -> Optional[ConfigSpecEntity]:
+        """Resolve a ConfigSpec id to a ConfigSpecEntity with ParameterEntity neighbors expanded.
+
+        Returns a ConfigSpecEntity whose ``parameters`` field still holds ParameterEntityIds;
+        use :meth:`resolve_config_spec_parameters` for fully materialised ParameterEntity objects.
+        """
+        if config_spec_id is None:
+            return None
+        specs = PipeKG.find_config_spec(uri=str(config_spec_id))
+        return specs[0] if specs else None
+
+    @staticmethod
+    def resolve_config_spec_parameters(
+        config_spec_id: Optional[ConfigSpecEntityId],
+    ) -> tuple[Optional[ConfigSpecEntity], List[ParameterEntity]]:
+        """Resolve config spec and its Parameter entities."""
+        spec = PipeKG.resolve_config_spec(config_spec_id)
+        if spec is None:
+            return None, []
+        parameters: List[ParameterEntity] = []
+        for param_id in spec.parameters:
+            found = PipeKG.find_parameter(uri=str(param_id))
+            if found:
+                parameters.append(found[0])
+        return spec, parameters
 
     @staticmethod
     def add_config_binding(config_binding: ConfigBindingEntity):
@@ -336,14 +478,14 @@ class PipeKG:
         return None
 
     @staticmethod
-    def _to_list(value: Any) -> List[str]:
-        """Normalize KG property values to list[str]."""
+    def _to_list(value: Any) -> List[Any]:
+        """Normalize KG property values to a list (preserving scalar types when possible)."""
         if value is None:
             return []
         if isinstance(value, list):
-            return [str(v) for v in value]
+            return list(value)
         if isinstance(value, tuple):
-            return [str(v) for v in value]
+            return list(value)
         if isinstance(value, str):
             text = value.strip()
             if not text:
@@ -355,21 +497,102 @@ class PipeKG:
                 except (ValueError, SyntaxError):
                     return [text]
                 if isinstance(parsed, list):
-                    return [str(v) for v in parsed]
+                    return list(parsed)
             return [text]
-        return [str(value)]
+        return [value]
+
+    @staticmethod
+    def _to_bool(value: Any) -> bool:
+        if isinstance(value, bool):
+            return value
+        if value is None:
+            return False
+        if isinstance(value, (int, float)):
+            return bool(value)
+        text = str(value).strip().lower()
+        if text in {"true", "1", "yes"}:
+            return True
+        if text in {"false", "0", "no", ""}:
+            return False
+        return bool(value)
+
+    @staticmethod
+    def _to_float(value: Any) -> Optional[float]:
+        if value is None:
+            return None
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return None
+
+    @staticmethod
+    def _coerce_scalar(value: Any) -> Optional[str | int | float | bool]:
+        if value is None:
+            return None
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, int) and not isinstance(value, bool):
+            return value
+        if isinstance(value, float):
+            return value
+        if isinstance(value, str):
+            text = value.strip()
+            if not text:
+                return None
+            lowered = text.lower()
+            if lowered == "true":
+                return True
+            if lowered == "false":
+                return False
+            try:
+                if "." in text or "e" in lowered:
+                    return float(text)
+                return int(text)
+            except ValueError:
+                return text
+        return str(value)
 
     @staticmethod
     def resolve_data_spec_formats(data_spec_ids: List[DataSpecEntityId]) -> List[str]:
-        """Resolve DataSpec entity IDs to connectable format strings."""
+        """Resolve DataSpec entity IDs to format strings (unique, sorted).
+
+        Prefer :meth:`resolve_data_spec_ports` when multiplicity / port names matter.
+        """
         formats: list[str] = []
         seen: set[str] = set()
-        for data_spec_id in data_spec_ids:
-            fmt = PipeKG._resolve_data_spec_format(data_spec_id)
-            if fmt is not None and fmt not in seen:
+        for port in PipeKG.resolve_data_spec_ports(data_spec_ids):
+            fmt = port["format"]
+            if fmt not in seen:
                 seen.add(fmt)
                 formats.append(fmt)
         return sorted(formats)
+
+    @staticmethod
+    def resolve_data_spec_ports(data_spec_ids: List[DataSpecEntityId]) -> List[dict[str, str]]:
+        """Resolve DataSpecs to named ports ``{name, format}`` (preserves multiplicity)."""
+        ports: list[dict[str, str]] = []
+        for data_spec_id in data_spec_ids:
+            port = PipeKG._resolve_data_spec_port(data_spec_id)
+            if port is not None:
+                ports.append(port)
+        return ports
+
+    @staticmethod
+    def _resolve_data_spec_port(data_spec_id: DataSpecEntityId) -> Optional[dict[str, str]]:
+        entity = SYS_KG.read_entity(str(data_spec_id))
+        if entity is None:
+            return None
+        name = PipeKG._prop_value(
+            entity.properties,
+            str(KGPIPE_NS.name),
+            config.ONTOLOGY_PREFIX + "name",
+            "name",
+        )
+        fmt = PipeKG._resolve_data_spec_format(data_spec_id)
+        if fmt is None:
+            return None
+        port_name = str(name) if name is not None else fmt
+        return {"name": port_name, "format": fmt}
 
     @staticmethod
     def _resolve_data_spec_format(data_spec_id: DataSpecEntityId) -> Optional[str]:

@@ -56,6 +56,26 @@ def test_resolve_data_spec_formats_returns_linked_data_type_format():
     assert PipeKG.resolve_data_spec_formats([spec_id]) == ["nt"]
 
 
+def test_resolve_data_spec_ports_preserves_same_format_multiplicity():
+    data_type_id = PipeKG.add_data_type(
+        DataTypeEntity(format="te.json", data_schema="te.json")
+    )
+    spec_ids = [
+        PipeKG.add_data_spec(DataSpecEntity(name="json1", data_type=data_type_id)),
+        PipeKG.add_data_spec(DataSpecEntity(name="json2", data_type=data_type_id)),
+        PipeKG.add_data_spec(DataSpecEntity(name="json3", data_type=data_type_id)),
+    ]
+
+    ports = PipeKG.resolve_data_spec_ports(spec_ids)
+    assert [(p["name"], p["format"]) for p in ports] == [
+        ("json1", "te.json"),
+        ("json2", "te.json"),
+        ("json3", "te.json"),
+    ]
+    # Unique-format helper still collapses.
+    assert PipeKG.resolve_data_spec_formats(spec_ids) == ["te.json"]
+
+
 def test_data_layer_type_spec_and_entity():
     schema_name = _uid("schema")
     spec_name = _uid("spec")
@@ -130,6 +150,73 @@ def test_run_layer_add_task_run():
     )
 
     assert task_run_id
+
+
+def test_config_spec_roundtrip_on_implementation():
+    from kgpipe.common.graph.mapper import implementation_to_entity
+    from kgpipe.common.model.configuration import (
+        ConfigurationDefinition,
+        Parameter,
+        ParameterType,
+    )
+    from kgpipe.common.model.task import KgTask
+    from kgpipe.common.models import DataFormat
+
+    task_name = _uid("cfg_task")
+    config_name = _uid("cfg_spec")
+
+    def _fn(inputs, outputs):
+        return None
+
+    task = KgTask(
+        name=task_name,
+        input_spec={"input": DataFormat.ANY},
+        output_spec={"output": DataFormat.ANY},
+        function=_fn,
+        description="config roundtrip",
+        config_spec=ConfigurationDefinition(
+            name=config_name,
+            description="demo config",
+            parameters=[
+                Parameter(
+                    name="mode",
+                    native_keys=["--mode"],
+                    datatype=ParameterType.enum,
+                    default_value="exact",
+                    required=True,
+                    allowed_values=["exact", "fuzzy"],
+                ),
+                Parameter(
+                    name="threshold",
+                    native_keys=["--threshold"],
+                    datatype=ParameterType.number,
+                    default_value=0.5,
+                    required=False,
+                    minimum=0.0,
+                    maximum=1.0,
+                    unit="ratio",
+                ),
+            ],
+        ),
+    )
+
+    impl_id = implementation_to_entity(task)
+    found = PipeKG.find_implementation(task_name)
+    assert len(found) == 1
+    assert found[0].config_spec is not None
+
+    spec, params = PipeKG.resolve_config_spec_parameters(found[0].config_spec)
+    assert spec is not None
+    assert spec.name == config_name
+    assert spec.description == "demo config"
+    assert impl_id
+    by_key = {p.key: p for p in params}
+    assert by_key["mode"].datatype == "enum"
+    assert by_key["mode"].allowed_values == ("exact", "fuzzy")
+    assert by_key["threshold"].datatype == "number"
+    assert by_key["threshold"].minimum == 0.0
+    assert by_key["threshold"].maximum == 1.0
+    assert by_key["threshold"].unit == "ratio"
 
 
 def test_discovered_tasks_sync_to_systemgraph():
