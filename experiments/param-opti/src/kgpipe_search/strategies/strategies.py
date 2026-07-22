@@ -599,6 +599,129 @@ def run_hnr(
 
     return SearchRun(strategy="hnr", history=history, budget=budget, decisions=decisions)
 
+def run_hnr_2(
+    *,
+    budget: int,
+    evaluate_fn: EvaluateFn,
+    search_space: Dict[str, Dict[str, Any]],
+    pipeline_layout: PipelineLayout,
+    init_budget: int,
+    init_strategy: Literal["random", "implementation_aware"] = "implementation_aware",
+    y: int = 1,
+    rho: float = 0.2,
+    min_quality_delta = 0.05,
+    min_iterations_wo_improvement = 2,
+    rng: Optional[random.Random] = None,
+) -> SearchRun:
+    if budget <= 0:
+        return SearchRun(strategy="hnr_2", history=[], budget=0, decisions=[])
+    if init_budget <= 0:
+        raise ValueError("HNR requires init_budget > 0")
+
+    draw = rng or random.Random()
+    history: List[Observation] = []
+    decisions: List[str] = []
+    evaluated_keys: Set[str] = set()
+
+    if init_strategy == "implementation_aware":
+        init_set = implementation_aware_initialization(
+            search_space,
+            pipeline_layout,
+            budget=min(init_budget, budget),
+            y=y,
+            rng=draw,
+        )
+    else:
+        init_set = random_initialization(
+            search_space,
+            pipeline_layout,
+            budget=min(init_budget, budget),
+            rng=draw,
+        )
+
+    for cfg in init_set:
+        key = pipeline_config_snapshot_key(cfg, search_space)
+        if key in evaluated_keys:
+            continue
+        score = evaluate_fn(cfg)
+        history.append((score, cfg))
+        evaluated_keys.add(key)
+        decisions.append(f"init({init_strategy})")
+        if len(history) >= budget:
+            return SearchRun(strategy="hnr_2", history=history, budget=budget, decisions=decisions)
+
+    best_score, best_cfg = max(history, key=lambda item: item[0])
+    current_task_index = 0
+    quality_delta = 0
+    iterations_wo_improvement = 0
+    while len(history) < budget:
+        improved = False
+        if len(history) >= budget:
+            break
+        task_neighbors = _restricted_implementation_neighbors_for_index(
+            best_cfg, search_space, pipeline_layout, draw, index=current_task_index
+        )
+        task_candidates = [
+            n
+            for n in task_neighbors
+            if pipeline_config_snapshot_key(n, search_space) not in evaluated_keys
+        ]
+
+        if task_candidates:
+            candidate = draw.choice(task_candidates)
+            decision = f"task_neighbor(idx={current_task_index})"
+        else:
+            param_neighbors = _restricted_parameter_neighbors_for_index(
+                best_cfg, search_space, index=current_task_index
+            )
+            param_candidates = [
+                n
+                for n in param_neighbors
+                if pipeline_config_snapshot_key(n, search_space) not in evaluated_keys
+            ]
+            if param_candidates:
+                candidate = draw.choice(param_candidates)
+                decision = f"param_neighbor(idx={current_task_index})"
+            else:
+                candidate = sample_unevaluated_config(
+                    draw, search_space, pipeline_layout, evaluated_keys
+                )
+                decision = f"explore(fallback,idx={current_task_index})"
+
+        key = pipeline_config_snapshot_key(candidate, search_space)
+        score = evaluate_fn(candidate)
+        history.append((score, candidate))
+        evaluated_keys.add(key)
+        decisions.append(decision)
+
+        if score > best_score:
+            best_score, best_cfg = score, candidate
+            improved = True
+            quality_delta = score - best_score # current quality delta
+
+        if quality_delta < min_quality_delta: # if the delta is below the require the min quality delta consider this
+            # run as no improvement
+            iterations_wo_improvement += 1
+        else:
+            iterations_wo_improvement = 0
+        if iterations_wo_improvement >= min_iterations_wo_improvement: # if the number of no improvements we consider the next task
+            if current_task_index < len(best_cfg.tasks):
+                current_task_index += 1
+                iterations_wo_improvement = 0
+
+        if not improved and len(history) < budget and draw.random() < rho:
+            candidate = sample_unevaluated_config(
+                draw, search_space, pipeline_layout, evaluated_keys
+            )
+            key = pipeline_config_snapshot_key(candidate, search_space)
+            score = evaluate_fn(candidate)
+            history.append((score, candidate))
+            evaluated_keys.add(key)
+            decisions.append("explore(post_sweep)")
+            if score > best_score:
+                best_score, best_cfg = score, candidate
+
+    return SearchRun(strategy="hnr", history=history, budget=budget, decisions=decisions)
 
 def run_bayesian(
     *,
