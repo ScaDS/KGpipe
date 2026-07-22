@@ -113,15 +113,17 @@ def load_entity_uri_label_type_pairs(config: EntityAlignmentConfig) -> list[UriL
 # Specific alignment methods
 
 def align_entities_by_label_embedding(tg: TripleGraph, config: EntityAlignmentConfig) -> list[EntityAlignment]:
-    model = get_model()
     ref_entity_uri_label_type_pairs = load_entity_uri_label_type_pairs(config)
-    ref_labels = [pair.label for pair in ref_entity_uri_label_type_pairs]
-    ref_labels_embeddings = model.encode(ref_labels, convert_to_numpy=True, show_progress_bar=False)
-
     gen_entity_uri_label_type_pairs = list(get_entity_uri_label_type_pairs(tg, config.ignored_entities))
-    gen_labels = [pair.label for pair in gen_entity_uri_label_type_pairs]
-    gen_labels_embeddings = model.encode(gen_labels, convert_to_numpy=True, show_progress_bar=False)
+    # encode([]) yields shape (0,) which cannot matmul against (d, n_ref)
+    if not ref_entity_uri_label_type_pairs or not gen_entity_uri_label_type_pairs:
+        return []
 
+    model = get_model()
+    ref_labels = [pair.label for pair in ref_entity_uri_label_type_pairs]
+    gen_labels = [pair.label for pair in gen_entity_uri_label_type_pairs]
+    ref_labels_embeddings = model.encode(ref_labels, convert_to_numpy=True, show_progress_bar=False)
+    gen_labels_embeddings = model.encode(gen_labels, convert_to_numpy=True, show_progress_bar=False)
 
     sims = np.dot(gen_labels_embeddings, ref_labels_embeddings.T)
 

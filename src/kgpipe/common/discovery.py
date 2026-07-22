@@ -7,7 +7,6 @@ from installed packages and local modules.
 
 import importlib
 import importlib.util
-import pkgutil
 import sys
 from pathlib import Path
 from typing import List, Dict, Any, Optional, Callable
@@ -96,13 +95,99 @@ def discover_installed_packages() -> None:
     pass
 
 
+def _resolve_import_root(module_path: Path) -> tuple[Path, str] | None:
+    """Return (sys.path root, dotted module prefix) for the longest matching sys.path entry."""
+    module_path = module_path.resolve()
+    best_match: tuple[Path, str] | None = None
+    best_len = -1
+
+    for sys_path_entry in sys.path:
+        if not sys_path_entry:
+            continue
+        try:
+            sys_path = Path(sys_path_entry).resolve()
+            relative = module_path.relative_to(sys_path)
+            if len(sys_path.parts) > best_len:
+                best_match = (sys_path, ".".join(relative.parts))
+                best_len = len(sys_path.parts)
+        except (ValueError, OSError):
+            continue
+
+    return best_match
+
+
+def _find_package_source_root(module_path: Path) -> Path | None:
+    """Find the directory that should be on sys.path for package imports."""
+    module_path = module_path.resolve()
+    if module_path.is_file():
+        module_path = module_path.parent
+
+    for parent in [module_path, *module_path.parents]:
+        try:
+            relative = module_path.relative_to(parent)
+        except ValueError:
+            break
+        if not relative.parts:
+            continue
+
+        top_package = parent / relative.parts[0]
+        if top_package.is_dir() and (top_package / "__init__.py").exists():
+            if not (parent / "__init__.py").exists():
+                return parent
+
+    return None
+
+
+def _module_name_for_path(py_file: Path, scan_root: Path) -> str:
+    """Build a dotted module name for a Python file under scan_root."""
+    py_file = py_file.resolve()
+    scan_root = scan_root.resolve()
+
+    import_root = _resolve_import_root(scan_root)
+    if import_root:
+        sys_path_root, _ = import_root
+        relative = py_file.relative_to(sys_path_root)
+        return ".".join(relative.with_suffix("").parts)
+
+    package_src = _find_package_source_root(scan_root)
+    if package_src:
+        path_str = str(package_src)
+        if path_str not in sys.path:
+            sys.path.insert(0, path_str)
+        relative = py_file.relative_to(package_src)
+        return ".".join(relative.with_suffix("").parts)
+
+    relative = py_file.relative_to(scan_root)
+    return ".".join(relative.with_suffix("").parts)
+
+
+def _import_python_module(py_file: Path, module_name: str) -> None:
+    """Import a module by name, falling back to loading directly from a file path."""
+    try:
+        importlib.import_module(module_name)
+        logger.info(f"Successfully discovered module: {module_name}")
+        return
+    except Exception as e:
+        logger.debug(f"Could not import {module_name}: {e}")
+
+    try:
+        spec = importlib.util.spec_from_file_location(module_name, py_file)
+        if spec and spec.loader:
+            module = importlib.util.module_from_spec(spec)
+            sys.modules.setdefault(module_name, module)
+            spec.loader.exec_module(module)
+            logger.info(f"Successfully discovered module from file: {py_file} ({module_name})")
+    except Exception as e:
+        logger.warning(f"Error discovering module {py_file} ({module_name}): {e}")
+
+
 def discover_local_modules(module_path: Path) -> None:
     """
     Discover components from local modules.
     
     This function can handle:
     - Python files (.py) - imports the file as a module
-    - Directories - scans for Python files and imports them
+    - Directories - recursively scans for Python files and imports them
     - Paths in sys.path - converts to relative module names
     
     Args:
@@ -111,102 +196,27 @@ def discover_local_modules(module_path: Path) -> None:
     if not module_path.exists():
         logger.warning(f"Module path does not exist: {module_path}")
         return
-    
-    # Resolve to absolute path
+
     module_path = module_path.resolve()
-    
-    # Handle file paths
-    if module_path.is_file() and module_path.suffix == '.py':
-        try:
-            # Use importlib.util to load from file path
-            module_name = module_path.stem
-            spec = importlib.util.spec_from_file_location(module_name, module_path)
-            if spec and spec.loader:
-                module = importlib.util.module_from_spec(spec)
-                # Execute the module to trigger registration
-                spec.loader.exec_module(module)
-                logger.info(f"Successfully discovered module from file: {module_path}")
-        except Exception as e:
-            logger.error(f"Error discovering module from file {module_path}: {e}")
+
+    if module_path.is_file():
+        if module_path.suffix != ".py" or module_path.name == "__init__.py":
+            return
+        py_files = [module_path]
+        scan_root = module_path.parent
+    elif module_path.is_dir():
+        py_files = sorted(
+            py_file
+            for py_file in module_path.rglob("*.py")
+            if py_file.name != "__init__.py"
+        )
+        scan_root = module_path
+    else:
         return
-    
-    # Handle directory paths
-    if module_path.is_dir():
-        # Check if this directory (or its resolved path) is in sys.path
-        path_str = str(module_path)
-        path_in_sys_path = path_str in sys.path
-        # Also check resolved paths
-        if not path_in_sys_path:
-            for sys_path_entry in sys.path:
-                try:
-                    if Path(sys_path_entry).resolve() == module_path:
-                        path_in_sys_path = True
-                        break
-                except Exception:
-                    continue
-        
-        if path_in_sys_path:
-            # Directory is in sys.path, so we can import modules from it directly
-            # Scan for Python files in the directory
-            for py_file in module_path.glob("*.py"):
-                if py_file.name == "__init__.py":
-                    continue
-                try:
-                    module_name = py_file.stem
-                    spec = importlib.util.spec_from_file_location(module_name, py_file)
-                    if spec and spec.loader:
-                        module = importlib.util.module_from_spec(spec)
-                        spec.loader.exec_module(module)
-                        logger.info(f"Successfully discovered module: {module_name}")
-                except Exception as e:
-                    logger.warning(f"Error discovering module {py_file}: {e}")
-        else:
-            # Try to import the directory as a package
-            # First, check if we can find it relative to sys.path entries
-            for sys_path_entry in sys.path:
-                try:
-                    sys_path = Path(sys_path_entry).resolve()
-                    try:
-                        # Check if module_path is a subdirectory of sys_path
-                        relative_path = module_path.relative_to(sys_path)
-                        if relative_path:
-                            # Convert to module name
-                            module_name = str(relative_path).replace('/', '.').replace('\\', '.')
-                            # Try to import it
-                            module = importlib.import_module(module_name)
-                            logger.info(f"Successfully discovered package: {module_name}")
-                            # Also scan for Python files in the directory
-                            for py_file in module_path.glob("*.py"):
-                                if py_file.name == "__init__.py":
-                                    continue
-                                try:
-                                    file_module_name = f"{module_name}.{py_file.stem}"
-                                    file_module = importlib.import_module(file_module_name)
-                                    logger.info(f"Successfully discovered module: {file_module_name}")
-                                except Exception as e:
-                                    logger.debug(f"Could not import {py_file.stem} from {module_name}: {e}")
-                            return
-                    except ValueError:
-                        # Not a subdirectory, continue
-                        continue
-                except Exception:
-                    continue
-            
-            # If not found relative to sys.path, try direct import with absolute path conversion
-            # This is a fallback that may not work, but we try it
-            logger.debug(f"Directory {module_path} not found relative to sys.path, attempting direct scan")
-            for py_file in module_path.glob("*.py"):
-                if py_file.name == "__init__.py":
-                    continue
-                try:
-                    module_name = py_file.stem
-                    spec = importlib.util.spec_from_file_location(module_name, py_file)
-                    if spec and spec.loader:
-                        module = importlib.util.module_from_spec(spec)
-                        spec.loader.exec_module(module)
-                        logger.info(f"Successfully discovered module from file: {py_file}")
-                except Exception as e:
-                    logger.warning(f"Error discovering module {py_file}: {e}")
+
+    for py_file in py_files:
+        module_name = _module_name_for_path(py_file, scan_root)
+        _import_python_module(py_file, module_name)
 
 
 def get_registered_tasks() -> List[Any]:

@@ -110,6 +110,8 @@ class RdfLibTripleGraph(TripleGraph):
             return self.kg.get_graph()
         elif isinstance(self.kg, Path):
             return Graph().parse(str(self.kg))
+        elif isinstance(self.kg, str):
+            return Graph().parse(self.kg)
         else:
             raise ValueError(f"Unsupported KG type: {type(self.kg)}")
 
