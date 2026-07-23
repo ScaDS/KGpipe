@@ -45,6 +45,7 @@ from kgpipe_search.evaluation import evaluate_pipeline
 from kgpipe_search.search import (
     bayesian_optimization,
     hnr_search,
+    hnr_2_search,
     implementation_aware_search,
     llm_search,
     qgns_search,
@@ -55,7 +56,7 @@ from kgpipe_search.strategies.strategies import SearchRun
 import execute as pipeline_execute
 
 PipelineType = Literal["rdf", "text"]
-SearchStrategyName = Literal["random", "implementation_aware", "qgns", "hnr", "bayesian", "llm"]
+SearchStrategyName = Literal["random", "implementation_aware", "qgns", "hnr", "hnr_2", "bayesian", "llm"]
 TasksTmpScope = Literal["config", "pipeline", "shared"]
 InitStrategy = Literal["random", "implementation_aware"]
 
@@ -120,6 +121,14 @@ def _run_search(
             rho=rho,
         )
 
+    if strategy == "hnr_2":
+        return hnr_2_search(
+            **common,
+            init_budget=init_budget,
+            init_strategy=init_strategy,
+            y=y,
+            rho=rho,
+        )
     if strategy == "bayesian":
         return bayesian_optimization(
             **common,
@@ -397,7 +406,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--strategy",
-        choices=["random", "implementation_aware", "qgns", "hnr", "bayesian", "llm"],
+        choices=["random", "implementation_aware", "qgns", "hnr", "hnr_2", "bayesian", "llm"],
         default="random",
         help=(
             "Search strategy to use. "
