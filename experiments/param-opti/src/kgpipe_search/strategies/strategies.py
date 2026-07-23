@@ -490,7 +490,7 @@ def run_hnr(
     init_budget: int,
     init_strategy: Literal["random", "implementation_aware"] = "implementation_aware",
     y: int = 1,
-    rho: float = 0.2,
+    rho: float = 0.0,
     rng: Optional[random.Random] = None,
 ) -> SearchRun:
     if budget <= 0:
@@ -581,6 +581,7 @@ def run_hnr(
             evaluated_keys.add(key)
             decisions.append(decision)
 
+            print(f"INFO [HNR] score: {score}, best_score: {best_score}, task_idx: {idx}")
             if score > best_score:
                 best_score, best_cfg = score, candidate
                 improved = True
@@ -608,7 +609,7 @@ def run_hnr_2(
     init_budget: int,
     init_strategy: Literal["random", "implementation_aware"] = "implementation_aware",
     y: int = 1,
-    rho: float = 0.2,
+    rho: float = 0.0,
     min_quality_delta = 0.03,
     min_iterations_wo_improvement = 2,
     rng: Optional[random.Random] = None,
@@ -694,6 +695,8 @@ def run_hnr_2(
         evaluated_keys.add(key)
         decisions.append(decision)
         quality_delta = score - best_score  # current quality delta
+
+        print(f"INFO [HNR_2] score: {score}, best_score: {best_score}, task_idx: {current_task_index}")
         if score > best_score:
             best_score, best_cfg = score, candidate
             improved = True
