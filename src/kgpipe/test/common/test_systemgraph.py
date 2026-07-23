@@ -1,17 +1,20 @@
 from uuid import uuid4
 
-from kgpipe.common.discovery import discover_entry_points, get_registered_tasks
+from kgpipe.common.discovery import discover_entry_points, get_registered_tasks, get_registered_metrics
 from kgpipe.common.graph.definitions import (
     DataEntity,
     DataSpecEntity,
     DataTypeEntity,
     ImplementationEntity,
+    MeasurementSpecEntity,
     MetricEntity,
     TaskEntity,
     TaskRunEntity,
     ToolEntity,
 )
 from kgpipe.common.graph.systemgraph import PipeKG
+from kgpipe.common.graph.mapper import sync_metric_to_systemgraph
+from kgpipe_eval.metrics.statistics import CountMetric
 
 
 def _uid(prefix: str) -> str:
@@ -104,11 +107,52 @@ def test_data_layer_type_spec_and_entity():
 
 def test_metrics_layer_add_metric():
     metric_name = _uid("metric")
-    metric = MetricEntity(name=metric_name, description="Accuracy metric", type="score")
-    # add_metric is not yet implemented; ensure the entity model is valid.
-    assert metric.name == metric_name
-    assert metric.description == "Accuracy metric"
-    assert metric.type == "score"
+    m1 = PipeKG.add_measurement_spec(
+        MeasurementSpecEntity(
+            name="precision",
+            unit="percentage",
+            alias=("prec", "p"),
+        )
+    )
+    m2 = PipeKG.add_measurement_spec(
+        MeasurementSpecEntity(name="recall", unit="percentage")
+    )
+    metric_id = PipeKG.add_metric(
+        MetricEntity(
+            name=metric_name,
+            description="Accuracy metric",
+            type="score",
+            measurements=[m1, m2],
+        )
+    )
+
+    found = PipeKG.find_metric(metric_name)
+    assert len(found) == 1
+    assert found[0].name == metric_name
+    assert found[0].description == "Accuracy metric"
+    assert found[0].type == "score"
+    assert len(found[0].measurements) == 2
+
+    specs = PipeKG.resolve_measurement_specs(found[0].measurements)
+    by_name = {s.name: s for s in specs}
+    assert by_name["precision"].unit == "percentage"
+    assert by_name["precision"].alias == ("prec", "p")
+    assert by_name["recall"].unit == "percentage"
+    assert by_name["recall"].alias == ()
+    assert metric_id
+
+
+def test_sync_metric_to_systemgraph_writes_measurement_specs():
+    metric_id = sync_metric_to_systemgraph(CountMetric)
+    found = PipeKG.find_metric(CountMetric.key)
+    assert len(found) == 1
+    assert found[0].name == CountMetric.key
+    assert found[0].description == CountMetric.description
+
+    specs = PipeKG.resolve_measurement_specs(found[0].measurements)
+    expected = {m.name: m.unit for m in CountMetric.measurements}
+    assert {s.name: s.unit for s in specs} == expected
+    assert metric_id
 
 
 def test_run_layer_add_task_run():
@@ -231,3 +275,17 @@ def test_discovered_tasks_sync_to_systemgraph():
     registered_names = {task.name for task in get_registered_tasks()}
     synced_names = {impl.name for impl in PipeKG.find_implementation()}
     assert registered_names.issubset(synced_names)
+
+
+def test_discovered_metrics_sync_to_systemgraph():
+    discover_entry_points()
+
+    count_metric = PipeKG.find_metric("CountMetric")
+    assert len(count_metric) == 1
+    assert count_metric[0].name == "CountMetric"
+    specs = PipeKG.resolve_measurement_specs(count_metric[0].measurements)
+    assert {s.name for s in specs} == {m.name for m in CountMetric.measurements}
+
+    registered_keys = {getattr(m, "key", m.__name__) for m in get_registered_metrics()}
+    synced_keys = {metric.name for metric in PipeKG.find_metric()}
+    assert registered_keys.issubset(synced_keys)

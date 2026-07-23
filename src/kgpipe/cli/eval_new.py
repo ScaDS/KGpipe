@@ -6,11 +6,6 @@ import json
 from pathlib import Path
 import codecs
 
-from kgpipe_eval.metrics.statistics import CountMetric
-from kgpipe_eval.metrics.duplicates import DuplicateMetric
-from kgpipe_eval.metrics.entity_alignment import EntityAlignmentMetric
-from kgpipe_eval.metrics.triple_alignment import TripleAlignmentMetric
-from kgpipe_eval.metrics.consistency_violations import DisjointDomainMetric, DomainMetric, RangeMetric, RelationDirectionMetric, DatatypeMetric, DatatypeFormatMetric
 from kgpipe_eval.utils.kg_utils import KgManager
 from kgpipe_eval.utils.metric_utils import MeasurementKey, parse_eval_results, write_eval_csv
 from kgpipe_eval.config.manager import load_metric_configs, write_default_config_yaml
@@ -65,19 +60,16 @@ def _decode_single_char_delimiter(delimiter: str) -> str:
 
 
 def _available_metric_instances() -> dict[str, Any]:
-    # Keep this explicit until the metrics package is more complete/stable.
-    return {
-        "CountMetric": CountMetric(),
-        "DuplicateMetric": DuplicateMetric(),
-        "EntityAlignmentMetric": EntityAlignmentMetric(),
-        "TripleAlignmentMetric": TripleAlignmentMetric(),
-        "DisjointDomainMetric": DisjointDomainMetric(),
-        "DomainMetric": DomainMetric(),
-        "RangeMetric": RangeMetric(),
-        "RelationDirectionMetric": RelationDirectionMetric(),
-        "DatatypeMetric": DatatypeMetric(),
-        "DatatypeFormatMetric": DatatypeFormatMetric(),
-    }
+    from kgpipe.common.discovery import get_registered_metric_instances
+
+    # Prefer Registry-discovered metrics; fall back to the explicit catalog.
+    instances = get_registered_metric_instances()
+    if not instances:
+        from kgpipe_eval.metrics import register_metrics
+
+        register_metrics()
+        instances = get_registered_metric_instances()
+    return {_metric_key(m): m for m in instances}
 
 def _normalize_key(k: str) -> str:
     return k.strip().lower().replace("-", "_")

@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List, Any
 from kgcore.api.kg import KGId
 
@@ -29,6 +29,7 @@ class KGPIPE_NS(DefinedNamespace):
     Schema = _NS["Schema"]
     Metric = _NS["Metric"]
     MetricRun = _NS["MetricRun"]
+    MeasurementSpec = _NS["MeasurementSpec"]
     DataSpec = _NS["DataSpec"]
     DataEntity = _NS["Data"]
     DataType = _NS["DataType"]
@@ -68,6 +69,8 @@ class KGPIPE_NS(DefinedNamespace):
     implementsMethod = _NS["implementsMethod"]
     usesTool = _NS["usesTool"]
     hasParameter = _NS["hasParameter"]
+    hasMeasurement = _NS["hasMeasurement"]
+    metricType = _NS["metricType"]
 
     providesMethod = _NS["providesMethod"]
 
@@ -258,15 +261,24 @@ class PipelineRunEntity(BaseModel):
     # TODO usesPipelineDefinition: PipelineDefinition
     # TODO runsPipeline: PipelineStepEntityId
 
+MeasurementSpecEntityId = KGId
+class MeasurementSpecEntity(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    uri: Optional[str] = None
+    ### datatype properties ###
+    name: str
+    unit: Optional[str] = None
+    alias: tuple[str, ...] = ()
+
 MetricEntityId = KGId
 class MetricEntity(BaseModel):
     model_config = ConfigDict(frozen=True)
     ### datatype properties ###
     name: str
     description: Optional[str] = None
-    type: str # TODO should be an enum
+    type: Optional[str] = None  # TODO should be an enum / aspect
     ### object properties ###
-    # TODO output: List[schema_format]
+    measurements: List[MeasurementSpecEntityId] = Field(default_factory=list)
     # TODO hasParameter: List[ParameterId]
 
 MetricRunEntityId = KGId

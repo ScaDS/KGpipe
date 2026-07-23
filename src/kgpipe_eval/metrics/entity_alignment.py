@@ -1,6 +1,8 @@
+from typing import ClassVar
+
 from kgpipe.common import KG
 
-from kgpipe_eval.api import Metric, Measurement, MetricResult
+from kgpipe_eval.api import Metric, Measurement, MetricResult, MeasurementSpec
 
 from kgpipe_eval.utils.measurement_utils import BCMeasurement
 from kgpipe_eval.utils.alignment_utils import align_entities_by_label_embedding, EntityAlignmentConfig, load_entity_uri_label_type_pairs, get_entity_uri_label_typeset_pairs, get_entity_uri_label_type_pairs
@@ -146,6 +148,18 @@ def eval_entity_alignment_by_label_alias_embedding(kg: KG, config: EntityAlignme
 # Metric Implementation
 
 class EntityAlignmentMetric(Metric):
+    key = "EntityAlignmentMetric"
+    description = "Entity alignment precision/recall against a reference."
+    measurements: ClassVar[tuple[MeasurementSpec, ...]] = (
+        MeasurementSpec(name="tp", unit="number"),
+        MeasurementSpec(name="fp", unit="number"),
+        MeasurementSpec(name="tn", unit="number"),
+        MeasurementSpec(name="fn", unit="number"),
+        MeasurementSpec(name="precision", unit="percentage", alias=("ACC_E",)),
+        MeasurementSpec(name="recall", unit="percentage", alias=("COV_E",)),
+        MeasurementSpec(name="f1_score", unit="percentage"),
+    )
+
     def compute(self, kg: KG, config: EntityAlignmentConfig):
         alignments: BCMeasurement = eval_entity_alignment(kg, config)
         return MetricResult(
@@ -155,8 +169,18 @@ class EntityAlignmentMetric(Metric):
                 Measurement(name="fp", value=alignments.fp, unit="number"),
                 Measurement(name="tn", value=alignments.tn, unit="number"),
                 Measurement(name="fn", value=alignments.fn, unit="number"),
-                Measurement(name="precision", value=alignments.precision(), unit="percentage"),
-                Measurement(name="recall", value=alignments.recall(), unit="percentage"),
+                Measurement(
+                    name="precision",
+                    value=alignments.precision(),
+                    unit="percentage",
+                    alias=("ACC_E",),
+                ),
+                Measurement(
+                    name="recall",
+                    value=alignments.recall(),
+                    unit="percentage",
+                    alias=("COV_E",),
+                ),
                 Measurement(name="f1_score", value=alignments.f1_score(), unit="percentage"),
             ],
             summary=f"Entity alignment by {config.method}"

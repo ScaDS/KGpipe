@@ -1,5 +1,19 @@
 from pydantic import BaseModel
 
+from kgpipe_eval.api import MeasurementSpec
+
+# Generic BC measurement names/units without metric-specific aliases.
+# Prefer declaring measurements on each Metric class when aliases differ.
+BC_MEASUREMENT_SPECS: tuple[MeasurementSpec, ...] = (
+    MeasurementSpec(name="tp", unit="number"),
+    MeasurementSpec(name="fp", unit="number"),
+    MeasurementSpec(name="tn", unit="number"),
+    MeasurementSpec(name="fn", unit="number"),
+    MeasurementSpec(name="precision", unit="percentage"),
+    MeasurementSpec(name="recall", unit="percentage"),
+    MeasurementSpec(name="f1_score", unit="percentage"),
+)
+
 class BinaryClassificationMeasurement(BaseModel):
     tp: int
     fp: int

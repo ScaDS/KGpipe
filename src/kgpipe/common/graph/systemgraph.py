@@ -20,6 +20,7 @@ from kgpipe.common.graph.definitions import (
     DataSpecEntity, DataSpecEntityId,
     DataTypeEntity, DataTypeEntityId,
     MetricEntity, MetricEntityId,
+    MeasurementSpecEntity, MeasurementSpecEntityId,
     MetricRunEntity, MetricRunEntityId,
     TaskRunEntity, TaskRunEntityId,
     ParameterEntity, ParameterEntityId,
@@ -227,11 +228,116 @@ class PipeKG:
 
     ### Evaluation Layer Entities ###
 
-    def add_metric(metric: MetricEntity):
-        pass
+    @staticmethod
+    @functools.lru_cache
+    def add_measurement_spec(measurement: MeasurementSpecEntity) -> MeasurementSpecEntityId:
+        entity_id = measurement.uri or (
+            config.PIPEKG_PREFIX + encode_string(f"{measurement.name}_{measurement.unit or 'none'}")
+        )
+        properties: dict[str, Any] = {
+            KGPIPE_NS.name: measurement.name,
+        }
+        if measurement.unit is not None:
+            properties[KGPIPE_NS.unit] = measurement.unit
+        if measurement.alias:
+            properties[KGPIPE_NS.alias_keys] = list(measurement.alias)
+        SYS_KG.create_entity(
+            id=entity_id,
+            types=[KGPIPE_NS.MeasurementSpec],
+            properties=properties,
+        )
+        return MeasurementSpecEntityId(entity_id)
+
+    @staticmethod
+    def add_metric(metric: MetricEntity) -> MetricEntityId:
+        entity_id = config.PIPEKG_PREFIX + encode_string(metric.name)
+        properties: dict[str, Any] = {
+            KGPIPE_NS.name: metric.name,
+        }
+        if metric.description is not None:
+            properties[KGPIPE_NS.description] = metric.description
+        if metric.type is not None:
+            properties[KGPIPE_NS.metricType] = metric.type
+        SYS_KG.create_entity(
+            id=entity_id,
+            types=[KGPIPE_NS.Metric],
+            properties=properties,
+        )
+        for measurement_id in metric.measurements:
+            SYS_KG.create_relation(
+                type=KGPIPE_NS.hasMeasurement,
+                source=entity_id,
+                target=measurement_id,
+            )
+        return MetricEntityId(entity_id)
+
+    @staticmethod
+    def has_metric(name: str) -> bool:
+        entities = SYS_KG.find_entities(
+            types=[str(KGPIPE_NS.Metric)],
+            properties={str(KGPIPE_NS.name): name},
+        )
+        return len(entities) > 0
+
+    @staticmethod
+    def find_metric(name: Optional[str] = None) -> List[MetricEntity]:
+        find_kwargs: dict[str, Any] = {"types": [str(KGPIPE_NS.Metric)]}
+        if name is not None:
+            find_kwargs["properties"] = {str(KGPIPE_NS.name): name}
+        entities: List[KGEntity] = SYS_KG.find_entities(**find_kwargs)
+        metrics: List[MetricEntity] = []
+        for entity in entities:
+            name_vals = entity.get_property_value(str(KGPIPE_NS.name))
+            desc_vals = entity.get_property_value(str(KGPIPE_NS.description))
+            type_vals = entity.get_property_value(str(KGPIPE_NS.metricType))
+            metrics.append(
+                MetricEntity(
+                    name=name_vals[0] if name_vals else "",
+                    description=desc_vals[0] if desc_vals else None,
+                    type=type_vals[0] if type_vals else None,
+                    measurements=[
+                        MeasurementSpecEntityId(neighbor.id)
+                        for neighbor in SYS_KG.get_neighbors(
+                            entity.id, str(KGPIPE_NS.hasMeasurement)
+                        )
+                    ],
+                )
+            )
+        return metrics
+
+    @staticmethod
+    def resolve_measurement_specs(
+        measurement_ids: List[MeasurementSpecEntityId],
+    ) -> List[MeasurementSpecEntity]:
+        specs: List[MeasurementSpecEntity] = []
+        for measurement_id in measurement_ids:
+            entity = SYS_KG.read_entity(str(measurement_id))
+            if entity is None:
+                continue
+            name_vals = entity.get_property_value(str(KGPIPE_NS.name))
+            unit_vals = entity.get_property_value(str(KGPIPE_NS.unit))
+            alias_vals = entity.get_property_value(str(KGPIPE_NS.alias_keys))
+            alias: tuple[str, ...] = ()
+            if alias_vals:
+                # Property may be stored as a list or as repeated/single values.
+                raw = alias_vals if isinstance(alias_vals, list) else list(alias_vals)
+                flattened: list[str] = []
+                for item in raw:
+                    flattened.extend(str(v) for v in PipeKG._to_list(item))
+                alias = tuple(flattened)
+            specs.append(
+                MeasurementSpecEntity(
+                    uri=entity.id,
+                    name=name_vals[0] if name_vals else "",
+                    unit=unit_vals[0] if unit_vals else None,
+                    alias=alias,
+                )
+            )
+        return specs
 
     ### Run Layer Entities ###
 
+    @staticmethod
     def add_task_run(task_run: TaskRunEntity):
         entity_id = config.PIPEKG_PREFIX + new_id()
         SYS_KG.create_entity(
@@ -250,6 +356,7 @@ class PipeKG:
         SYS_KG.create_relation(type=KGPIPE_NS.usesImplementation, source=entity_id, target=task_run.usesImplementation)
         return TaskRunEntityId(entity_id)
 
+    @staticmethod
     def add_metric_run(metric_run: MetricRunEntity):
         pass
 

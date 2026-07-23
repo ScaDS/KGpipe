@@ -1,13 +1,11 @@
  # global Registry, entry-point discovery
  
-from typing import Any, Callable, List, Dict
+from typing import Any, Callable, List, Dict, Type
 from kgpipe.common.models import KgTask, DataFormat
 # from kgpipe.common.graph.systemgraph import PipeKG
 from kgpipe.common.graph.definitions import MetricEntity, TaskEntity
 from kgpipe.common.model.configuration import ConfigurationDefinition
 from kgpipe.common.graph.mapper import sync_task_to_systemgraph
-
-# TODO add also metrics to system graph
 
 class Registry:
     """
@@ -43,17 +41,18 @@ class Registry:
         return cls._registry
 
     # Metric #
-    
+
+    @classmethod
+    def add_metric(cls, metric_cls: Type[Any]):
+        """Register a kgpipe_eval Metric class by its `key`."""
+        key = getattr(metric_cls, "key", None) or metric_cls.__name__
+        cls._registry[f"metric:{str(key).lower()}"] = metric_cls
+
     @classmethod
     def metric(cls):
+        """Decorator for kgpipe_eval Metric classes."""
         def decorator(t):
-            cls._registry[f"metric:{t.__name__.lower()}"] = t
-            obj = t()
-            name = getattr(obj, 'name', None)
-            description = getattr(obj, 'description', None)
-            type = getattr(obj, 'aspect', None)
-            metric = MetricEntity(name=name, description=description, type=type.value if type else None)
-            # TODO add to system graph
+            cls.add_metric(t)
             return t
         return decorator
 

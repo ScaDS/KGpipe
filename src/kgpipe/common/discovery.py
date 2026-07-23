@@ -15,7 +15,7 @@ import logging
 
 from .registry import Registry
 from .models import KgTask
-from kgpipe.common.graph.mapper import sync_task_to_systemgraph
+from kgpipe.common.graph.mapper import sync_task_to_systemgraph, sync_metric_to_systemgraph
 
 logger = logging.getLogger(__name__)
 
@@ -53,12 +53,19 @@ def discover_entry_points() -> None:
 
 
 def sync_registry_to_systemgraph() -> None:
-    """Sync all registered tasks from the in-memory registry into PipeKG."""
+    """Sync all registered tasks and metrics from the in-memory registry into PipeKG."""
     for task in get_registered_tasks():
         try:
             sync_task_to_systemgraph(task)
         except Exception as e:
             logger.error(f"Error syncing task {task.name} to system graph: {e}")
+
+    for metric in get_registered_metrics():
+        try:
+            sync_metric_to_systemgraph(metric)
+        except Exception as e:
+            key = getattr(metric, "key", getattr(metric, "__name__", metric))
+            logger.error(f"Error syncing metric {key} to system graph: {e}")
 
 
 def discover_kgpipe_tasks() -> None:
@@ -102,15 +109,15 @@ def discover_kgpipe_examples() -> None:
     except Exception as e:
         logger.error(f"Error discovering kgpipe_examples: {e}")
 def discover_evaluation_components() -> None:
-    """Discover and register evaluation components."""
+    """Discover and register evaluation components from kgpipe_eval."""
     try:
-        # Import metrics registration to trigger registration
-        import kgpipe.evaluation.metrics
-        
-        logger.info("Successfully discovered evaluation components")
+        from kgpipe_eval.metrics import register_metrics
+
+        register_metrics()
+        logger.info("Successfully discovered kgpipe_eval metrics")
         
     except ImportError as e:
-        logger.warning(f"Evaluation components not available: {e}")
+        logger.warning(f"kgpipe_eval not available: {e}")
     except Exception as e:
         logger.error(f"Error discovering evaluation components: {e}")
 
@@ -276,22 +283,23 @@ def get_registered_pipelines() -> List[Any]:
 
 def get_registered_metrics() -> List[Any]:
     """
-    Get all registered metrics.
+    Get all registered metrics as metric class objects (kgpipe_eval.Metric).
     
     Returns:
-        List of metric objects
+        List of Metric classes
     """
-    metric_functions = Registry.list("metric")
-    metrics = []
-    
-    for metric_function in metric_functions:
+    return Registry.list("metric")
+
+
+def get_registered_metric_instances() -> List[Any]:
+    """Instantiate all registered kgpipe_eval metrics."""
+    instances = []
+    for metric_cls in get_registered_metrics():
         try:
-            metric = metric_function()
-            metrics.append(metric)
+            instances.append(metric_cls())
         except Exception as e:
-            logger.error(f"Error instantiating metric {metric_function.__name__}: {e}")
-    
-    return metrics
+            logger.error(f"Error instantiating metric {getattr(metric_cls, 'key', metric_cls)}: {e}")
+    return instances
 
 
 def get_registered_evaluators() -> List[Any]:

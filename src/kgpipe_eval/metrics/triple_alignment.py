@@ -1,12 +1,12 @@
 from pydantic import BaseModel, ConfigDict
-from typing import Literal
+from typing import ClassVar, Literal
 
 from kgpipe.common import KG
 from kgpipe_eval.metrics.entity_alignment import EntityAlignmentConfig
 from kgpipe_eval.utils.kg_utils import KgLike, KgManager, TripleGraph
 from kgpipe_eval.utils.alignment_utils import align_triples_by_value_embedding
 from kgpipe_eval.utils.measurement_utils import BCMeasurement
-from kgpipe_eval.api import Measurement, Metric, MetricResult
+from kgpipe_eval.api import Measurement, Metric, MetricResult, MeasurementSpec
 
 # measures precision, recall, f1 score, etc.
 
@@ -52,7 +52,18 @@ def eval_triple_alignment(tg: TripleGraph, config: TripleAlignmentConfig):
 #     pass
 
 class TripleAlignmentMetric(Metric):
-    
+    key = "TripleAlignmentMetric"
+    description = "Triple alignment precision/recall against a reference."
+    measurements: ClassVar[tuple[MeasurementSpec, ...]] = (
+        MeasurementSpec(name="tp", unit="number"),
+        MeasurementSpec(name="fp", unit="number"),
+        MeasurementSpec(name="tn", unit="number"),
+        MeasurementSpec(name="fn", unit="number"),
+        MeasurementSpec(name="precision", unit="percentage", alias=("ACC_T",)),
+        MeasurementSpec(name="recall", unit="percentage", alias=("COV_T",)),
+        MeasurementSpec(name="f1_score", unit="percentage"),
+    )
+
     def compute(self, kg: KG, config: TripleAlignmentConfig):
         m: BCMeasurement = eval_triple_alignment(kg, config)
         return MetricResult(
@@ -62,8 +73,18 @@ class TripleAlignmentMetric(Metric):
                 Measurement(name="fp", value=m.fp, unit="number"),
                 Measurement(name="tn", value=m.tn, unit="number"),
                 Measurement(name="fn", value=m.fn, unit="number"),
-                Measurement(name="precision", value=m.precision(), unit="percentage"),
-                Measurement(name="recall", value=m.recall(), unit="percentage"),
+                Measurement(
+                    name="precision",
+                    value=m.precision(),
+                    unit="percentage",
+                    alias=("ACC_T",),
+                ),
+                Measurement(
+                    name="recall",
+                    value=m.recall(),
+                    unit="percentage",
+                    alias=("COV_T",),
+                ),
                 Measurement(name="f1_score", value=m.f1_score(), unit="percentage"),
             ],
             summary=f"Triple alignment by {config.method}",

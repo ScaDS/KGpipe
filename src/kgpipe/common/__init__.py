@@ -34,8 +34,8 @@ from .registry import Registry
 from .io import get_docker_volume_bindings, remap_data_path_for_container
 from .discovery import (
     discover_entry_points, get_registered_tasks, get_registered_pipelines,
-    get_registered_metrics, get_registered_evaluators, list_available_components,
-    find_task_by_name, find_pipeline_by_name
+    get_registered_metrics, get_registered_metric_instances, get_registered_evaluators,
+    list_available_components, find_task_by_name, find_pipeline_by_name
 )
 
 __all__ = [
@@ -45,6 +45,7 @@ __all__ = [
     "Registry",
     "get_docker_volume_bindings", "remap_data_path_for_container",
     "discover_entry_points", "get_registered_tasks", "get_registered_pipelines",
-    "get_registered_metrics", "get_registered_evaluators", "list_available_components",
+    "get_registered_metrics", "get_registered_metric_instances", "get_registered_evaluators",
+    "list_available_components",
     "find_task_by_name", "find_pipeline_by_name"
 ]
