@@ -1,15 +1,16 @@
 # KGpipe: A Framework for Knowledge Graph Integration Pipelines
 
-## Related benchmarks & datasets
-
-- **KGI-Bench**: benchmark specification + tooling for KG integration evaluation. See `https://github.com/ScaDS/KGI-Bench`.
-- **KGI-Bench (Movies)**: Movie-domain benchmark dataset release (Zenodo). See `https://doi.org/10.5281/zenodo.17246357`.
-
-
 KGpipe is an open-source framework for defining, executing, and evaluating knowledge graph (KG) integration pipelines.
 It enables the reuse and composition of existing tools (e.g., OpenIE, PARIS, JedAI) and Large Language Models (LLMs) into modular pipelines that integrate heterogeneous data sources into a unified KG.
 
 ![KGpipe workflow](docs/workflow.png)
+
+## Related benchmarks, datasets, and papers
+
+- [**KGI-Bench**](https://github.com/ScaDS/KGI-Bench): benchmark specification + tooling for KG integration evaluation.
+- [**KGI-Bench (Movies)**](https://doi.org/10.5281/zenodo.17246357): Movie-domain benchmark dataset release (Zenodo).
+- [**KGpipe Explorer**](https://vehnem.github.io/kgpipe-explorer/): a demo exploring results of KGI-Bench executed with KGpipe.
+- [**Framework Paper**](https://arxiv.org/abs/2511.18364): framework core paper; revised version accepted at QDB 2026 (to appear).
 
 **Who is this for?**
 - You have multiple heterogeneous sources (RDF/JSON/text) and want a **reproducible, modular pipeline**.
