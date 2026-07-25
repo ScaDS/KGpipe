@@ -2,6 +2,8 @@
 
 Search over KG integration pipeline configs (task selection + parameters) to maximize evaluation quality against a reference KG. Supports **RDF** (graph alignment / fusion) and **text** (IE → linking → RDF → fusion) pipelines on the MovieKG benchmark.
 
+Experiment results can be found at https://github.com/Vehnem/kgpipe-experiment-results/tree/main/parameter_search
+
 ## Layout
 
 | Path | Role |
