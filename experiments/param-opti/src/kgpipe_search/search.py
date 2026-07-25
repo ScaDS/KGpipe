@@ -19,6 +19,7 @@ from kgpipe_search.strategies.strategies import (
     SearchRun,
     run_bayesian,
     run_hnr,
+    run_hnr_2,
     run_implementation_aware,
     run_qgns,
     run_random,
@@ -34,6 +35,7 @@ __all__ = [
     "neighborhood_optimization",
     "qgns_search",
     "hnr_search",
+    "hnr_2_search",
     "bayesian_optimization",
     "llm_search",
 ]
@@ -128,6 +130,34 @@ def hnr_search(
         rng=rng,
     )
 
+
+def hnr_2_search(
+    *,
+    budget: int,
+    evaluate_fn: EvaluateFn,
+    search_space: Dict[str, Dict[str, Any]],
+    pipeline_layout: PipelineLayout,
+    init_budget: int,
+    init_strategy: str = "implementation_aware",
+    y: int = 1,
+    rho: float = 0.2,
+    min_quality_delta: float = 0.05,
+    min_iterations_wo_improvement: int = 2,
+    rng: Any = None,
+) -> SearchRun:
+    return run_hnr_2(
+        budget=budget,
+        evaluate_fn=evaluate_fn,
+        search_space=search_space,
+        pipeline_layout=pipeline_layout,
+        init_budget=init_budget,
+        init_strategy="random" if init_strategy == "random" else "implementation_aware",
+        y=y,
+        rho=rho,
+        min_quality_delta=min_quality_delta,
+        min_iterations_wo_improvement=min_iterations_wo_improvement,
+        rng=rng,
+    )
 
 def neighborhood_optimization(
     budget: int,

@@ -14,17 +14,22 @@ import matplotlib.pyplot as plt
 
 
 DEFAULT_RESULTS_DIR = Path(__file__).resolve().parent.parent / "search-results"
-DEFAULT_OUTPUT = Path(__file__).resolve().parent.parent / "search-results" / "search-evolution.png"
-DEFAULT_TABLE_CSV = Path(__file__).resolve().parent.parent / "search-results" / "search-evolution-table.csv"
-DEFAULT_TABLE_MD = Path(__file__).resolve().parent.parent / "search-results" / "search-evolution-table.md"
+DEFAULT_OUT_DIR = Path(__file__).resolve().parent.parent / "search-results"
+
+PLOT_FILENAME = "search-evolution.png"
+PLOT_CHRONOLOGICAL_FILENAME = "search-evolution-chronological.png"
+TABLE_CSV_FILENAME = "search-evolution-table.csv"
+TABLE_MD_FILENAME = "search-evolution-table.md"
 
 STRATEGY_LABELS = {
     "bayes-offline.json": "Bayesian optimization",
     "bayesian-results.json": "Bayesian optimization",
-    "hnr-offline.json": "HNR",
-    "hnr-results.json": "HNR",
-    "qgns-offline.json": "QGNS",
-    "qgns-results.json": "QGNS",
+    "hnr-offline.json": "HNR-1",
+    "hnr-results.json": "HNR-1",
+    "hnr_2-offline.json": "HNR-2",
+    "hnr_2-results.json": "HNR-2",
+    "qgns-offline.json": "RNS",
+    "qgns-results.json": "RNS",
     "random-implementation-aware-offline.json": "Random (implementation-aware)",
     "implementation-aware-results.json": "Implementation-aware",
     "random-random-offline.json": "Random",
@@ -129,6 +134,7 @@ class StrategyMetrics:
     strategy: str
     q_best: float
     evals_to_95pct: Optional[int]
+    evals_to_best: Optional[int]
     aoc: float
 
 
@@ -180,17 +186,19 @@ def _metrics_for_report(
         strategy=_label_for(path, report),
         q_best=max(ys),
         evals_to_95pct=_evals_to_fraction(xs, ys, fraction=target_fraction),
+        evals_to_best=_evals_to_fraction(xs, ys, fraction=1.0),
         aoc=_area_under_curve(xs, ys),
     )
 
 
 def _format_metrics_table(rows: Sequence[StrategyMetrics]) -> List[List[str]]:
-    header = ["Strategy", "Q best", "Evals to 95%", "AOC"]
+    header = ["Strategy", "Q best", "Evals to 95%", "Evals to best", "AOC"]
     body = [
         [
             row.strategy,
             f"{row.q_best:.4f}",
             str(row.evals_to_95pct) if row.evals_to_95pct is not None else "—",
+            str(row.evals_to_best) if row.evals_to_best is not None else "—",
             f"{row.aoc:.2f}",
         ]
         for row in rows
@@ -212,9 +220,17 @@ def _write_metrics_csv(path: Path, rows: Sequence[StrategyMetrics]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.writer(f)
-        writer.writerow(["strategy", "q_best", "evals_to_95pct", "aoc"])
+        writer.writerow(["strategy", "q_best", "evals_to_95pct", "evals_to_best", "aoc"])
         for row in rows:
-            writer.writerow([row.strategy, f"{row.q_best:.6f}", row.evals_to_95pct, f"{row.aoc:.4f}"])
+            writer.writerow(
+                [
+                    row.strategy,
+                    f"{row.q_best:.6f}",
+                    row.evals_to_95pct,
+                    row.evals_to_best,
+                    f"{row.aoc:.4f}",
+                ]
+            )
 
 
 def _write_metrics_markdown(path: Path, rows: Sequence[StrategyMetrics]) -> None:
@@ -227,10 +243,6 @@ def _write_metrics_markdown(path: Path, rows: Sequence[StrategyMetrics]) -> None
     for row in table[1:]:
         lines.append("| " + " | ".join(row) + " |")
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
-
-
-def _chronological_out_path(out: Path) -> Path:
-    return out.with_name(f"{out.stem}-chronological{out.suffix}")
 
 
 def _label_for(path: Path, report: dict[str, Any]) -> str:
@@ -298,16 +310,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="Directory containing *-offline.json or *-results.json reports.",
     )
     p.add_argument(
-        "--out",
+        "--out-dir",
         type=Path,
-        default=DEFAULT_OUTPUT,
-        help="Output image path for init-sorted plot.",
-    )
-    p.add_argument(
-        "--out-chronological",
-        type=Path,
-        default=None,
-        help="Output image path for chronological-init plot (default: <out-stem>-chronological<suffix>).",
+        default=DEFAULT_OUT_DIR,
+        help="Directory for generated figures and tables.",
     )
     p.add_argument(
         "--skip-chronological-plot",
@@ -318,18 +324,6 @@ def build_parser() -> argparse.ArgumentParser:
         "--title",
         default="Search evolution",
         help="Plot title.",
-    )
-    p.add_argument(
-        "--table-csv",
-        type=Path,
-        default=DEFAULT_TABLE_CSV,
-        help="CSV path for strategy summary metrics.",
-    )
-    p.add_argument(
-        "--table-md",
-        type=Path,
-        default=DEFAULT_TABLE_MD,
-        help="Markdown path for strategy summary metrics.",
     )
     p.add_argument(
         "--target-fraction",
@@ -343,6 +337,7 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: Sequence[str] | None = None) -> int:
     args = build_parser().parse_args(argv)
     results_dir: Path = args.results_dir
+    out_dir: Path = args.out_dir
     if not results_dir.is_dir():
         raise SystemExit(f"Results directory not found: {results_dir}")
 
@@ -353,6 +348,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
 
     reports = [(path, _read_report(path)) for path in report_paths]
+    out_dir.mkdir(parents=True, exist_ok=True)
 
     metrics: List[StrategyMetrics] = []
     for path, report in reports:
@@ -365,17 +361,18 @@ def main(argv: Sequence[str] | None = None) -> int:
         if row is not None:
             metrics.append(row)
 
+    plot_out = out_dir / PLOT_FILENAME
     plot_reports(
         reports,
         reorder_init=True,
         running_best=True,
-        out=args.out,
+        out=plot_out,
         title=str(args.title),
     )
-    print(f"wrote: {args.out}")
+    print(f"wrote: {plot_out}")
 
     if not args.skip_chronological_plot:
-        chrono_out = args.out_chronological or _chronological_out_path(args.out)
+        chrono_out = out_dir / PLOT_CHRONOLOGICAL_FILENAME
         chrono_title = f"{args.title} (chronological scores)"
         plot_reports(
             reports,
@@ -387,10 +384,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"wrote: {chrono_out}")
 
     if metrics:
-        _write_metrics_csv(args.table_csv, metrics)
-        _write_metrics_markdown(args.table_md, metrics)
-        print(f"wrote: {args.table_csv}")
-        print(f"wrote: {args.table_md}")
+        table_csv = out_dir / TABLE_CSV_FILENAME
+        table_md = out_dir / TABLE_MD_FILENAME
+        _write_metrics_csv(table_csv, metrics)
+        _write_metrics_markdown(table_md, metrics)
+        print(f"wrote: {table_csv}")
+        print(f"wrote: {table_md}")
         print()
         _print_metrics_table(metrics)
 

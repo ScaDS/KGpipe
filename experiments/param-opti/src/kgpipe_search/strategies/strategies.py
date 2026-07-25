@@ -6,6 +6,7 @@ from typing import Any, Callable, Dict, List, Literal, Optional, Set, Tuple
 from kgpipe.common.model.configuration import ConfigurationProfile, ParameterBinding
 from kgpipe_search.configuration import (
     build_pipeline_config_for_task_combo,
+    enumerate_exhaustive_pipeline_configs,
     enumerate_valid_task_combinations,
     pipeline_config_snapshot_key,
     sample_valid_pipeline_config,
@@ -308,19 +309,31 @@ def run_random(
     pipeline_layout: PipelineLayout,
     rng: Optional[random.Random] = None,
 ) -> SearchRun:
+    """
+    Uniform random search over the exhaustive valid config set.
+
+    Enumerates every valid (task combo × parameter) config, then samples
+    ``budget`` distinct configs without replacement. Unlike hierarchical
+    sampling (task first, then params), each leaf config is equally likely.
+    """
     draw = rng or random.Random()
+    if budget <= 0:
+        return SearchRun(strategy="random", history=[], budget=0, decisions=[])
+
+    all_configs = enumerate_exhaustive_pipeline_configs(search_space, pipeline_layout)
+    if not all_configs:
+        raise RuntimeError("Exhaustive config enumeration produced no valid configs")
+    if budget > len(all_configs):
+        raise ValueError(
+            f"budget={budget} exceeds exhaustive search space size ({len(all_configs)})"
+        )
+
+    selected = draw.sample(all_configs, k=budget)
     history: List[Observation] = []
     decisions: List[str] = []
-    evaluated_keys: Set[str] = set()
-
-    for _ in range(budget):
-        candidate = sample_unevaluated_config(
-            draw, search_space, pipeline_layout, evaluated_keys
-        )
-        key = pipeline_config_snapshot_key(candidate, search_space)
+    for candidate in selected:
         score = evaluate_fn(candidate)
         history.append((score, candidate))
-        evaluated_keys.add(key)
         decisions.append("sample")
 
     return SearchRun(strategy="random", history=history, budget=budget, decisions=decisions)
@@ -490,9 +503,11 @@ def run_hnr(
     init_budget: int,
     init_strategy: Literal["random", "implementation_aware"] = "implementation_aware",
     y: int = 1,
-    rho: float = 0.2,
+    rho: float = 0.0,
     rng: Optional[random.Random] = None,
 ) -> SearchRun:
+    rho = 0.0
+    print(f"INFO [HNR] rho: {rho}, budget: {budget}, init_budget: {init_budget}, init_strategy: {init_strategy}, y: {y}")
     if budget <= 0:
         return SearchRun(strategy="hnr", history=[], budget=0, decisions=[])
     if init_budget <= 0:
@@ -581,6 +596,7 @@ def run_hnr(
             evaluated_keys.add(key)
             decisions.append(decision)
 
+            print(f"INFO [HNR] score: {score}, best_score: {best_score}, task_idx: {idx}")
             if score > best_score:
                 best_score, best_cfg = score, candidate
                 improved = True
@@ -608,11 +624,13 @@ def run_hnr_2(
     init_budget: int,
     init_strategy: Literal["random", "implementation_aware"] = "implementation_aware",
     y: int = 1,
-    rho: float = 0.2,
-    min_quality_delta = 0.05,
+    rho: float = 0.0,
+    min_quality_delta = 0.003,
     min_iterations_wo_improvement = 2,
     rng: Optional[random.Random] = None,
 ) -> SearchRun:
+    rho = 0.0
+    print(f"INFO [HNR-2] budget: {budget}, init_budget: {init_budget}, init_strategy: {init_strategy}, y: {y}, rho: {rho}, min_quality_delta: {min_quality_delta}, min_iterations_wo_improvement: {min_iterations_wo_improvement}")
     if budget <= 0:
         return SearchRun(strategy="hnr_2", history=[], budget=0, decisions=[])
     if init_budget <= 0:
@@ -693,13 +711,13 @@ def run_hnr_2(
         history.append((score, candidate))
         evaluated_keys.add(key)
         decisions.append(decision)
+        quality_delta = score - best_score  # current quality delta
 
+        print(f"INFO [HNR_2] score: {score}, best_score: {best_score}, task_idx: {current_task_index}")
         if score > best_score:
             best_score, best_cfg = score, candidate
             improved = True
-            quality_delta = score - best_score # current quality delta
-
-        if quality_delta < min_quality_delta: # if the delta is below the require the min quality delta consider this
+        if quality_delta < min_quality_delta: # if the delta is below the required min quality delta consider this
             # run as no improvement
             iterations_wo_improvement += 1
         else:
@@ -708,7 +726,9 @@ def run_hnr_2(
             if current_task_index < len(best_cfg.tasks):
                 current_task_index += 1
                 iterations_wo_improvement = 0
-
+            else:
+                # We are not able to improve the last task anymore. Therefore, we can also stop the runs.
+                pass # TODO: implement a proper stopping criterion
         if not improved and len(history) < budget and draw.random() < rho:
             candidate = sample_unevaluated_config(
                 draw, search_space, pipeline_layout, evaluated_keys

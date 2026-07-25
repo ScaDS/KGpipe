@@ -41,10 +41,12 @@ from kgpipe_search.definitions import (
     TEXT_SEARCH_SPACE,
     PipelineConfig,
 )
-from kgpipe_search.evaluation import evaluate_pipeline
+from kgpipe_search.evaluation import aggregate_from_cached_evaluation, evaluate_pipeline
+from kgpipe_search.ranking_conf import AGGREGATION_CONFIGS, get_aggregation_config
 from kgpipe_search.search import (
     bayesian_optimization,
     hnr_search,
+    hnr_2_search,
     implementation_aware_search,
     llm_search,
     qgns_search,
@@ -55,7 +57,7 @@ from kgpipe_search.strategies.strategies import SearchRun
 import execute as pipeline_execute
 
 PipelineType = Literal["rdf", "text"]
-SearchStrategyName = Literal["random", "implementation_aware", "qgns", "hnr", "bayesian", "llm"]
+SearchStrategyName = Literal["random", "implementation_aware", "qgns", "hnr", "hnr_2", "bayesian", "llm"]
 TasksTmpScope = Literal["config", "pipeline", "shared"]
 InitStrategy = Literal["random", "implementation_aware"]
 
@@ -84,6 +86,8 @@ def _run_search(
     beta: float,
     llm_max_retries: int,
     rng: random.Random,
+    min_quality_delta: float = 0.05,
+    min_iterations_wo_improvement: int = 2,
 ) -> SearchRun:
     common = {
         "budget": budget,
@@ -120,6 +124,16 @@ def _run_search(
             rho=rho,
         )
 
+    if strategy == "hnr_2":
+        return hnr_2_search(
+            **common,
+            init_budget=init_budget,
+            init_strategy=init_strategy,
+            y=y,
+            rho=rho,
+            min_quality_delta=min_quality_delta,
+            min_iterations_wo_improvement=min_iterations_wo_improvement,
+        )
     if strategy == "bayesian":
         return bayesian_optimization(
             **common,
@@ -161,10 +175,14 @@ def run_search_experiment(
     tasks_tmp_scope: TasksTmpScope,
     results_path: Optional[Path],
     reuse_existing: bool = True,
+    min_quality_delta: float = 0.05,
+    min_iterations_wo_improvement: int = 2,
+    rank_aggregation: str = "default",
 ) -> Dict[str, Any]:
     pipeline_execute._set_ontology_env(ontology_path)
 
     search_space, pipeline_layout, run_pipeline = _pipeline_context(pipeline_type)
+    aggregation_config = get_aggregation_config(rank_aggregation)
     output_dir.mkdir(parents=True, exist_ok=True)
 
     rng = random.Random(rng_seed)
@@ -207,6 +225,7 @@ def run_search_experiment(
             "tasks_tmp_dir": str(tasks_tmp_dir),
             "status": "ok",
             "cached": False,
+            "rank_aggregation": rank_aggregation,
         }
 
         try:
@@ -220,14 +239,22 @@ def run_search_experiment(
                     score = float(cached["score"])
                     print(f"cached error: {entry['error']}")
                 else:
-                    entry["evaluation"] = cached["evaluation"]
-                    score = float(cached["score"])
-                    print(f"cached score: {score:.6f}")
+                    # Re-rank from stored measurements so a different aggregation
+                    # (e.g. flat_hmean) can be used without re-running evaluation.
+                    aggregate_score = aggregate_from_cached_evaluation(
+                        cached["evaluation"],
+                        aggregation_config,
+                    )
+                    evaluation = pipeline_execute._to_jsonable(aggregate_score)
+                    entry["evaluation"] = evaluation
+                    score = float(aggregate_score.final_score)
+                    print(f"cached score ({rank_aggregation}): {score:.6f}")
             elif reuse_existing and result_path.exists():
                 aggregate_score = evaluate_pipeline(
                     pipeline_config,
                     result_path,
                     reference_path,
+                    aggregation=aggregation_config,
                 )
                 evaluation = pipeline_execute._to_jsonable(aggregate_score)
                 entry["evaluation"] = evaluation
@@ -249,6 +276,7 @@ def run_search_experiment(
                     pipeline_config,
                     result_path,
                     reference_path,
+                    aggregation=aggregation_config,
                 )
                 evaluation = pipeline_execute._to_jsonable(aggregate_score)
                 entry["evaluation"] = evaluation
@@ -275,6 +303,7 @@ def run_search_experiment(
     print(f"reference: {reference_path}")
     print(f"output_dir: {output_dir}")
     print(f"tasks_tmp_scope: {tasks_tmp_scope}")
+    print(f"rank_aggregation: {rank_aggregation}")
 
     search_run = _run_search(
         strategy=strategy,
@@ -291,6 +320,8 @@ def run_search_experiment(
         beta=beta,
         llm_max_retries=llm_max_retries,
         rng=rng,
+        min_quality_delta=min_quality_delta,
+        min_iterations_wo_improvement=min_iterations_wo_improvement,
     )
 
     result_by_hash = {item["config_hash"]: item for item in run_results}
@@ -347,6 +378,7 @@ def run_search_experiment(
         "best_score": running_best,
         "cache_hits": cache_hits,
         "reuse_existing": reuse_existing,
+        "rank_aggregation": rank_aggregation,
     }
 
     resolved_results_path = results_path or (output_dir / "results.json")
@@ -397,7 +429,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--strategy",
-        choices=["random", "implementation_aware", "qgns", "hnr", "bayesian", "llm"],
+        choices=["random", "implementation_aware", "qgns", "hnr", "hnr_2", "bayesian", "llm"],
         default="random",
         help=(
             "Search strategy to use. "
@@ -429,7 +461,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--rho",
         type=float,
         default=0.2,
-        help="Exploration probability for QGNS/HNR",
+        help="Exploration probability for RNS",
     )
     parser.add_argument(
         "--pool-size",
@@ -477,6 +509,30 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Re-run pipelines and evaluation even when cached result/eval files exist",
     )
+    parser.add_argument(
+        "--min-quality-delta",
+        type=float,
+        default=0.01,
+        help="Minimum quality delta for HNR_2",
+    )
+    parser.add_argument(
+        "--min-iterations-wo-improvement",
+        type=int,
+        default=3,
+        help="Minimum iterations without improvement for HNR_2",
+    )
+    parser.add_argument(
+        "--rank-aggregation",
+        choices=sorted(AGGREGATION_CONFIGS),
+        default="default",
+        help=(
+            "How to turn per-metric measurements into the search objective. "
+            "'default' = subgroup means then weighted mean; "
+            "'flat_hmean' = harmonic mean over all measurements; "
+            "'custom' = custom aggregation config. "
+            "Cached .eval.json files are re-ranked from stored measurements."
+        ),
+    )
     return parser
 
 
@@ -520,6 +576,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         tasks_tmp_scope=args.tasks_tmp_scope,
         results_path=args.results,
         reuse_existing=not args.force_rerun,
+        min_quality_delta=args.min_quality_delta,
+        min_iterations_wo_improvement=args.min_iterations_wo_improvement,
+        rank_aggregation=args.rank_aggregation,
     )
 
     failed = sum(1 for item in payload["results"] if item["status"] != "ok")
