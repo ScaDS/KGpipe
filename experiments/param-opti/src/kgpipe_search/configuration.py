@@ -611,6 +611,30 @@ def sample_unique_pipeline_config_snapshots_per_combo(
     return snapshots, stats
 
 
+def enumerate_exhaustive_pipeline_configs(
+    search_space: Dict[str, Dict[str, Any]],
+    pipeline_layout: PipelineLayout,
+) -> List[PipelineConfig]:
+    """
+    Enumerate every valid pipeline config in the search space.
+
+    Unlike hierarchical sampling (task combo first, then params), this flattens
+    the full Cartesian product so each leaf config is equally likely when sampled.
+    """
+    configs: List[PipelineConfig] = []
+    for combo in enumerate_valid_task_combinations(search_space, pipeline_layout):
+        per_task_assignments = [
+            _task_param_assignments(search_space, task_key) for task_key in combo
+        ]
+        for assignment_tuple in itertools.product(*per_task_assignments):
+            configs.append(
+                _pipeline_config_for_combo_and_params(
+                    search_space, combo, assignment_tuple
+                )
+            )
+    return configs
+
+
 def enumerate_exhaustive_pipeline_config_snapshots(
     search_space: Dict[str, Dict[str, Any]],
     pipeline_layout: PipelineLayout,

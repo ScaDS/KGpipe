@@ -141,6 +141,8 @@ def hnr_2_search(
     init_strategy: str = "implementation_aware",
     y: int = 1,
     rho: float = 0.2,
+    min_quality_delta: float = 0.05,
+    min_iterations_wo_improvement: int = 2,
     rng: Any = None,
 ) -> SearchRun:
     return run_hnr_2(
@@ -152,6 +154,8 @@ def hnr_2_search(
         init_strategy="random" if init_strategy == "random" else "implementation_aware",
         y=y,
         rho=rho,
+        min_quality_delta=min_quality_delta,
+        min_iterations_wo_improvement=min_iterations_wo_improvement,
         rng=rng,
     )
 

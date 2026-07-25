@@ -35,7 +35,9 @@ class AggregateScore:
     subgroups: dict[str, SubgroupScore] = field(default_factory=dict)
 
 
-_AGGREGATIONS = frozenset({"mean", "weighted_mean", "min", "max", "geometric_mean", "product"})
+_AGGREGATIONS = frozenset(
+    {"mean", "weighted_mean", "min", "max", "geometric_mean", "harmonic_mean", "product"}
+)
 _TRANSFORMS = frozenset({None, "identity", "invert", "one_minus"})
 
 
@@ -90,6 +92,13 @@ def _aggregate(values: Sequence[float], method: str, weights: Sequence[float] | 
         if any(v == 0 for v in values):
             return 0.0
         return math.exp(sum(math.log(v) for v in values) / len(values))
+
+    if method == "harmonic_mean":
+        if any(v < 0 for v in values):
+            raise ValueError("harmonic_mean requires non-negative values")
+        if any(v == 0 for v in values):
+            return 0.0
+        return len(values) / sum(1.0 / v for v in values)
 
     raise ValueError(f"Unsupported aggregation method: {method!r}")
 
@@ -240,7 +249,8 @@ def aggregate_scores(
     }
 
     Measurement refs may be objects or shorthand strings like ``MetricName.measurement``.
-    Supported subgroup/final aggregations: mean, weighted_mean, min, max, geometric_mean, product.
+    Supported subgroup/final aggregations: mean, weighted_mean, min, max, geometric_mean,
+    harmonic_mean, product.
     Supported transforms: identity (default), invert / one_minus (``1 - value``).
     """
     lookup = _coerce_measurement_lookup(measurements)
