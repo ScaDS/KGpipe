@@ -34,6 +34,9 @@ from kgpipe.common.graph.definitions import (
     ConfigSpecEntityId,
     ConfigBindingEntity,
     ConfigBindingEntityId,
+    PipelineEntity,
+    PipelineEntityId,
+    PipelineStepEntity,
 )
 
 from typing import TYPE_CHECKING, Any, Type
@@ -45,6 +48,8 @@ if TYPE_CHECKING:
     from kgpipe.common.model import (
         DataFormat,
         KgData,
+        KgPipe,
+        KgPipePlanStep,
         KgTask,
         KgTaskRun,
         KgPipelineRun,
@@ -180,6 +185,122 @@ def implementation_to_entity(implementation: "KgTask") -> ImplementationEntityId
         config_spec=config_spec,
     )
     return PipeKG.add_implementation(implementation_entity)
+
+
+def _plan_data_spec_to_entity(
+    pipeline_name: str,
+    step_number: int,
+    port_name: str,
+    data_type: "DataFormat",
+    direction: str,
+) -> DataSpecEntityId:
+    data_spec_entity = DataSpecEntity(
+        uri=config.PIPEKG_PREFIX
+        + encode_string(f"{pipeline_name}_{step_number}_{direction}_{port_name}_{data_type}"),
+        name=f"{step_number}:{direction}:{port_name}",
+        data_type=data_type_to_entity(data_type),
+    )
+    return PipeKG.add_data_spec(data_spec_entity)
+
+
+def sync_pipeline_to_systemgraph(pipeline: "KgPipe") -> PipelineEntityId:
+    if not pipeline.plan.steps:
+        raise ValueError("Pipeline plan is empty. Call build() before syncing to PipeKG.")
+
+    catalog: list[DataSpecEntityId] = []
+    if pipeline.plan.source is not None:
+        catalog.append(
+            _plan_data_spec_to_entity(
+                pipeline.name,
+                0,
+                "source",
+                pipeline.plan.source.format,
+                "input",
+            )
+        )
+    if pipeline.plan.seed is not None:
+        catalog.append(
+            _plan_data_spec_to_entity(
+                pipeline.name,
+                0,
+                "seed",
+                pipeline.plan.seed.format,
+                "input",
+            )
+        )
+
+    step_ids = []
+    pipeline_inputs = list(catalog)
+    pipeline_outputs: list[DataSpecEntityId] = []
+
+    for index, plan_step in enumerate(pipeline.plan.steps, start=1):
+        task = next((candidate for candidate in pipeline.tasks if candidate.name == plan_step.task), None)
+        if task is None:
+            raise ValueError(f"Task {plan_step.task} not found in pipeline definition")
+
+        step_inputs: list[DataSpecEntityId] = []
+        for input_name, format_spec in task.input_spec.items():
+            if input_name == "kg":
+                if not catalog:
+                    raise ValueError(f"Pipeline {pipeline.name} has no catalog entry for 'kg' input")
+                step_inputs.append(catalog[-1])
+                continue
+
+            matched = None
+            for candidate in catalog:
+                port = PipeKG._resolve_data_spec_port(candidate)
+                if port is not None and port["format"] == str(format_spec):
+                    matched = candidate
+                    break
+            if matched is None:
+                matched = _plan_data_spec_to_entity(
+                    pipeline.name,
+                    index,
+                    input_name,
+                    format_spec,
+                    "input",
+                )
+                if matched not in pipeline_inputs:
+                    pipeline_inputs.append(matched)
+            step_inputs.append(matched)
+
+        step_outputs = [
+            _plan_data_spec_to_entity(
+                pipeline.name,
+                index,
+                output_name,
+                format_spec,
+                "output",
+            )
+            for output_name, format_spec in task.output_spec.items()
+        ]
+        if step_outputs:
+            catalog = step_outputs + catalog
+            pipeline_outputs = step_outputs
+
+        step_task = task_to_entity(task.category[0]) if getattr(task, "category", None) else None
+        impl_id = sync_task_to_systemgraph(task)
+        step_entity = PipelineStepEntity(
+            uri=config.PIPEKG_PREFIX + encode_string(f"{pipeline.name}_step_{index}_{task.name}"),
+            name=f"{index}. {task.name}",
+            number=index,
+            input=step_inputs,
+            output=step_outputs,
+            stepTask=step_task,
+            usesImplementation=impl_id,
+        )
+        step_ids.append(PipeKG.add_pipeline_step(step_entity))
+
+    pipeline_entity = PipelineEntity(
+        uri=config.PIPEKG_PREFIX + encode_string(f"pipeline-{pipeline.name}"),
+        name=pipeline.name,
+        steps=step_ids,
+        firstStep=step_ids[0],
+        lastStep=step_ids[-1],
+        input=pipeline_inputs,
+        output=pipeline_outputs,
+    )
+    return PipeKG.add_pipeline(pipeline_entity)
 
 def measurement_spec_to_entity(
     measurement: "EvalMeasurementSpec",

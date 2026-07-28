@@ -19,6 +19,7 @@ from kgpipe.common.graph.definitions import (
     DataEntity, DataEntityId, 
     DataSpecEntity, DataSpecEntityId,
     DataTypeEntity, DataTypeEntityId,
+    PipelineEntity, PipelineStepEntity, PipelineEntityId, PipelineStepEntityId,
     MetricEntity, MetricEntityId,
     MeasurementSpecEntity, MeasurementSpecEntityId,
     MetricRunEntity, MetricRunEntityId,
@@ -225,6 +226,88 @@ class PipeKG:
         return DataTypeEntityId(entity_id)
 
     ### Pipeline Layer Entities ###
+
+    @staticmethod
+    def add_pipeline_step(step: PipelineStepEntity) -> PipelineStepEntityId:
+        entity_id = step.uri or (
+            config.PIPEKG_PREFIX + encode_string(f"pipeline-step-{step.name}-{step.number}")
+        )
+        SYS_KG.create_entity(
+            id=entity_id,
+            types=[KGPIPE_NS.PipelineStep],
+            properties={
+                KGPIPE_NS.name: step.name,
+            },
+        )
+        for input_spec in step.input:
+            SYS_KG.create_relation(type=KGPIPE_NS.input, source=entity_id, target=input_spec)
+        for output_spec in step.output:
+            SYS_KG.create_relation(type=KGPIPE_NS.output, source=entity_id, target=output_spec)
+        if step.stepTask is not None:
+            SYS_KG.create_relation(type=KGPIPE_NS.stepTask, source=entity_id, target=step.stepTask)
+        if step.usesImplementation is not None:
+            SYS_KG.create_relation(
+                type=KGPIPE_NS.usesImplementation,
+                source=entity_id,
+                target=step.usesImplementation,
+            )
+        return PipelineStepEntityId(entity_id)
+
+    @staticmethod
+    def add_pipeline(pipeline: PipelineEntity) -> PipelineEntityId:
+        entity_id = pipeline.uri or (
+            config.PIPEKG_PREFIX + encode_string(f"pipeline-{pipeline.name}")
+        )
+        SYS_KG.create_entity(
+            id=entity_id,
+            types=[KGPIPE_NS.Pipeline],
+            properties={
+                KGPIPE_NS.name: pipeline.name,
+            },
+        )
+        for step in pipeline.steps:
+            SYS_KG.create_relation(type=KGPIPE_NS.hasStep, source=entity_id, target=step)
+        for source, target in zip(pipeline.steps, pipeline.steps[1:]):
+            SYS_KG.create_relation(type=KGPIPE_NS.nextStep, source=source, target=target)
+        for input_spec in pipeline.input:
+            SYS_KG.create_relation(type=KGPIPE_NS.input, source=entity_id, target=input_spec)
+        for output_spec in pipeline.output:
+            SYS_KG.create_relation(type=KGPIPE_NS.output, source=entity_id, target=output_spec)
+        return PipelineEntityId(entity_id)
+
+    @staticmethod
+    def find_pipeline(name: Optional[str] = None) -> List[PipelineEntity]:
+        find_kwargs: dict[str, Any] = {"types": [str(KGPIPE_NS.Pipeline)]}
+        if name is not None:
+            find_kwargs["properties"] = {str(KGPIPE_NS.name): name}
+        entities: List[KGEntity] = SYS_KG.find_entities(**find_kwargs)
+        pipelines: List[PipelineEntity] = []
+        for entity in entities:
+            step_ids = [
+                PipelineStepEntityId(neighbor.id)
+                for neighbor in SYS_KG.get_neighbors(entity.id, str(KGPIPE_NS.hasStep))
+            ]
+            input_ids = [
+                DataSpecEntityId(neighbor.id)
+                for neighbor in SYS_KG.get_neighbors(entity.id, str(KGPIPE_NS.input))
+            ]
+            output_ids = [
+                DataSpecEntityId(neighbor.id)
+                for neighbor in SYS_KG.get_neighbors(entity.id, str(KGPIPE_NS.output))
+            ]
+            name_vals = entity.get_property_value(str(KGPIPE_NS.name))
+            pipelines.append(
+                PipelineEntity(
+                    uri=entity.id,
+                    name=name_vals[0] if name_vals else "",
+                    steps=step_ids,
+                    firstStep=step_ids[0] if step_ids else "",
+                    lastStep=step_ids[-1] if step_ids else "",
+                    input=input_ids,
+                    output=output_ids,
+                )
+            )
+        return pipelines
 
     ### Evaluation Layer Entities ###
 

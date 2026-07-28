@@ -1,8 +1,10 @@
 from uuid import uuid4
+from pathlib import Path
 
 from kgpipe.common.discovery import discover_entry_points, get_registered_tasks, get_registered_metrics
 from kgpipe.common.graph.definitions import (
     DataEntity,
+    KGPIPE_NS,
     DataSpecEntity,
     DataTypeEntity,
     ImplementationEntity,
@@ -12,8 +14,11 @@ from kgpipe.common.graph.definitions import (
     TaskRunEntity,
     ToolEntity,
 )
-from kgpipe.common.graph.systemgraph import PipeKG
-from kgpipe.common.graph.mapper import sync_metric_to_systemgraph
+from kgpipe.common.graph.systemgraph import PipeKG, SYS_KG
+from kgpipe.common.graph.mapper import sync_metric_to_systemgraph, sync_pipeline_to_systemgraph
+from kgpipe.common.model.pipeline import KgPipe
+from kgpipe.common.model.task import KgTask
+from kgpipe.common.models import Data, DataFormat
 from kgpipe_eval.metrics.statistics import CountMetric
 
 
@@ -289,3 +294,41 @@ def test_discovered_metrics_sync_to_systemgraph():
     registered_keys = {getattr(m, "key", m.__name__) for m in get_registered_metrics()}
     synced_keys = {metric.name for metric in PipeKG.find_metric()}
     assert registered_keys.issubset(synced_keys)
+
+
+def test_sync_pipeline_to_systemgraph_registers_abstract_steps():
+    task_a = KgTask(
+        name=_uid("pipe_task_a"),
+        input_spec={"source": DataFormat.JSON, "kg": DataFormat.RDF_NTRIPLES},
+        output_spec={"matches": DataFormat.ER_JSON},
+        function=lambda _i, _o: None,
+    )
+    task_b = KgTask(
+        name=_uid("pipe_task_b"),
+        input_spec={"matches": DataFormat.ER_JSON, "kg": DataFormat.RDF_NTRIPLES},
+        output_spec={"result": DataFormat.RDF_NTRIPLES},
+        function=lambda _i, _o: None,
+    )
+    pipeline = KgPipe(
+        tasks=[task_a, task_b],
+        seed=Data(path=Path("seed.nt"), format=DataFormat.RDF_NTRIPLES),
+        data_dir="/tmp/kgpipe-pipeline-test",
+        name=_uid("pipeline"),
+    )
+    pipeline.build(
+        source=Data(path=Path("source.json"), format=DataFormat.JSON),
+        result=Data(path=Path("result.nt"), format=DataFormat.RDF_NTRIPLES),
+        stable_files=True,
+    )
+
+    pipeline_id = sync_pipeline_to_systemgraph(pipeline)
+    found = PipeKG.find_pipeline(pipeline.name)
+
+    assert pipeline_id
+    assert len(found) == 1
+    assert found[0].name == pipeline.name
+    assert len(found[0].steps) == 2
+
+    step_entities = [SYS_KG.read_entity(str(step_id)) for step_id in found[0].steps]
+    step_names = [entity.get_property_value(str(KGPIPE_NS.name))[0] for entity in step_entities if entity is not None]
+    assert step_names == [f"1. {task_a.name}", f"2. {task_b.name}"]

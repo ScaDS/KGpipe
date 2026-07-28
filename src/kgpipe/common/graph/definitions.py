@@ -23,6 +23,7 @@ class KGPIPE_NS(DefinedNamespace):
     Parameter = _NS["Parameter"]
     ParameterBinding = _NS["ParameterBinding"]
     Pipeline = _NS["Pipeline"]
+    PipelineStep = _NS["PipelineStep"]
     PipelineRun = _NS["PipelineRun"]
     Artifact = _NS["Artifact"]
     ArtifactType = _NS["ArtifactType"]
@@ -73,6 +74,9 @@ class KGPIPE_NS(DefinedNamespace):
     metricType = _NS["metricType"]
 
     providesMethod = _NS["providesMethod"]
+    hasStep = _NS["hasStep"]
+    stepTask = _NS["stepTask"]
+    nextStep = _NS["nextStep"]
 
     key = _NS["key"]
     alias_keys = _NS["alias_keys"]
@@ -226,12 +230,15 @@ class PipelineStepEntity(BaseModel):
     uri: Optional[str] = None
     ### datatype properties ###
     name: str
+    number: int
     ### object properties ###
-    input: List[DataEntityId]
-    output: List[DataEntityId]
-    executesTask: TaskEntityId
+    input: List[DataSpecEntityId]
+    output: List[DataSpecEntityId]
+    stepTask: Optional[TaskEntityId] = None
+    usesImplementation: Optional[ImplementationEntityId] = None
 
 # TODO issue as the Graph has no ordering of the tasks
+PipelineEntityId = KGId
 class PipelineEntity(BaseModel):
     model_config = ConfigDict(frozen=True)
     uri: Optional[str] = None
@@ -241,8 +248,8 @@ class PipelineEntity(BaseModel):
     steps: List[PipelineStepEntityId]
     firstStep: PipelineStepEntityId
     lastStep: PipelineStepEntityId
-    input: List[DataEntityId]
-    output: List[DataEntityId]
+    input: List[DataSpecEntityId]
+    output: List[DataSpecEntityId]
 
 PipelineRunEntityId = KGId
 class PipelineRunEntity(BaseModel):
