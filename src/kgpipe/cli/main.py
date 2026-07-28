@@ -10,7 +10,7 @@ import click
 from rich.console import Console
 
 # Import all subcommands
-# from .run import run_cmd, batch_cmd
+from .run import run_cmd
 from .eval import eval_cmd
 from .report import report_cmd
 from .list import list_cmd
@@ -71,8 +71,7 @@ def cli(ctx: click.Context, config: Optional[str], verbose: bool, quiet: bool):
 
 
 # Add all subcommands
-# cli.add_command(run_cmd)
-# cli.add_command(batch_cmd)
+cli.add_command(run_cmd)
 cli.add_command(eval_cmd)
 cli.add_command(report_cmd)
 cli.add_command(list_cmd)
