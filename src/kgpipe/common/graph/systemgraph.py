@@ -101,13 +101,16 @@ class PipeKG:
     @staticmethod
     def add_implementation(implementation: ImplementationEntity):
         entity_id = config.PIPEKG_PREFIX + encode_string(implementation.name)
+        properties = {
+            KGPIPE_NS.name: implementation.name,
+            KGPIPE_NS.version: implementation.version,
+        }
+        if implementation.description:
+            properties[KGPIPE_NS.description] = implementation.description
         SYS_KG.create_entity(
             id=entity_id,
             types=[KGPIPE_NS.Implementation],
-            properties={
-                KGPIPE_NS.name: implementation.name,
-                KGPIPE_NS.version: implementation.version,
-            },
+            properties=properties,
         )
         for input_spec in implementation.input_spec:
             SYS_KG.create_relation(type=KGPIPE_NS.input, source=entity_id, target=input_spec)
@@ -117,6 +120,8 @@ class PipeKG:
             SYS_KG.create_relation(type=KGPIPE_NS.realisesTask, source=entity_id, target=realizes_task)
         for tool in implementation.usesTool:
             SYS_KG.create_relation(type=KGPIPE_NS.usesTool, source=entity_id, target=tool)
+        for see_also in implementation.see_also:
+            SYS_KG.create_relation(type=KGPIPE_NS.see_also, source=entity_id, target=see_also)
         if implementation.config_spec:
             SYS_KG.create_relation(type=KGPIPE_NS.config_spec, source=entity_id, target=implementation.config_spec)
         return ImplementationEntityId(entity_id)
@@ -151,11 +156,17 @@ class PipeKG:
             )
             name_vals = entity.get_property_value(str(KGPIPE_NS.name))
             version_vals = entity.get_property_value(str(KGPIPE_NS.version))
+            description_vals = entity.get_property_value(str(KGPIPE_NS.description))
+            see_also = tuple(
+                neighbor.id
+                for neighbor in SYS_KG.get_neighbors(entity.id, str(KGPIPE_NS.see_also))
+            )
             implementations.append(
                 ImplementationEntity(
                     uri=entity.id,
                     name=name_vals[0] if name_vals else "",
                     version=version_vals[0] if version_vals else "",
+                    description=description_vals[0] if description_vals else None,
                     input_spec=[
                         DataSpecEntityId(neighbor.id)
                         for neighbor in SYS_KG.get_neighbors(entity.id, str(KGPIPE_NS.input))
@@ -173,6 +184,7 @@ class PipeKG:
                         for neighbor in SYS_KG.get_neighbors(entity.id, str(KGPIPE_NS.usesTool))
                     ],
                     config_spec=config_spec_id,
+                    see_also=see_also,
                 )
             )
         return implementations

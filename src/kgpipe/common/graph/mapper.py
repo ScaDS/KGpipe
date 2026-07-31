@@ -134,8 +134,8 @@ def config_spec_to_entity(config_spec: "ConfigurationDefinition", implementation
 def sync_task_to_systemgraph(task: "KgTask") -> ImplementationEntityId:
     """Register a KgTask in PipeKG if it is not already present.
 
-    If the implementation already exists but has no config_spec while the runtime
-    task declares one, attach the missing ConfigSpec relation.
+    If the implementation already exists, backfill missing config_spec / see_also /
+    description from the runtime task declaration.
     """
     cached = _SYNCED_TASKS.get(task.name)
     if cached is not None:
@@ -143,18 +143,38 @@ def sync_task_to_systemgraph(task: "KgTask") -> ImplementationEntityId:
 
     if PipeKG.has_implementation(task.name):
         impl_id = ImplementationEntityId(config.PIPEKG_PREFIX + encode_string(task.name))
-        if task.config_spec is not None:
-            existing = PipeKG.find_implementation(task.name)
-            if existing and existing[0].config_spec is None:
+        existing = PipeKG.find_implementation(task.name)
+        if existing:
+            from kgpipe.common.graph.systemgraph import SYS_KG
+            from kgpipe.common.graph.definitions import KGPIPE_NS
+
+            if task.config_spec is not None and existing[0].config_spec is None:
                 config_spec_id = config_spec_to_entity(task.config_spec, task.name)
                 if config_spec_id is not None:
-                    from kgpipe.common.graph.systemgraph import SYS_KG
-                    from kgpipe.common.graph.definitions import KGPIPE_NS
                     SYS_KG.create_relation(
                         type=KGPIPE_NS.config_spec,
                         source=str(impl_id),
                         target=config_spec_id,
                     )
+
+            declared_see_also = tuple(getattr(task, "see_also", None) or [])
+            if declared_see_also and not existing[0].see_also:
+                for link in declared_see_also:
+                    SYS_KG.create_relation(
+                        type=KGPIPE_NS.see_also,
+                        source=str(impl_id),
+                        target=link,
+                    )
+
+            declared_description = getattr(task, "description", None)
+            if declared_description and not existing[0].description:
+                # create_entity inserts property triples; safe for backfill on existing IRIs.
+                SYS_KG.create_entity(
+                    id=str(impl_id),
+                    types=[],
+                    properties={KGPIPE_NS.description: declared_description},
+                )
+
         _SYNCED_TASKS[task.name] = impl_id
         return impl_id
 
@@ -169,7 +189,10 @@ def implementation_to_entity(implementation: "KgTask") -> ImplementationEntityId
 
     output_specs = [data_spec_to_entity(data_spec, implementation.name) for data_spec in implementation.output_spec.items()]
 
-    realizes_tasks = [task_to_entity(task) for task in implementation.category]
+    categories = getattr(implementation, "category", None) or []
+    if isinstance(categories, (str, TaskCategory)):
+        categories = [categories]
+    realizes_tasks = [task_to_entity(category) for category in categories]
 
     config_spec = config_spec_to_entity(implementation.config_spec, implementation.name)
 
@@ -177,6 +200,8 @@ def implementation_to_entity(implementation: "KgTask") -> ImplementationEntityId
         ### datatype properties ###
         name=implementation.name,
         version="1.0.0", # TODO: get version from implementation
+        description=implementation.description,
+        see_also=tuple(implementation.see_also or []),
         ### object properties ###
         input_spec=input_specs,
         output_spec=output_specs,

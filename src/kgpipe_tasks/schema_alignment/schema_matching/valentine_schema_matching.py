@@ -7,15 +7,29 @@ This module provides schema matching using Valentine.
 from pathlib import Path
 from typing import Dict, Any
 
-from kgpipe.common import KgTask, Data, DataFormat, Registry
+from kgpipe.common import KgTask, Data, DataFormat, Registry, BasicTaskCategoryCatalog
 from kgpipe.common.io import get_docker_volume_bindings, remap_data_path_for_container
 from kgpipe.execution import docker_client
+from kgpipe.common.model.configuration import ConfigurationDefinition, Parameter, ParameterType
 
 @Registry.task(
     input_spec={"source": DataFormat.CSV, "target": DataFormat.CSV},
     output_spec={"output": DataFormat.ER_JSON},
     description="Perform schema matching using Valentine",
-    category=["SchemaAlignment", "SchemaMatching"]
+    category=[BasicTaskCategoryCatalog.schema_alignment, BasicTaskCategoryCatalog.schema_matching],
+    config_spec=ConfigurationDefinition(
+        name="Valentine schema matching configuration",
+        description="Valentine schema matching configuration",
+        parameters=[
+            Parameter(
+                name="relation matching threshold",
+                description="Relation matching threshold",
+                datatype=ParameterType.number,
+                default_value=0.5,
+            )
+        ]
+    ),
+    see_also=["https://github.com/delftdata/valentine"]
 )
 def valentine_csv_matching(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     """Perform schema matching using Valentine."""

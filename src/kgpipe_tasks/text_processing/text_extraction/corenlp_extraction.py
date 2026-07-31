@@ -12,6 +12,8 @@ from typing import Dict, Any, List
 from kgpipe.common import KgTask, Data, DataFormat, Registry
 from kgpipe.common.io import get_docker_volume_bindings, remap_data_path_for_container
 from kgpipe.execution import docker_client
+from kgpipe.common.model.configuration import ConfigurationDefinition, Parameter, ParameterType
+from kgpipe.common import BasicTaskCategoryCatalog
 
 
 CORENLP_ENTRYPOINT = ["java", "-cp", "*", "edu.stanford.nlp.pipeline.StanfordCoreNLP"]
@@ -21,7 +23,20 @@ CORENLP_ENTRYPOINT = ["java", "-cp", "*", "edu.stanford.nlp.pipeline.StanfordCor
     input_spec={"input": DataFormat.TEXT},
     output_spec={"output": DataFormat.OPENIE_JSON},
     description="Extract OpenIE triples using Stanford CoreNLP",
-    category=["TextProcessing", "TextExtraction"]
+    category=[BasicTaskCategoryCatalog.text_processing, BasicTaskCategoryCatalog.text_extraction],
+    config_spec=ConfigurationDefinition(
+        name="Stanford CoreNLP extraction configuration",
+        description="Stanford CoreNLP extraction configuration",
+        parameters=[
+            Parameter(
+                name="confidence",
+                description="Confidence",
+                datatype=ParameterType.number,
+                default_value=0.35,
+            )
+        ]
+    ),
+    see_also=["https://github.com/stanfordnlp/stanford-corenlp"]
 )
 def corenlp_openie_extraction(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     """Extract OpenIE triples using Stanford CoreNLP."""

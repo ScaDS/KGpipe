@@ -58,14 +58,16 @@ def sync_registry_to_systemgraph() -> None:
         try:
             sync_task_to_systemgraph(task)
         except Exception as e:
-            logger.error(f"Error syncing task {task.name} to system graph: {e}")
+            logger.exception(f"Error syncing task {task.name} to system graph: {e}")
+            print(f"Error syncing task {task.name} to system graph: {e}")
 
     for metric in get_registered_metrics():
         try:
             sync_metric_to_systemgraph(metric)
         except Exception as e:
             key = getattr(metric, "key", getattr(metric, "__name__", metric))
-            logger.error(f"Error syncing metric {key} to system graph: {e}")
+            logger.exception(f"Error syncing metric {key} to system graph: {e}")
+            print(f"Error syncing metric {key} to system graph: {e}")
 
 
 def discover_kgpipe_tasks() -> None:

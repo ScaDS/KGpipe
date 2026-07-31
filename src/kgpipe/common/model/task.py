@@ -84,7 +84,7 @@ class KgTask:
     config_spec: Optional[ConfigurationDefinition] = None
     tools: List[str] = field(default_factory=list)
     trace_task_run: bool = False
-    
+    see_also: List[str] = field(default_factory=list)
     def __post_init__(self):
         if not self.name:
             raise ValueError("Task name cannot be empty")
@@ -94,7 +94,17 @@ class KgTask:
             raise ValueError("Output specification cannot be empty")
         if not callable(self.function):
             raise ValueError("Function must be callable")
-
+        # Decorators often pass a single TaskCategory; normalize to a list.
+        if self.category is None:
+            self.category = []
+        elif isinstance(self.category, (str, TaskCategory)):
+            self.category = [self.category]
+        else:
+            self.category = list(self.category)
+        if self.see_also is None:
+            self.see_also = []
+        else:
+            self.see_also = list(self.see_also)
 
     # TODO if configProfile is not provided, use the default config profile derived from the config_spec
     def run(self, inputs: List[Data], outputs: List[Data], stable_files_override: bool = False, configProfile: Optional[ConfigurationProfile] = None) -> KgTaskReport:

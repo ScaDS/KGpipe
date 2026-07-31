@@ -1,10 +1,11 @@
  # global Registry, entry-point discovery
  
-from typing import Any, Callable, List, Dict, Type
+from typing import Any, Callable, List, Dict, Type, Union
 from kgpipe.common.models import KgTask, DataFormat
 # from kgpipe.common.graph.systemgraph import PipeKG
 from kgpipe.common.graph.definitions import MetricEntity, TaskEntity
 from kgpipe.common.model.configuration import ConfigurationDefinition
+from kgpipe.common.model.default_catalog import TaskCategory
 from kgpipe.common.graph.mapper import sync_task_to_systemgraph
 
 class Registry:
@@ -69,11 +70,24 @@ class Registry:
         input_spec: Dict[str, DataFormat], 
         output_spec: Dict[str, DataFormat], 
         description: str | None = None, 
-        category: List[str] = [],
-        config_spec: ConfigurationDefinition | None = None
+        category: Union[TaskCategory, str, List[Union[TaskCategory, str]]] = [],
+        config_spec: ConfigurationDefinition | None = None,
+        see_also: List[str] = []
         ) -> Callable[[Callable], KgTask]:
         def decorator(t):
-            task = KgTask(t.__name__.lower(), input_spec, output_spec, t, description, category, config_spec)
+            categories = category
+            if isinstance(categories, (str, TaskCategory)):
+                categories = [categories]
+            task = KgTask(
+                t.__name__.lower(),
+                input_spec,
+                output_spec,
+                t,
+                description,
+                list(categories or []),
+                config_spec,
+                see_also=see_also,
+            )
             if getattr(t, "_trace_task_run", False):
                 setattr(task, "trace_task_run", True)
             cls._registry[f"task:{t.__name__.lower()}"] = task

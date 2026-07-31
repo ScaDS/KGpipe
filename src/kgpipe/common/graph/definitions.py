@@ -69,6 +69,7 @@ class KGPIPE_NS(DefinedNamespace):
     homepage = _NS["homepage"]
     implementsMethod = _NS["implementsMethod"]
     usesTool = _NS["usesTool"]
+    see_also = _NS["seeAlso"]
     hasParameter = _NS["hasParameter"]
     hasMeasurement = _NS["hasMeasurement"]
     metricType = _NS["metricType"]
@@ -191,12 +192,14 @@ class ImplementationEntity(BaseModel):
     ### datatype properties ###
     name: str
     version: str
+    description: Optional[str] = None
     ### object properties ###
     input_spec: List[DataSpecEntityId]
     output_spec: List[DataSpecEntityId]
     realizesTask: List[TaskEntityId]
     usesTool: List[ToolEntityId]
     config_spec: Optional[ConfigSpecEntityId] = None
+    see_also: tuple[str, ...] = ()
 
     # TODO implementsMethod: List[MethodEntityId]
     # TODO interface: str
