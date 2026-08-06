@@ -100,7 +100,7 @@ def paris_task_docker(inputs: TaskInput, outputs: TaskOutput):
     print(f"PARIS completed: {result}")
 
 @Registry.task(
-    input_spec={"input1": DataFormat.CSV, "input2": DataFormat.CSV, "gt": DataFormat.CSV},
+    input_spec={"input1": DataFormat.CSV, "input2": DataFormat.CSV, "gt": DataFormat.CSV, "config": DataFormat.ANY},
     output_spec={"output": DataFormat.ER_JSON},
 )
 def pyjedai_task_docker(inputs: TaskInput, outputs: TaskOutput):
@@ -118,6 +118,7 @@ def pyjedai_task_docker(inputs: TaskInput, outputs: TaskOutput):
     source_path1 = remap_data_path_for_container(inputs["input1"], host_to_container)
     source_path2 = remap_data_path_for_container(inputs["input2"], host_to_container)
     gt_path = remap_data_path_for_container(inputs["gt"], host_to_container)
+    config_path = remap_data_path_for_container(inputs["config"], host_to_container)
     output_path = remap_data_path_for_container(outputs["output"], host_to_container)
 
     client = docker_client(
@@ -126,8 +127,10 @@ def pyjedai_task_docker(inputs: TaskInput, outputs: TaskOutput):
                  "pyjedai.sh",
                  str(source_path1.path),
                  str(source_path2.path),
+                 str(output_path.path),
+                 str(config_path.path),
                  str(gt_path.path),
-                 str(output_path.path)],
+                 ",",],
         volumes=volumes,
     )
 
