@@ -30,6 +30,8 @@ class BasicTaskCategoryCatalog:
     data_mapping = TaskCategory(name="DataMapping")
     blocking = TaskCategory(name="Blocking", parent=entity_resolution)
     clustering = TaskCategory(name="Clustering", parent=entity_resolution)
+    schema_matching = TaskCategory(name="SchemaMatching", parent=data_mapping)
+    ontology_matching = TaskCategory(name="OntologyMatching", parent=data_mapping)
 
 
     # @dataclass(frozen=True)
