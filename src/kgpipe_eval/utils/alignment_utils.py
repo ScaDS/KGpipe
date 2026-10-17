@@ -1,4 +1,3 @@
-from transformers.models.t5gemma2.modeling_t5gemma2 import T5Gemma2ClassificationHead
 from kgpipe.common import KG
 from typing import TYPE_CHECKING, Literal, NamedTuple, Optional
 from functools import lru_cache

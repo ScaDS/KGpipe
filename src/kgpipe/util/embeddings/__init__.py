@@ -1,7 +1,5 @@
 import os
 from typing import List, Dict
-import kgpipe.util.embeddings.openwebui_emb as openwebui_emb
-import kgpipe.util.embeddings.st_emb as st_emb
 from kgpipe.util.embeddings.emb import Embedder
 import numpy as np
 
@@ -42,9 +40,11 @@ def get_embedder() -> Embedder:
     if embedder is None:
         # pick the real embedder first
         if os.getenv("EMBEDDER") == "openwebui":
+            import kgpipe.util.embeddings.openwebui_emb as openwebui_emb
             base = openwebui_emb.OpenWebUIEmbedder()
             model_id = getattr(base, "model_id", os.getenv("OPENWEBUI_MODEL", "openwebui-default"))
         elif os.getenv("EMBEDDER") == "sentence-transformer":
+            import kgpipe.util.embeddings.st_emb as st_emb
             base = st_emb.SentenceTransformerEmbedder()
             model_id = getattr(base, "model_name", os.getenv("ST_MODEL", "st-default"))
         else:

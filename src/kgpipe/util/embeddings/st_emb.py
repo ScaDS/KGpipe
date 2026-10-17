@@ -1,11 +1,11 @@
+from __future__ import annotations
 
-
-from sentence_transformers import SentenceTransformer
-import torch
-from typing import List
+from typing import TYPE_CHECKING, Dict, List
 from kgpipe.util.embeddings.emb import Embedder
 import numpy as np
-from typing import Dict
+
+if TYPE_CHECKING:
+    from sentence_transformers import SentenceTransformer
 
 # lazy load the model
 model = None
@@ -13,6 +13,9 @@ model = None
 def get_model() -> SentenceTransformer:
     global model
     if model is None:
+        from sentence_transformers import SentenceTransformer
+        import torch
+
         # disable pulling newer images
         model = SentenceTransformer("all-MiniLM-L6-v2")
         # if possible move to cuda if available
