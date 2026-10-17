@@ -1,6 +1,5 @@
 import os
 import json
-from sentence_transformers import SentenceTransformer, util
 from rdflib import Graph, OWL, RDFS, RDF
 from typing import Dict, List
 from kgpipe.common.models import KgTask, Data, DataFormat
@@ -14,6 +13,8 @@ logger = logging.getLogger(__name__)
 class SimpleTransformerBasedRelationLinker:
 
     def __init__(self, ontology_file, model_name="all-MiniLM-L6-v2"):
+        from sentence_transformers import SentenceTransformer
+
         self.model = SentenceTransformer(model_name)
 
         g = Graph()
@@ -42,7 +43,9 @@ class SimpleTransformerBasedRelationLinker:
         if len(extracted_relations) == 0:
             logger.error("No extracted relations")
             return []
-        
+
+        from sentence_transformers import util
+
         extracted_embeddings = self.model.encode(extracted_relations, convert_to_tensor=True, show_progress_bar=False)
         # Ensure both tensors are on the same device
         self.ontology_embeddings = self.ontology_embeddings.to(extracted_embeddings.device)

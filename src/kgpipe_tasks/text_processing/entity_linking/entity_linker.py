@@ -1,7 +1,3 @@
-from sentence_transformers import util
-from transformers import AutoTokenizer
-from transformers import AutoModelForSequenceClassification
-
 from kgpipe.common import KgTask, Data, DataFormat, Registry
 from kgpipe.execution import docker_client
 
@@ -44,6 +40,8 @@ class AliasAndLabelBasedEntityLinker():
         if len(extracted_entities) == 0:
             # print("No extracted relations")
             return []
+
+        from sentence_transformers import util
 
         # if extracted_relations in self.match_cache:
         #     return self.match_cache[extracted_relations]

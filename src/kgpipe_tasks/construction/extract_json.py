@@ -7,7 +7,6 @@ import hashlib
 import numpy as np
 from rdflib import Graph
 from rdflib.namespace import SKOS, RDFS
-from sentence_transformers import SentenceTransformer
 from kgpipe_tasks.text_processing.relation_match import AliasAndTransformerBasedRelationLinker
 from kgcore.api.ontology import Ontology, OntologyUtil
 from kgpipe.common import Registry, DataFormat, Data
@@ -239,7 +238,6 @@ from pathlib import Path
 import numpy as np
 from rdflib import Graph, URIRef, BNode, Literal, Namespace
 from rdflib.namespace import RDF, RDFS, SKOS, XSD, DCTERMS
-from sentence_transformers import SentenceTransformer
 
 # Provenance tracking type: json_path -> iri
 Provenance = Dict[str, str]  # json_path -> source_uri_or_bnode
