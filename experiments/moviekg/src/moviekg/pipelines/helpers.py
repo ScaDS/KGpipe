@@ -4,7 +4,7 @@ from typing import Dict
 
 from kgpipe.common.registry import Registry
 from kgpipe.common.models import Data, DataFormat, KgPipePlan, KgStageReport
-from kgpipe.generation.loaders import build_from_conf
+from kgpipe.generation.loaders import build_from_conf, pipeline_task_names
 from kgpipe.datasets.multipart_multisource import Dataset
 
 from kgpipe.io.pipe_out import PipeOut, StageOut
@@ -152,7 +152,7 @@ def run_helper_to_json(
     output_format: str
 ):
     pipeline_conf = catalog.root[pipeline_name]
-    tasks = [Registry.get_task(task_name) for task_name in pipeline_conf.tasks]
+    tasks = [Registry.get_task(task_name) for task_name in pipeline_task_names(pipeline_conf)]
     # each task as {"name": task_name, "input": input, "output": output}
     tasks_dict = []
 

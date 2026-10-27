@@ -47,5 +47,6 @@ rebel_extraction_task = KgTask(
     input_spec={"input": DataFormat.TEXT},
     output_spec={"output": DataFormat.TE_JSON},
     function=rebel_extraction,
-    description="Extract triples using REBEL"
+    description="Extract triples using REBEL",
+    see_also=["https://github.com/Babelscape/rebel"]
 ) 

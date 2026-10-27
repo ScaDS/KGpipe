@@ -63,6 +63,19 @@ def _infer_result_format(pipeline: KgPipe) -> DataFormat:
     return output_formats[0] if output_formats else DataFormat.ANY
 
 
+def _format_for_path(path: str | None, fallback: DataFormat) -> DataFormat:
+    """Use a recognized file extension, otherwise the format inferred from the pipeline."""
+    if not path:
+        return fallback
+    suffix = Path(path).suffix.lower().lstrip(".")
+    if not suffix:
+        return fallback
+    try:
+        return DataFormat.from_extension(suffix)
+    except ValueError:
+        return fallback
+
+
 def resolve_pipeline_names(
     pipeline_file: str,
     pipeline_names: tuple[str, ...],
@@ -98,6 +111,9 @@ def build_dry_run_pipeline(
     pipeline_file: str,
     pipeline_name: str,
     data_dir: str | None = None,
+    source_file: str | None = None,
+    target_file: str | None = None,
+    ontology_file: str | None = None,
 ) -> KgPipe:
     catalog = load_pipeline_catalog(Path(pipeline_file))
     if pipeline_name not in catalog.root:
@@ -109,7 +125,11 @@ def build_dry_run_pipeline(
     working_dir = base_dir / pipeline_name
     working_dir.mkdir(parents=True, exist_ok=True)
 
-    seed_data = Data(path=working_dir / "seed.placeholder", format=DataFormat.RDF_NTRIPLES)
+    seed_path = Path(target_file) if target_file else working_dir / "seed.placeholder"
+    seed_data = Data(
+        path=seed_path,
+        format=_format_for_path(target_file, DataFormat.RDF_NTRIPLES),
+    )
     pipeline = build_from_conf(
         name=pipeline_name,
         conf=pipeline_conf,
@@ -117,19 +137,22 @@ def build_dry_run_pipeline(
         data_dir=working_dir.as_posix(),
     )
 
+    source_path = Path(source_file) if source_file else working_dir / "source.placeholder"
     source_data = Data(
-        path=working_dir / "source.placeholder",
-        format=_infer_source_format(pipeline),
+        path=source_path,
+        format=_format_for_path(source_file, _infer_source_format(pipeline)),
     )
     pipeline.seed = Data(
-        path=working_dir / "seed.placeholder",
-        format=_infer_seed_format(pipeline),
+        path=seed_path,
+        format=_format_for_path(target_file, _infer_seed_format(pipeline)),
     )
     result_data = Data(
         path=working_dir / "result.placeholder",
         format=_infer_result_format(pipeline),
     )
     pipeline.data = [pipeline.seed]
+    if ontology_file:
+        pipeline.ontology_path = ontology_file
     pipeline.build(source=source_data, result=result_data, stable_files=True)
     return pipeline
 
@@ -138,6 +161,9 @@ def dry_run_pipelines(
     pipeline_file: str,
     pipeline_names: list[str],
     data_dir: str | None = None,
+    source_file: str | None = None,
+    target_file: str | None = None,
+    ontology_file: str | None = None,
 ) -> list[tuple[str, str | None, str | None]]:
     """Dry-run pipelines and return (name, pipeline_id, error) tuples."""
     results: list[tuple[str, str | None, str | None]] = []
@@ -147,12 +173,31 @@ def dry_run_pipelines(
                 pipeline_file=pipeline_file,
                 pipeline_name=pipeline_name,
                 data_dir=data_dir,
+                source_file=source_file,
+                target_file=target_file,
+                ontology_file=ontology_file,
             )
             pipeline_id = sync_pipeline_to_systemgraph(pipeline)
             results.append((pipeline_name, str(pipeline_id), None))
         except Exception as exc:
             results.append((pipeline_name, None, str(exc)))
     return results
+
+
+def _print_run_inputs(
+    source_file: str | None,
+    target_file: str | None,
+    ontology_file: str | None,
+    data_dir: str | None,
+) -> None:
+    if source_file:
+        console.print(f"[dim]Input:[/dim] {source_file}", soft_wrap=True)
+    if target_file:
+        console.print(f"[dim]Target:[/dim] {target_file}", soft_wrap=True)
+    if ontology_file:
+        console.print(f"[dim]Ontology:[/dim] {ontology_file}", soft_wrap=True)
+    if data_dir:
+        console.print(f"[dim]Output:[/dim] {data_dir}", soft_wrap=True)
 
 
 def show_dry_run_summary(results: list[tuple[str, str | None, str | None]]) -> None:
@@ -192,9 +237,29 @@ def show_dry_run_summary(results: list[tuple[str, str | None, str | None]]) -> N
     help="Build the pipeline plan and register it in the system graph without execution.",
 )
 @click.option(
-    "--data-dir",
+    "--input",
+    "source_file",
     type=click.Path(),
-    help="Base directory for synthetic dry-run artifacts and planned outputs.",
+    help="Source file consumed by the pipeline (SOURCE_FILE).",
+)
+@click.option(
+    "--target",
+    "target_file",
+    type=click.Path(),
+    help="Seed knowledge graph (SEED_KG).",
+)
+@click.option(
+    "--ontology",
+    "ontology_file",
+    type=click.Path(),
+    help="Optional ontology file (ONTOLOGY).",
+)
+@click.option(
+    "--output",
+    "--data-dir",
+    "data_dir",
+    type=click.Path(),
+    help="Directory for planned pipeline outputs.",
 )
 @click.pass_context
 def run_cmd(
@@ -204,6 +269,9 @@ def run_cmd(
     pipelines: tuple[str, ...],
     run_all: bool,
     dry_run: bool,
+    source_file: str | None,
+    target_file: str | None,
+    ontology_file: str | None,
     data_dir: str | None,
 ):
     """
@@ -215,8 +283,8 @@ def run_cmd(
     Examples:
 
         kgpipe run pipeline.conf rdf_base --dry-run
-        kgpipe run pipeline.conf rdf_base rdf_alt --dry-run
-        kgpipe run pipeline.conf -p rdf_base -p json_base --dry-run
+        kgpipe run pipeline.conf --pipeline rdf_base --input source.nt --target seed.nt --output ./output --dry-run
+        kgpipe run pipeline.conf --pipeline rdf_base --input source.nt --target seed.nt --ontology ontology.ttl --output ./output --dry-run
         kgpipe run pipeline.conf --all --dry-run
     """
     if not dry_run:
@@ -235,12 +303,16 @@ def run_cmd(
             run_all=run_all,
         )
         discover_entry_points()
+        _print_run_inputs(source_file, target_file, ontology_file, data_dir)
         if len(selected) == 1:
             pipeline_name = selected[0]
             pipeline = build_dry_run_pipeline(
                 pipeline_file=pipeline_file,
                 pipeline_name=pipeline_name,
                 data_dir=data_dir,
+                source_file=source_file,
+                target_file=target_file,
+                ontology_file=ontology_file,
             )
             pipeline_id = sync_pipeline_to_systemgraph(pipeline)
             console.print("[yellow]DRY RUN - Showing execution plan:[/yellow]")
@@ -253,6 +325,9 @@ def run_cmd(
             pipeline_file=pipeline_file,
             pipeline_names=selected,
             data_dir=data_dir,
+            source_file=source_file,
+            target_file=target_file,
+            ontology_file=ontology_file,
         )
         console.print(
             f"[yellow]DRY RUN - Registering {len(selected)} pipeline(s) in the system graph[/yellow]"

@@ -150,6 +150,83 @@ def test_run_dry_run_all(monkeypatch, tmp_path: Path):
     assert len(PipeKG.find_pipeline(pipeline_b)) == 1
 
 
+def test_run_dry_run_accepts_input_target_and_ontology(monkeypatch, tmp_path: Path):
+    task = KgTask(
+        name=_uid("cli_task"),
+        input_spec={"source": DataFormat.JSON, "kg": DataFormat.RDF_NTRIPLES},
+        output_spec={"result": DataFormat.RDF_NTRIPLES},
+        function=lambda _i, _o: None,
+    )
+    Registry.add_task(task.name, task)
+
+    pipeline_name = _uid("pipeline")
+    pipeline_conf = tmp_path / "pipeline.conf"
+    pipeline_conf.write_text(
+        "\n".join(
+            [
+                f"{pipeline_name}:",
+                '    description: "with io"',
+                "    tasks:",
+                f"        - {task.name}",
+                "",
+            ]
+        )
+    )
+    source = tmp_path / "source.json"
+    seed = tmp_path / "seed.nt"
+    ontology = tmp_path / "ontology.ttl"
+    source.write_text("{}\n")
+    seed.write_text("\n")
+    ontology.write_text("@prefix ex: <http://example.org/> .\n")
+    output_dir = tmp_path / "output"
+
+    monkeypatch.setattr("kgpipe.cli.run.discover_entry_points", lambda: None)
+
+    runner = CliRunner()
+    result = runner.invoke(
+        run_cmd,
+        [
+            str(pipeline_conf),
+            "--pipeline",
+            pipeline_name,
+            "--input",
+            str(source),
+            "--target",
+            str(seed),
+            "--ontology",
+            str(ontology),
+            "--output",
+            str(output_dir),
+            "--dry-run",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert f"Input: {source}" in result.output
+    assert f"Target: {seed}" in result.output
+    assert f"Ontology: {ontology}" in result.output
+    assert f"Output: {output_dir}" in result.output
+    assert (output_dir / pipeline_name).is_dir()
+
+    from kgpipe.cli.run import build_dry_run_pipeline
+
+    pipeline = build_dry_run_pipeline(
+        pipeline_file=str(pipeline_conf),
+        pipeline_name=pipeline_name,
+        data_dir=str(output_dir),
+        source_file=str(source),
+        target_file=str(seed),
+        ontology_file=str(ontology),
+    )
+    assert pipeline.plan.source is not None
+    assert pipeline.plan.seed is not None
+    assert pipeline.plan.source.path == source
+    assert pipeline.plan.seed.path == seed
+    assert pipeline.plan.source.format == DataFormat.JSON
+    assert pipeline.plan.seed.format == DataFormat.RDF_NTRIPLES
+    assert pipeline.ontology_path == str(ontology)
+
+
 def test_resolve_pipeline_names_all_excludes_explicit_names(tmp_path: Path):
     pipeline_conf = tmp_path / "pipeline.conf"
     pipeline_conf.write_text("alpha:\n    description: a\n    tasks: []\n")
