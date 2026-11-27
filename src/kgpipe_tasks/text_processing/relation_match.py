@@ -1,7 +1,3 @@
-from sentence_transformers import util
-from transformers import AutoTokenizer
-from transformers import AutoModelForSequenceClassification
-
 from typing import List, Dict, Tuple
 
 import os
@@ -64,6 +60,8 @@ class AliasAndTransformerBasedRelationLinker:
         if len(extracted_relations) == 0:
             # print("No extracted relations")
             return []
+
+        from sentence_transformers import util
 
         # if extracted_relations in self.match_cache:
         #     return self.match_cache[extracted_relations]

@@ -1,8 +1,6 @@
 from kgpipe.common import KG, DataFormat, KgTask, Data, Registry
 from rdflib import Graph, URIRef, Literal, RDFS, OWL
-from sentence_transformers import SentenceTransformer
 from typing import List
-from sentence_transformers import util
 from pathlib import Path
 from typing import Dict
 import os
@@ -46,6 +44,8 @@ class LabelBasedEntityLinker:
     def link_entities(self, enitity_surfaceform: List[str]) -> List[EntityMatch]:
         if len(enitity_surfaceform) == 0:
             return []
+
+        from sentence_transformers import util
 
         surfaceform_texts = [normalize(k) for k in enitity_surfaceform]
         surfaceform_embeddings = global_encode(surfaceform_texts)

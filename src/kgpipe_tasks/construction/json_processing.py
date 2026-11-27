@@ -349,7 +349,6 @@ import json
 import numpy as np
 from rdflib import Graph
 from rdflib.namespace import SKOS, RDFS
-from sentence_transformers import SentenceTransformer
 
 # --- Config ---
 LABEL_KEYS = re.compile(r"(?:^|_)(name|label|title|display.?name|prefLabel)$", re.I)
@@ -413,6 +412,8 @@ class LabelIndex:
 # --- Baseline linker ---
 class SimpleLinker:
     def __init__(self, ttl_path: str):
+        from sentence_transformers import SentenceTransformer
+
         self.model = SentenceTransformer(EMB_MODEL)
         items = load_kg_labels(ttl_path)
         self.index = LabelIndex(items, self.model)
