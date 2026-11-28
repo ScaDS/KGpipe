@@ -251,3 +251,35 @@ def test_example_pipeline_catalog_resolves_ports(tmp_path: Path):
         "json2": "relations.output",
     }
     assert join_explicit.fingerprint != join_auto.fingerprint
+
+
+def test_sample_yaml_matches_python_plan(tmp_path: Path):
+    from kgpipe.common.models import Data, DataFormat
+    from kgpipe.generation.loaders import build_from_conf, build_from_yaml, load_pipeline_catalog
+    import kgpipe_examples.dummy_tasks  # noqa: F401
+
+    sample = Path(__file__).resolve().parents[2] / "sample.yaml"
+    catalog = load_pipeline_catalog(sample, environ={"KGPIPE_THRESHOLD": "0.99"})
+    conf = catalog.root["sample"]
+    python_pipe = build_from_conf(
+        "sample",
+        conf,
+        Data(path=tmp_path / "seed.nt", format=DataFormat.RDF_NTRIPLES),
+        str(tmp_path / "python"),
+    )
+    python_plan = python_pipe.build(
+        source=Data(path=tmp_path / "source.nt", format=DataFormat.RDF_NTRIPLES),
+        result=Data(path=tmp_path / "python" / "result.nt", format=DataFormat.RDF_NTRIPLES),
+        stable_files=True,
+    )
+    yaml_pipe = build_from_yaml(
+        sample,
+        source=tmp_path / "source.nt",
+        seed=tmp_path / "seed.nt",
+        result=tmp_path / "yaml" / "result.nt",
+        data_dir=tmp_path / "yaml",
+        environ={"KGPIPE_THRESHOLD": "0.99"},
+    )
+    assert yaml_pipe.plan.fingerprint == python_plan.fingerprint
+    assert yaml_pipe.plan.steps[0].parameters["entity_matching_threshold"] == 0.8
+    assert yaml_pipe.plan.steps[2].parameters["entity_matching_threshold"] == 0.99

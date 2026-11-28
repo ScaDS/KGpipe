@@ -4,7 +4,7 @@ A pipeline catalog is a user specification. `KgPipe.build()` resolves it into a 
 
 ## Catalog
 
-`experiments/examples/pipeline.conf` is a catalog written in this form. Its tasks are the dummies in `experiments/examples/src/kgpipe_examples/dummy_tasks.py`. `experiments/moviekg/pipeline.conf` is the working MovieKG catalog: a description, an optional legacy `config` map, and an ordered list of task names. `connect` defaults to `auto`.
+The catalog schema version is `kgpipe.pipeline/v1`, written as the root `schema` key. That key is not a pipeline. Files that omit it still load as v1. An unknown `schema` value is rejected. `experiments/examples/sample.yaml` is a single-pipeline file in this form. `experiments/examples/pipeline.conf` is a larger catalog of the same dummy tasks (`experiments/examples/src/kgpipe_examples/dummy_tasks.py`). `experiments/moviekg/pipeline.conf` is the MovieKG catalog: `rdf_base` uses typed `parameters` and port declarations; other entries still use the legacy `config` map and an ordered list of task names. `connect` defaults to `auto`.
 
 ```yaml
 schema: kgpipe.pipeline/v1
@@ -36,7 +36,18 @@ tasks:
           entity_matching_threshold: 0.99
 ```
 
-Load a catalog and build a pipeline with:
+Load a catalog and run it without assembling `KgPipe` by hand:
+
+```python
+from kgpipe.generation.loaders import build_from_yaml, validate_pipeline
+
+pipe = build_from_yaml("pipeline.yaml", "rdf_base")
+reports = pipe.run()
+```
+
+`validate_pipeline(path, name)` is the same load and plan step without `run()`. Invalid task names, backends, parameter types, and port combinations fail there.
+
+`build_from_conf` is the lower-level form when the files already exist as `Data` objects:
 
 ```python
 from kgpipe.generation.loaders import load_pipeline_catalog, build_from_conf
@@ -50,6 +61,28 @@ plan = pipe.build(source=source, result=result, stable_files=True)
 ```
 
 `build_from_conf` resolves task names through the registry and binds parameters onto each task that declares `config_spec`. It does not connect ports. That happens in `build()`.
+
+A step may set `id`, `task` (or `name`), `parameters`, `inputs`, `outputs`, `backend`, and `backend_options`. `backend` is `python`, `docker`, or `remote`. If the catalog asks for a backend the registered task does not have, load fails. `backend_options` is a free-form map for that backend; it is not part of the fingerprint.
+
+## Defaults, paths, and environment
+
+Catalog-level `defaults` and `env` are reserved keys, not pipelines. Pipeline `defaults` overlay the catalog. `build_from_yaml` then overlays function arguments. Relative paths are resolved against the YAML file directory. File paths never enter `plan.fingerprint`.
+
+```yaml
+schema: kgpipe.pipeline/v1
+
+env:
+    KGPIPE_THRESHOLD: "0.99"
+
+defaults:
+    data_dir: ./output
+    source: ./data/source.nt
+    seed: ${SEED_FILE:-./data/seed.nt}
+    result: ./output/result.nt
+    ontology: ./data/ontology.ttl
+```
+
+`seed` and `target` are the same slot. `${VAR}` and `${VAR:-default}` are expanded when the catalog loads. Bare `$source`, `$seed`, and `$result` are port refs and are not expanded. A missing variable without a default is an error. `load_pipeline_catalog(..., environ=...)` supplies the map; the default is `os.environ` overlaid on the catalog `env` block.
 
 ## Auto-connect
 

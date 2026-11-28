@@ -27,7 +27,7 @@ print(config.SYS_KG_URL)
 
 ## Pipeline specification
 
-A catalog entry names the tasks and, optionally, their parameter values. See [Pipelines](pipelines.md) for how `build()` connects ports.
+A catalog is `kgpipe.pipeline/v1` YAML. See [Pipelines](pipelines.md) for the schema, relative paths, `${VAR}` interpolation, backend options, and how `build()` connects ports. `build_from_yaml()` is enough to plan and run an entry; `validate_pipeline()` stops after the plan.
 
 ```yaml
 rdf_base:
@@ -55,7 +55,7 @@ A pipeline parameter that matches no task `config_spec` is an error. A step para
 
 ## Legacy `config` map
 
-MovieKG catalogs still carry a string map:
+MovieKG `rdf_base` now uses typed `parameters`. Other MovieKG entries still carry a string map:
 
 ```yaml
 config:

@@ -65,6 +65,19 @@ def my_task(inputs: TaskInput, outputs: TaskOutput):
     outputs["output"].path.touch()
 ```
 
+## Define and run a pipeline (YAML)
+
+A `kgpipe.pipeline/v1` catalog is enough to plan a pipeline. `experiments/examples/sample.yaml` is the minimal file. Relative paths resolve against that file; `${VAR}` and `${VAR:-default}` read the environment.
+
+```python
+from kgpipe.generation.loaders import build_from_yaml
+
+pipe = build_from_yaml("experiments/examples/sample.yaml")
+pipe.run()
+```
+
+`validate_pipeline(path)` stops after planning and rejects unknown tasks, backend mismatches, bad parameter types, and combinations that cannot be wired. See [Pipelines](pipelines.md) for the schema.
+
 ## Define and run a pipeline (Python API)
 
 Pipelines connect tasks by passing `Data` (path + format) between them. A minimal example exists in

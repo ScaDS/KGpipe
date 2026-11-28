@@ -91,7 +91,9 @@ def test_legacy_catalogs_load():
     assert moviekg.schema_version == PIPELINE_SPEC_SCHEMA
     rdf = moviekg.root["rdf_base"]
     assert rdf.connect == "auto"
-    assert rdf.config["ENTITY_MATCHING_THRESHOLD"] == "0.99"
+    assert rdf.parameters["entity_matching_threshold"] == 0.99
+    assert rdf.parameters["relation_matching_threshold"] == 0.5
+    assert rdf.inputs["source"].format == "nt"
     assert rdf.tasks[:2] == ["paris_entity_matching", "paris_exchange"]
     assert dummy.root["dummy"].tasks == ["dummy_task"]
 

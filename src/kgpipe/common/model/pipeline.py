@@ -286,20 +286,26 @@ class KgPipe:
                 catalog = outputs + catalog
 
             if len(inputs) != len(task.input_spec):
-                missing_inputs = len(task.input_spec) - len(inputs)
-                catalog_str = "\n".join([str(i) for i in catalog])
+                bound = set(input_refs)
+                missing = [port for port in task.input_spec if port not in bound]
+                available = [
+                    f"{_ref_for(item, ref_by_id)} ({_format_name(item.format)})"
+                    for item in catalog
+                ]
+                expected = {
+                    port: _format_name(fmt) for port, fmt in task.input_spec.items()
+                }
                 raise ValueError(
-                    f"For task {task.name}: expected {task.input_spec} inputs, got {inputs}. "
-                    f"Missing {missing_inputs} inputs."
-                    f"catalog: {catalog_str}"
+                    f"Cannot connect task '{task.name}': missing input port(s) {missing}. "
+                    f"Expected {expected}. Available: {available or '(none)'}."
                 )
             elif len(outputs) != len(task.output_spec):
-                missing_outputs = len(task.output_spec) - len(outputs)
-                catalog_str = "\n".join([str(i) for i in catalog])
+                expected = {
+                    port: _format_name(fmt) for port, fmt in task.output_spec.items()
+                }
                 raise ValueError(
-                    f"\nFor task {task.name}: expected {task.output_spec} outputs, got {outputs}. "
-                    f"\nMissing {missing_outputs} outputs."
-                    f"\nCatalog: {catalog_str}"
+                    f"Cannot connect task '{task.name}': expected outputs {expected}, "
+                    f"got {len(outputs)}."
                 )
             else:
                 print(f"Adding task '{task.name}' to plan with\n\t inputs: {[str(i.path) for i in inputs]} and \n\t outputs: {[str(o.path) for o in outputs]}")

@@ -2,12 +2,17 @@
 YAML pipeline loaders and template utilities.
 """
 
-from kgpipe.common import KgPipe, Registry, Data
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any, Mapping, Optional, Sequence, Union
 
 from pydantic import BaseModel
-from pathlib import Path
 
+from kgpipe.common import Data, KgPipe, Registry
+from kgpipe.common.models import DataFormat
 from kgpipe.generation.spec import (
+    CatalogValidationError,
     PipelineConf,
     PipelineConfs,
     PipelineTaskConf,
@@ -18,6 +23,27 @@ from kgpipe.generation.spec import (
     pipeline_task_name,
     pipeline_task_names,
 )
+
+__all__ = [
+    "CatalogValidationError",
+    "PipelineCatalog",
+    "PipelineConf",
+    "PipelineConfs",
+    "PipelineDefinition",
+    "bind_config_catalog",
+    "build_candidate",
+    "build_from_conf",
+    "build_from_yaml",
+    "get_test_data",
+    "load_pipeline_catalog",
+    "normalize_steps",
+    "pipeline_conf_from_candidate",
+    "pipeline_task_name",
+    "pipeline_task_names",
+    "select_pipeline_conf",
+    "ssp_pipeline",
+    "validate_pipeline",
+]
 
 class PipelineDefinition(BaseModel):
     name: str
@@ -58,32 +84,77 @@ def build_from_conf(name: str, conf: PipelineConf, target_data: Data, data_dir: 
     the tasks they already hold. Without them, each step name is resolved
     through the registry.
     """
-    steps = normalize_steps(conf)
+    resolved, steps = resolve_pipeline_tasks(name, conf, tasks=tasks)
+    try:
+        config_catalog = bind_config_catalog(conf, resolved, steps)
+    except (CatalogValidationError, ValueError, TypeError) as exc:
+        raise CatalogValidationError(f"Pipeline '{name}': {exc}") from exc
+    pipe = ssp_pipeline(name, resolved, target_data, data_dir)
+    pipe.connect = conf.connect
+    pipe.step_specs = steps
+    pipe.config_catalog = config_catalog
+    pipe.input_decls = dict(conf.inputs)
+    pipe.output_decls = dict(conf.output)
+    return pipe
+
+
+def resolve_pipeline_tasks(
+    name: str,
+    conf: PipelineConf,
+    tasks: Optional[Sequence[Any]] = None,
+) -> tuple[list, list[PipelineTaskConf]]:
+    """Resolve registry tasks and reject unknown names or backend mismatches."""
+    try:
+        steps = normalize_steps(conf)
+    except ValueError as exc:
+        raise CatalogValidationError(f"Pipeline '{name}': {exc}") from exc
+    if not steps:
+        raise CatalogValidationError(
+            f"Pipeline '{name}' has no tasks. Add at least one task name or step."
+        )
     if tasks is None:
         resolved = []
         for step in steps:
             try:
                 resolved.append(Registry.get_task(step.task_name))
             except KeyError as exc:
-                raise ValueError(f"Unknown task '{step.task_name}' in pipeline '{name}'.") from exc
+                raise CatalogValidationError(
+                    f"Unknown task '{step.task_name}' in pipeline '{name}'. "
+                    "Import the task package or run `kgpipe discover` first."
+                ) from exc
     else:
         resolved = list(tasks)
         if len(resolved) != len(steps):
-            raise ValueError(
+            raise CatalogValidationError(
                 f"Pipeline '{name}' has {len(steps)} steps and {len(resolved)} tasks."
             )
         for task, step in zip(resolved, steps):
             if task.name != step.task_name:
-                raise ValueError(
+                raise CatalogValidationError(
                     f"Task '{task.name}' does not match spec step '{step.task_name}'."
                 )
-    pipe = ssp_pipeline(name, resolved, target_data, data_dir)
-    pipe.connect = conf.connect
-    pipe.step_specs = steps
-    pipe.config_catalog = bind_config_catalog(conf, resolved, steps)
-    pipe.input_decls = dict(conf.inputs)
-    pipe.output_decls = dict(conf.output)
-    return pipe
+    _validate_backends(name, conf, resolved, steps)
+    return resolved, steps
+
+
+def _validate_backends(
+    name: str,
+    conf: PipelineConf,
+    tasks: Sequence[Any],
+    steps: Sequence[PipelineTaskConf],
+) -> None:
+    pipeline_backend = conf.backend
+    for task, step in zip(tasks, steps):
+        requested = step.backend or pipeline_backend
+        if requested is None:
+            continue
+        declared = getattr(task, "backend", None) or "python"
+        if str(declared).strip().lower() != requested:
+            raise CatalogValidationError(
+                f"Pipeline '{name}' step '{step.id or step.task_name}' requests "
+                f"backend {requested!r} but task '{task.name}' is registered "
+                f"with backend {declared!r}."
+            )
 
 
 def build_candidate(
@@ -101,244 +172,179 @@ def build_candidate(
     return pipe, conf
 
 
-def build_from_yaml(yaml_path: Path):
-    pipeline_conf = load_pipeline_catalog(yaml_path)
-    pipelines = []
-    for pipeline_name, pipeline_conf in pipeline_conf.root.items():
-        pass
-        # tasks = {task_name: Registry.get("task", task_name) for task_name in pipeline_conf.tasks}
-        # pipe = ssp_pipeline(tasks, pipeline_conf.target_data)
+def select_pipeline_conf(
+    catalog: PipelineConfs,
+    name: Optional[str] = None,
+) -> tuple[str, PipelineConf]:
+    """Pick one catalog entry. A single-pipeline file does not need a name."""
+    if name is not None:
+        if name not in catalog.root:
+            available = ", ".join(sorted(catalog.root)) or "(none)"
+            raise CatalogValidationError(
+                f"Unknown pipeline {name!r}. Available: {available}."
+            )
+        return name, catalog.root[name]
+    if len(catalog.root) == 1:
+        only = next(iter(catalog.root))
+        return only, catalog.root[only]
+    available = ", ".join(sorted(catalog.root)) or "(none)"
+    location = catalog.source_path or "catalog"
+    raise CatalogValidationError(
+        f"{location} defines multiple pipelines ({available}). Pass name= to select one."
+    )
 
 
-# from __future__ import annotations
+def build_from_yaml(
+    yaml_path: Path,
+    name: Optional[str] = None,
+    *,
+    source: Optional[Union[str, Path]] = None,
+    seed: Optional[Union[str, Path]] = None,
+    target: Optional[Union[str, Path]] = None,
+    result: Optional[Union[str, Path]] = None,
+    data_dir: Optional[Union[str, Path]] = None,
+    ontology: Optional[Union[str, Path]] = None,
+    tasks=None,
+    environ: Optional[Mapping[str, str]] = None,
+    stable_files: bool = True,
+) -> KgPipe:
+    """Load a catalog entry, bind files, and build a plan.
 
-# import yaml
-# from pathlib import Path
-# from typing import Any, Dict, List, Optional, Union
+    Path precedence, highest first: function arguments, pipeline ``defaults``,
+    catalog ``defaults``. Relative paths are resolved against the YAML file
+    directory. Call this instead of writing ``KgPipe(...)`` boilerplate.
+    """
+    loaded = load_pipeline_catalog(Path(yaml_path), environ=environ)
+    pipeline_name, conf = select_pipeline_conf(loaded, name)
+    resolved, _steps = resolve_pipeline_tasks(pipeline_name, conf, tasks=tasks)
+    paths = _resolve_run_paths(
+        loaded,
+        pipeline_name,
+        source=source,
+        seed=seed,
+        target=target,
+        result=result,
+        data_dir=data_dir,
+        ontology=ontology,
+    )
+    source_data = Data(
+        path=paths["source"],
+        format=_format_for_role(conf, "source", resolved, paths["source"]),
+    )
+    seed_data = Data(
+        path=paths["seed"],
+        format=_format_for_role(conf, "seed", resolved, paths["seed"]),
+    )
+    result_data = Data(
+        path=paths["result"],
+        format=_format_for_role(conf, "result", resolved, paths["result"]),
+    )
+    try:
+        pipe = build_from_conf(
+            pipeline_name,
+            conf,
+            seed_data,
+            str(paths["data_dir"]),
+            tasks=resolved,
+        )
+        if paths["ontology"] is not None:
+            pipe.ontology_path = str(paths["ontology"])
+        pipe.build(source=source_data, result=result_data, stable_files=stable_files)
+    except CatalogValidationError:
+        raise
+    except ValueError as exc:
+        raise CatalogValidationError(f"Pipeline '{pipeline_name}': {exc}") from exc
+    return pipe
 
-# from ..common.models import Data, DataFormat, KgTask, KgPipe, Stage
-# from .builders import PipelineBuilder, StageBuilder
+
+def validate_pipeline(
+    yaml_path: Path,
+    name: Optional[str] = None,
+    *,
+    environ: Optional[Mapping[str, str]] = None,
+    tasks=None,
+) -> KgPipe:
+    """Load, bind, and plan a catalog entry without executing it.
+
+    Invalid task combinations, parameter types, backends, and port wiring fail
+    here rather than during ``run()``.
+    """
+    return build_from_yaml(yaml_path, name, environ=environ, tasks=tasks)
 
 
-# class PipelineLoader:
-#     """Loader for pipeline definitions from YAML files."""
-    
-#     def __init__(self):
-#         self.templates = self._load_default_templates()
-    
-#     def load_pipeline_from_yaml(self, path: Union[str, Path]) -> KgPipe:
-#         """Load a pipeline definition from a YAML file."""
-#         path = Path(path)
-#         if not path.exists():
-#             raise FileNotFoundError(f"Pipeline file not found: {path}")
-        
-#         with open(path, 'r') as f:
-#             config = yaml.safe_load(f)
-        
-#         return self._build_pipeline_from_config(config)
-    
-#     def load_pipeline_from_string(self, yaml_content: str) -> KgPipe:
-#         """Load a pipeline definition from a YAML string."""
-#         config = yaml.safe_load(yaml_content)
-#         return self._build_pipeline_from_config(config)
-    
-#     def _build_pipeline_from_config(self, config: Dict[str, Any]) -> KgPipe:
-#         """Build a pipeline from a configuration dictionary."""
-#         # Validate required fields
-#         required_fields = ['name']
-#         for field in required_fields:
-#             if field not in config:
-#                 raise ValueError(f"Missing required field: {field}")
-        
-#         # Create pipeline builder
-#         builder = PipelineBuilder(
-#             name=config['name'],
-#             description=config.get('description'),
-#             parameters=config.get('parameters', {})
-#         )
-        
-#         # Add input data
-#         for input_config in config.get('inputs', []):
-#             data = self._create_data_from_config(input_config)
-#             builder.add_input(data)
-        
-#         # Add output data
-#         for output_config in config.get('outputs', []):
-#             data = self._create_data_from_config(output_config)
-#             builder.add_output(data)
-        
-#         # Add stages
-#         for stage_config in config.get('stages', []):
-#             stage = self._create_stage_from_config(stage_config)
-#             builder.add_stage(stage)
-        
-#         # Validate pipeline
-#         errors = builder.validate()
-#         if errors:
-#             raise ValueError(f"Pipeline validation failed: {'; '.join(errors)}")
-        
-#         return builder.build()
-    
-#     def _create_stage_from_config(self, config: Dict[str, Any]) -> Stage:
-#         """Create a stage from configuration."""
-#         required_fields = ['name']
-#         for field in required_fields:
-#             if field not in config:
-#                 raise ValueError(f"Stage missing required field: {field}")
-        
-#         stage_builder = StageBuilder(
-#             name=config['name'],
-#             description=config.get('description'),
-#             parameters=config.get('parameters', {}),
-#             depends_on=config.get('depends_on', [])
-#         )
-        
-#         # Add inputs
-#         for input_config in config.get('inputs', []):
-#             if isinstance(input_config, str):
-#                 stage_builder.add_input(input_config)
-#             else:
-#                 data = self._create_data_from_config(input_config)
-#                 stage_builder.add_input(data)
-        
-#         # Add outputs
-#         for output_config in config.get('outputs', []):
-#             if isinstance(output_config, str):
-#                 stage_builder.add_output(output_config)
-#             else:
-#                 data = self._create_data_from_config(output_config)
-#                 stage_builder.add_output(data)
-        
-#         # Add tasks (this would need to be implemented based on your task system)
-#         for task_config in config.get('tasks', []):
-#             task = self._create_task_from_config(task_config)
-#             stage_builder.add_task(task)
-        
-#         return stage_builder.build()
-    
-#     def _create_data_from_config(self, config: Dict[str, Any]) -> Data:
-#         """Create a Data object from configuration."""
-#         if isinstance(config, str):
-#             # Assume it's a path
-#             path = Path(config)
-#             format_ = self._infer_format_from_path(path)
-#             return Data(path, format_)
-        
-#         path = Path(config['path'])
-#         format_str = config.get('format', 'json')
-        
-#         try:
-#             format_ = DataFormat(format_str)
-#         except ValueError:
-#             format_ = self._infer_format_from_path(path)
-        
-#         return Data(path, format_)
-    
-#     def _create_task_from_config(self, config: Dict[str, Any]) -> KgTask:
-#         """Create a KgTask from configuration."""
-#         # This is a placeholder - you'll need to implement this based on your task system
-#         # For now, we'll create a mock task
-#         from unittest.mock import Mock
-        
-#         name = config.get('name', 'mock_task')
-#         input_spec = {k: DataFormat(v) for k, v in config.get('input_spec', {}).items()}
-#         output_spec = {k: DataFormat(v) for k, v in config.get('output_spec', {}).items()}
-        
-#         # Create a mock function
-#         def mock_function(inputs, outputs):
-#             pass
-        
-#         return KgTask(
-#             name=name,
-#             input_spec=input_spec,
-#             output_spec=output_spec,
-#             function=mock_function,
-#             description=config.get('description')
-#         )
-    
-#     def _infer_format_from_path(self, path: Path) -> DataFormat:
-#         """Infer data format from file path."""
-#         suffix = path.suffix.lower()
-#         format_map = {
-#             '.ttl': DataFormat.TTL,
-#             '.nq': DataFormat.NQUADS,
-#             '.json': DataFormat.JSON,
-#             '.csv': DataFormat.CSV,
-#             '.parquet': DataFormat.PARQUET,
-#             '.xml': DataFormat.XML,
-#             '.rdf': DataFormat.RDF,
-#             '.jsonld': DataFormat.JSONLD,
-#         }
-#         return format_map.get(suffix, DataFormat.JSON)
-    
-#     def _load_default_templates(self) -> Dict[str, Dict[str, Any]]:
-#         """Load default pipeline templates."""
-#         return {
-#             'simple_etl': {
-#                 'name': 'simple_etl',
-#                 'description': 'Simple ETL pipeline',
-#                 'stages': [
-#                     {
-#                         'name': 'extract',
-#                         'description': 'Extract data from source',
-#                         'tasks': []
-#                     },
-#                     {
-#                         'name': 'transform',
-#                         'description': 'Transform data',
-#                         'tasks': [],
-#                         'depends_on': ['extract']
-#                     },
-#                     {
-#                         'name': 'load',
-#                         'description': 'Load data to target',
-#                         'tasks': [],
-#                         'depends_on': ['transform']
-#                     }
-#                 ]
-#             },
-#             'entity_linking': {
-#                 'name': 'entity_linking',
-#                 'description': 'Entity linking pipeline',
-#                 'stages': [
-#                     {
-#                         'name': 'preprocessing',
-#                         'description': 'Preprocess text data',
-#                         'tasks': []
-#                     },
-#                     {
-#                         'name': 'candidate_generation',
-#                         'description': 'Generate entity candidates',
-#                         'tasks': [],
-#                         'depends_on': ['preprocessing']
-#                     },
-#                     {
-#                         'name': 'ranking',
-#                         'description': 'Rank entity candidates',
-#                         'tasks': [],
-#                         'depends_on': ['candidate_generation']
-#                     }
-#                 ]
-#             }
-#         }
-    
-#     def get_template(self, name: str) -> Dict[str, Any]:
-#         """Get a pipeline template by name."""
-#         if name not in self.templates:
-#             available = list(self.templates.keys())
-#             raise ValueError(f"Template '{name}' not found. Available templates: {available}")
-        
-#         return self.templates[name].copy()
-    
-#     def list_templates(self) -> List[str]:
-#         """List available template names."""
-#         return list(self.templates.keys())
-    
-#     def create_pipeline_from_template(self, template_name: str, **kwargs) -> KgPipe:
-#         """Create a pipeline from a template with custom parameters."""
-#         template = self.get_template(template_name)
-        
-#         # Apply custom parameters
-#         template.update(kwargs)
-        
-#         return self._build_pipeline_from_config(template)
+def _resolve_run_paths(
+    loaded: PipelineConfs,
+    name: str,
+    *,
+    source: Optional[Union[str, Path]],
+    seed: Optional[Union[str, Path]],
+    target: Optional[Union[str, Path]],
+    result: Optional[Union[str, Path]],
+    data_dir: Optional[Union[str, Path]],
+    ontology: Optional[Union[str, Path]],
+) -> dict[str, Optional[Path]]:
+    base_dir = loaded.source_path.parent if loaded.source_path is not None else Path.cwd()
+    defaults = loaded.resolved_defaults(name, base_dir=base_dir)
+    seed_arg = seed if seed is not None else target
+
+    def _pick(explicit: Optional[Union[str, Path]], default: Optional[str], fallback: Path) -> Path:
+        if explicit is not None:
+            return _as_path(explicit, base_dir=base_dir)
+        if default:
+            return Path(default)
+        return fallback
+
+    work = _pick(data_dir, defaults.data_dir, base_dir / ".kgpipe" / name)
+    source_path = _pick(source, defaults.source, work / "source")
+    seed_path = _pick(seed_arg, defaults.seed, work / "seed")
+    result_path = _pick(result, defaults.result, work / "result.nt")
+    ontology_path = None
+    if ontology is not None:
+        ontology_path = _as_path(ontology, base_dir=base_dir)
+    elif defaults.ontology:
+        ontology_path = Path(defaults.ontology)
+    return {
+        "data_dir": work,
+        "source": source_path,
+        "seed": seed_path,
+        "result": result_path,
+        "ontology": ontology_path,
+    }
+
+
+def _as_path(value: Union[str, Path], *, base_dir: Path) -> Path:
+    path = Path(value).expanduser()
+    if path.is_absolute():
+        return path
+    return (base_dir / path).resolve()
+
+
+def _format_for_role(
+    conf: PipelineConf,
+    role: str,
+    tasks: Sequence[Any],
+    path: Path,
+) -> DataFormat:
+    if role == "result":
+        for decl in conf.output.values():
+            return DataFormat(decl.format)
+        if tasks:
+            outputs = list(tasks[-1].output_spec.values())
+            if outputs:
+                return outputs[0]
+    else:
+        if role in conf.inputs:
+            return DataFormat(conf.inputs[role].format)
+        if tasks:
+            if role == "seed" and "kg" in tasks[0].input_spec:
+                return tasks[0].input_spec["kg"]
+            for port, fmt in tasks[0].input_spec.items():
+                if port != "kg":
+                    return fmt
+    suffix = path.suffix.lower().lstrip(".")
+    if suffix:
+        try:
+            return DataFormat.from_extension(suffix)
+        except ValueError:
+            pass
+    return DataFormat.RDF_NTRIPLES

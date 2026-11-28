@@ -1,0 +1,37 @@
+# Minimal kgpipe.pipeline/v1 catalog.
+# Tasks: experiments/examples/src/kgpipe_examples/dummy_tasks.py
+#
+# Relative paths resolve against this file. ${VAR} and ${VAR:-default} read
+# the environment after the `env` map. Override any path in Python with
+# build_from_yaml(..., source=..., seed=..., result=..., data_dir=...).
+schema: kgpipe.pipeline/v1
+
+env:
+  KGPIPE_THRESHOLD: "0.99"
+
+defaults:
+  data_dir: ./output
+  source: ./data/source.nt
+  seed: ./data/seed.nt
+  result: ./output/result.nt
+
+sample:
+    description: "Align source RDF with a seed KG"
+    connect: auto
+    backend: python
+    inputs:
+        source: {role: source, format: nt}
+        seed: {role: seed, format: nt}
+    output:
+        result: {role: result, format: nt}
+    parameters:
+        entity_matching_threshold: ${KGPIPE_THRESHOLD}
+    tasks:
+        - id: match
+          task: dummy_match
+          backend: python
+          parameters:
+              entity_matching_threshold: 0.8
+        - dummy_exchange
+        - dummy_fuse
+        - dummy_type
