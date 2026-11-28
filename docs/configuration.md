@@ -1,10 +1,10 @@
-# Framework Configuration
+# Framework configuration
 
-KGpipe supports configuration at multiple levels: main framework configuration, pipeline configuration, and task-specific configuration parameters.
+KGpipe has three configuration layers: the framework, a pipeline specification, and the parameter values bound onto tasks.
 
-## Main Configuration
+## Framework
 
-The main framework configuration is stored in a YAML file (typically `config.yaml` in the configuration directory). The configuration includes settings for the Meta KG connection and namespace definitions:
+The framework configuration is a YAML file, usually `config.yaml`. It selects the Meta KG connection and the namespaces used for constructed resources:
 
 ```yaml
 SYS_KG_URL: "memory://"
@@ -16,12 +16,7 @@ TARGET_RESOURCE_NAMESPACE: "http://kg.org/resource/"
 TARGET_ONTOLOGY_NAMESPACE: "http://kg.org/ontology/"
 ```
 
-The `SYS_KG_URL` specifies the connection string for the Meta KG (PipeKG). It can be:
-- `memory://` for in-memory storage
-- A file path for SQLite-based storage
-- A SPARQL endpoint URL for remote RDF stores
-
-The configuration is loaded automatically when the framework initializes. You can access it programmatically:
+`SYS_KG_URL` is `memory://`, a SQLite path, or a SPARQL endpoint. It is loaded when the framework starts:
 
 ```python
 from kgpipe.common.config import load_config
@@ -30,56 +25,59 @@ config = load_config()
 print(config.SYS_KG_URL)
 ```
 
-## Pipeline Configuration
+## Pipeline specification
 
-When defining pipelines in YAML files, you can specify configuration parameters that will be passed to tasks during execution:
+A catalog entry names the tasks and, optionally, their parameter values. See [Pipelines](pipelines.md) for how `build()` connects ports.
 
 ```yaml
-my_pipeline:
-    description: "Entity resolution pipeline with custom thresholds"
-    config:
-        ENTITY_MATCHING_THRESHOLD: "0.99"
-        RELATION_MATCHING_THRESHOLD: "0.5"
-        LLM_MODEL: "gpt-4"
+rdf_base:
+    description: "Align source RDF with target KG"
+    parameters:
+        entity_matching_threshold: 0.99
+        relation_matching_threshold: 0.5
     tasks:
         - paris_entity_matching
         - fusion_first_value
 ```
 
-These configuration values are made available to tasks as environment variables during execution. Tasks can access them using:
+`parameters` applies to every task whose `config_spec` has that parameter. A step can override it:
 
-```python
-import os
-
-threshold = float(os.getenv("ENTITY_MATCHING_THRESHOLD", "0.5"))
+```yaml
+tasks:
+    - name: paris_entity_matching
+      parameters:
+          entity_matching_threshold: 0.8
 ```
 
-## Task Configuration
+Building a pipeline binds these values into a `ConfigurationProfile` and stores them on the resolved plan. `run()` passes that profile to the task when the task function accepts `config`. Values are checked against the declared type, allowed values, and range before execution.
 
-When defining a task, you can specify configuration parameters that the task expects. These parameters can be:
+A pipeline parameter that matches no task `config_spec` is an error. A step parameter on a task that does not declare `config_spec` is an error.
 
-- **Confidence thresholds**: Used by matching and fusion tasks to determine when to accept or reject results
-- **Training parameters**: Used by machine learning-based tasks (e.g., epochs, training size)
-- **Algorithm selection**: Some tasks support multiple algorithms that can be selected via configuration
-- **Model parameters**: For LLM-based tasks, you can specify which model to use
+## Legacy `config` map
 
-The framework passes configuration from the pipeline definition to individual tasks through environment variables. This allows tasks to be configured without modifying their code.
+MovieKG catalogs still carry a string map:
 
-## Configuration Extraction
-
-The framework automatically extracts configuration from pipeline definitions and makes it available during task execution. When you build a pipeline from a YAML configuration, the `config` section is processed and environment variables are set before each task runs.
-
-You can also override configuration values programmatically when building pipelines:
-
-```python
-from kgpipe.generation.loaders import build_from_conf
-import os
-
-# Override configuration
-os.environ["ENTITY_MATCHING_THRESHOLD"] = "0.95"
-
-# Build and run pipeline
-pipe = build_from_conf(pipeline_conf, target_data, data_dir)
-pipe.build(source=input_data, result=output_data)
-pipe.run()
+```yaml
+config:
+    ENTITY_MATCHING_THRESHOLD: "0.99"
+    RELATION_MATCHING_THRESHOLD: "0.5"
+    LLM_MODEL: "gpt-5-mini"
 ```
+
+`build_from_conf` binds these keys onto each task that declares them. `fusion_first_value` reads `entity_matching_threshold` and `relation_matching_threshold` from that profile. The MovieKG runner still copies `LLM_MODEL` into `DEFAULT_LLM_MODEL_NAME` for the LLM tasks.
+
+When a task does declare `config_spec`, the same keys are also bound as parameters:
+
+| Legacy key | Parameter |
+|---|---|
+| `ENTITY_MATCHING_THRESHOLD` | `entity_matching_threshold` |
+| `RELATION_MATCHING_THRESHOLD` | `relation_matching_threshold` |
+| `LLM_MODEL` | `llm_model` |
+
+Names match after lowercasing and turning spaces or hyphens into underscores, so a parameter declared as `entity matching threshold` receives `entity_matching_threshold`. `native_keys` on `Parameter` is the other alias. Unrecognized legacy keys are left for the caller; they do not fail the catalog load.
+
+Binding order is: the parameter default, legacy `config`, pipeline `parameters`, then the step's `parameters`. The newer fields override the legacy map.
+
+## Ontology
+
+`fusion_first_value` and `type_inference_ontology_simple` still read `ONTOLOGY_PATH`. The CLI stores `--ontology` on the pipeline object. It is not yet a `$ontology` port in `build()`.

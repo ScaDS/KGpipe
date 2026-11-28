@@ -24,8 +24,9 @@ from importlib import import_module
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-from kgpipe.common import Data, DataFormat, KgPipe
+from kgpipe.common import Data, DataFormat
 from kgpipe.common.models import KgPipePlan
+from kgpipe.generation.loaders import build_candidate
 from kgpipe_search.configuration import (
     load_rdf_exhaustive_pipeline_configs,
     load_rdf_sampled_pipeline_configs,
@@ -207,6 +208,45 @@ def _load_pipeline_configs(
     return loaded
 
 
+def _run_candidate_pipeline(
+    pipeline_config: PipelineConfig,
+    *,
+    seed_path: Path,
+    source_path: Path,
+    source_format: DataFormat,
+    result_path: Path,
+    plan_path: Path,
+    tasks_tmp_dir: Path,
+    run_name: str,
+) -> Path:
+    """Build the candidate as a ``kgpipe.pipeline/v1`` spec, then execute it.
+
+    The configuration catalog passed into ``build`` and ``run`` is the one
+    bound from that spec, so the plan fingerprint and the cache filenames
+    describe the same candidate.
+    """
+    tasks_tmp_dir.mkdir(parents=True, exist_ok=True)
+    result_path.parent.mkdir(parents=True, exist_ok=True)
+
+    pipeline, _conf = build_candidate(
+        run_name,
+        pipeline_config.tasks,
+        pipeline_config.config_catalog,
+        Data(path=seed_path, format=DataFormat.RDF_NTRIPLES),
+        str(tasks_tmp_dir),
+        description=run_name,
+    )
+    plan = pipeline.build(
+        stable_files=True,
+        configCatalog=pipeline.config_catalog,
+        source=Data(path=source_path, format=source_format),
+        result=Data(path=result_path, format=DataFormat.RDF_NTRIPLES),
+    )
+    _write_plan_snapshot(plan_path, plan)
+    pipeline.run(configCatalog=pipeline.config_catalog, stable_files_override=False)
+    return result_path
+
+
 def run_rdf_pipeline(
     pipeline_config: PipelineConfig,
     *,
@@ -217,25 +257,16 @@ def run_rdf_pipeline(
     tasks_tmp_dir: Path,
     run_name: str,
 ) -> Path:
-    tasks_tmp_dir.mkdir(parents=True, exist_ok=True)
-    result_path.parent.mkdir(parents=True, exist_ok=True)
-
-    pipeline = KgPipe(
-        tasks=pipeline_config.tasks,
-        seed=Data(path=seed_path, format=DataFormat.RDF_NTRIPLES),
-        data_dir=tasks_tmp_dir,
-        name=run_name,
+    return _run_candidate_pipeline(
+        pipeline_config,
+        seed_path=seed_path,
+        source_path=source_path,
+        source_format=DataFormat.RDF_NTRIPLES,
+        result_path=result_path,
+        plan_path=plan_path,
+        tasks_tmp_dir=tasks_tmp_dir,
+        run_name=run_name,
     )
-
-    plan = pipeline.build(
-        stable_files=True,
-        configCatalog=pipeline_config.config_catalog,
-        source=Data(path=source_path, format=DataFormat.RDF_NTRIPLES),
-        result=Data(path=result_path, format=DataFormat.RDF_NTRIPLES),
-    )
-    _write_plan_snapshot(plan_path, plan)
-    pipeline.run(configCatalog=pipeline_config.config_catalog, stable_files_override=False)
-    return result_path
 
 
 def run_text_pipeline(
@@ -248,25 +279,16 @@ def run_text_pipeline(
     tasks_tmp_dir: Path,
     run_name: str,
 ) -> Path:
-    tasks_tmp_dir.mkdir(parents=True, exist_ok=True)
-    result_path.parent.mkdir(parents=True, exist_ok=True)
-
-    pipeline = KgPipe(
-        tasks=pipeline_config.tasks,
-        seed=Data(path=seed_path, format=DataFormat.RDF_NTRIPLES),
-        data_dir=tasks_tmp_dir,
-        name=run_name,
+    return _run_candidate_pipeline(
+        pipeline_config,
+        seed_path=seed_path,
+        source_path=source_path,
+        source_format=DataFormat.TEXT,
+        result_path=result_path,
+        plan_path=plan_path,
+        tasks_tmp_dir=tasks_tmp_dir,
+        run_name=run_name,
     )
-
-    plan = pipeline.build(
-        stable_files=True,
-        configCatalog=pipeline_config.config_catalog,
-        source=Data(path=source_path, format=DataFormat.TEXT),
-        result=Data(path=result_path, format=DataFormat.RDF_NTRIPLES),
-    )
-    _write_plan_snapshot(plan_path, plan)
-    pipeline.run(configCatalog=pipeline_config.config_catalog, stable_files_override=False)
-    return result_path
 
 
 def run_all_configs(

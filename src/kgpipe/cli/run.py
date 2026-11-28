@@ -40,6 +40,20 @@ def show_pipeline_plan(pipeline: KgPipe):
         )
     
     console.print(table)
+    if pipeline.plan.steps and any(step.inputs for step in pipeline.plan.steps):
+        wiring = Table(title="Resolved wiring")
+        wiring.add_column("Step", style="cyan")
+        wiring.add_column("Inputs", style="green")
+        wiring.add_column("Outputs", style="yellow")
+        for step in pipeline.plan.steps:
+            wiring.add_row(
+                step.id or step.task,
+                ", ".join(f"{port}={ref}" for port, ref in step.inputs.items()),
+                ", ".join(f"{port}={ref}" for port, ref in step.outputs.items()),
+            )
+        console.print(wiring)
+        if pipeline.plan.fingerprint:
+            console.print(f"[dim]Fingerprint:[/dim] {pipeline.plan.fingerprint}")
 
 
 def _infer_source_format(pipeline: KgPipe) -> DataFormat:

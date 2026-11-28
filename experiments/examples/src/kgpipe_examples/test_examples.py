@@ -207,3 +207,47 @@ def test_pipeline_definition_executes():
 def test_evaluation_example(tmp_path: Path):
     from kgpipe_examples.eval_examples import eval_example
     eval_example(tmp_path)
+
+
+def test_example_pipeline_catalog_resolves_ports(tmp_path: Path):
+    from kgpipe.common.models import Data, DataFormat
+    from kgpipe.generation.loaders import build_from_conf, load_pipeline_catalog
+    import kgpipe_examples.dummy_tasks  # noqa: F401
+
+    catalog = load_pipeline_catalog(Path(__file__).resolve().parents[2] / "pipeline.conf")
+    seed = Data(path=tmp_path / "seed.nt", format=DataFormat.RDF_NTRIPLES)
+    source = Data(path=tmp_path / "source.nt", format=DataFormat.RDF_NTRIPLES)
+    seed.path.touch()
+    source.path.touch()
+
+    def build(name: str):
+        result = Data(path=tmp_path / name / "result.nt", format=DataFormat.RDF_NTRIPLES)
+        pipe = build_from_conf(name, catalog.root[name], seed, str(tmp_path / name))
+        return pipe.build(source=source, result=result, stable_files=True)
+
+    auto = build("dummy_auto")
+    explicit = build("dummy_explicit")
+    assert [(step.inputs, step.outputs) for step in auto.steps] == [
+        ({"source": "$source", "kg": "$seed"}, {"output": "dummy_match.output"}),
+        ({"input": "dummy_match.output"}, {"output": "dummy_exchange.output"}),
+        (
+            {"source": "$source", "kg": "$seed", "matches1": "dummy_exchange.output"},
+            {"output": "dummy_fuse.output"},
+        ),
+        ({"source": "dummy_fuse.output"}, {"result": "$result"}),
+    ]
+    assert auto.steps[0].parameters["entity_matching_threshold"] == 0.99
+    assert auto.steps[2].parameters["entity_matching_threshold"] == 0.7
+    assert explicit.fingerprint == auto.fingerprint
+
+    join_auto = build("dummy_join_auto")
+    join_explicit = build("dummy_join_explicit")
+    assert join_auto.steps[2].inputs == {
+        "json1": "dummy_match_2.output",
+        "json2": "dummy_match.output",
+    }
+    assert join_explicit.steps[2].inputs == {
+        "json1": "entities.output",
+        "json2": "relations.output",
+    }
+    assert join_explicit.fingerprint != join_auto.fingerprint

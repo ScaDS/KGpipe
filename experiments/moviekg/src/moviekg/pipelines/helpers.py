@@ -39,12 +39,6 @@ def override_env_with_config(config: Dict[str, str]):
     if config.get("LLM_MODEL") is not None:
         os.environ["DEFAULT_LLM_MODEL_NAME"] = config["LLM_MODEL"]
 
-    if config.get("ENTITY_MATCHING_THRESHOLD") is not None:
-        os.environ["ENTITY_MATCHING_THRESHOLD"] = config["ENTITY_MATCHING_THRESHOLD"]
-
-    if config.get("RELATION_MATCHING_THRESHOLD") is not None:
-        os.environ["RELATION_MATCHING_THRESHOLD"] = config["RELATION_MATCHING_THRESHOLD"]
-
 def run_helper(
     pipeline_name: str,
     source_format: str,

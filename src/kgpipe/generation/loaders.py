@@ -2,14 +2,22 @@
 YAML pipeline loaders and template utilities.
 """
 
-from token import OP
-from kgpipe.common import KgPipe, KgTask, Registry, Data
+from kgpipe.common import KgPipe, Registry, Data
 
-from pydantic import BaseModel, Field, RootModel
-from yaml import load, Loader
+from pydantic import BaseModel
 from pathlib import Path
-import json
-from typing import Any, Dict, List, Optional, Union
+
+from kgpipe.generation.spec import (
+    PipelineConf,
+    PipelineConfs,
+    PipelineTaskConf,
+    bind_config_catalog,
+    load_pipeline_catalog,
+    normalize_steps,
+    pipeline_conf_from_candidate,
+    pipeline_task_name,
+    pipeline_task_names,
+)
 
 class PipelineDefinition(BaseModel):
     name: str
@@ -28,56 +36,6 @@ class PipelineCatalog(BaseModel):
     pipelines: list[PipelineDefinition]
 
 
-class PipelineTaskConf(BaseModel):
-    """One pipeline step with the parameter values configured for that task."""
-
-    name: str
-    parameters: Dict[str, Any] = Field(default_factory=dict)
-
-
-class PipelineConf(BaseModel):
-    description: str
-    # optional env
-    config: Optional[Dict[str, str]] = None
-    # A step is either a task name or a task plus its parameter values.
-    tasks: List[Union[str, PipelineTaskConf]]
-
-
-def pipeline_task_name(task: Union[str, PipelineTaskConf]) -> str:
-    if isinstance(task, str):
-        return task
-    return task.name
-
-
-def pipeline_task_names(conf: PipelineConf) -> List[str]:
-    return [pipeline_task_name(task) for task in conf.tasks]
-
-class PipelineConfs(RootModel[Dict[str, PipelineConf]]):
-    pass
-
-"""
-{
-    "dummy": {
-        "description": "Dummy pipeline",
-        "tasks": [
-            "dummy_task"
-        ]
-    },
-    "dummy_reuse": {
-        "description": "Dummy pipeline with reuse of dummy",
-        "tasks": [
-            "dummy"
-        ]
-    }
-}
-"""
-
-
-def load_pipeline_catalog(path: Path) -> PipelineConfs:
-    with open(path, "r") as f:
-        return PipelineConfs(**load(f, Loader=Loader))
-
-
 catalog = PipelineCatalog(
     name="rdf_pipelines",
     description="RDF pipelines",
@@ -88,15 +46,60 @@ def get_test_data(file_name: str) -> Path:
     return Path(__file__).parent / "test_data" / file_name
 
 
-def ssp_pipeline(name: str, tasks: list[KgTask], target_data: Data, data_dir: str) -> KgPipe:
+def ssp_pipeline(name: str, tasks: list, target_data: Data, data_dir: str) -> KgPipe:
     pipe = KgPipe(tasks, target_data, data_dir, name=name)
     return pipe
 
 
-def build_from_conf(name: str, conf: PipelineConf, target_data: Data, data_dir: str) -> KgPipe:
-    tasks = [Registry.get_task(task_name) for task_name in pipeline_task_names(conf)]
-    pipe = ssp_pipeline(name, tasks, target_data, data_dir)
+def build_from_conf(name: str, conf: PipelineConf, target_data: Data, data_dir: str, tasks=None) -> KgPipe:
+    """Build a pipeline from a catalog entry.
+
+    ``tasks`` is the ordered list of live task objects. Search candidates pass
+    the tasks they already hold. Without them, each step name is resolved
+    through the registry.
+    """
+    steps = normalize_steps(conf)
+    if tasks is None:
+        resolved = []
+        for step in steps:
+            try:
+                resolved.append(Registry.get_task(step.task_name))
+            except KeyError as exc:
+                raise ValueError(f"Unknown task '{step.task_name}' in pipeline '{name}'.") from exc
+    else:
+        resolved = list(tasks)
+        if len(resolved) != len(steps):
+            raise ValueError(
+                f"Pipeline '{name}' has {len(steps)} steps and {len(resolved)} tasks."
+            )
+        for task, step in zip(resolved, steps):
+            if task.name != step.task_name:
+                raise ValueError(
+                    f"Task '{task.name}' does not match spec step '{step.task_name}'."
+                )
+    pipe = ssp_pipeline(name, resolved, target_data, data_dir)
+    pipe.connect = conf.connect
+    pipe.step_specs = steps
+    pipe.config_catalog = bind_config_catalog(conf, resolved, steps)
+    pipe.input_decls = dict(conf.inputs)
+    pipe.output_decls = dict(conf.output)
     return pipe
+
+
+def build_candidate(
+    name: str,
+    tasks,
+    profiles,
+    target_data: Data,
+    data_dir: str,
+    *,
+    description: str = "search candidate",
+):
+    """Turn a search candidate into a pipeline built from the shared spec."""
+    conf = pipeline_conf_from_candidate(tasks, profiles, description=description)
+    pipe = build_from_conf(name, conf, target_data, data_dir, tasks=tasks)
+    return pipe, conf
+
 
 def build_from_yaml(yaml_path: Path):
     pipeline_conf = load_pipeline_catalog(yaml_path)

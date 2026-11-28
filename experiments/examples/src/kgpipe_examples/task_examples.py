@@ -1,4 +1,5 @@
 from kgpipe.common import TaskInput, TaskOutput
+import kgpipe_examples.dummy_tasks  # noqa: F401  registers the catalog dummy tasks
 from kgpipe.common import trace_task_run
 from kgpipe.common.model.configuration import ConfigurationProfile, ConfigurationDefinition, Parameter, ParameterType
 from kgpipe_examples.config import ExtendedFormats

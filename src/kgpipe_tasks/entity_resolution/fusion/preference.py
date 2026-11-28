@@ -5,6 +5,12 @@ from pathlib import Path
 from kgpipe_tasks.transform_interop.exchange.entity_matching import ER_Document
 from kgpipe.evaluation.cluster import MatchCluster
 from kgpipe.common.models import KgTask, DataFormat, Data
+from kgpipe.common.model.configuration import (
+    ConfigurationDefinition,
+    ConfigurationProfile,
+    Parameter,
+    ParameterType,
+)
 from typing import Dict, List, Optional
 import json
 from kgpipe.common.registry import Registry
@@ -16,6 +22,31 @@ from kgpipe_tasks.entity_resolution.fusion.util import load_matches_from_file
 logger = getLogger(__name__)
 
 SINGLE_CANDIDATE_CHECK: bool=False
+
+FUSION_THRESHOLD_CONFIG = ConfigurationDefinition(
+    name="fusion-first-value",
+    description="Match-score cutoffs used while fusing",
+    parameters=[
+        Parameter(
+            name="entity_matching_threshold",
+            datatype=ParameterType.number,
+            default_value=0.5,
+            native_keys=["ENTITY_MATCHING_THRESHOLD"],
+        ),
+        Parameter(
+            name="relation_matching_threshold",
+            datatype=ParameterType.number,
+            default_value=0.5,
+            native_keys=["RELATION_MATCHING_THRESHOLD"],
+        ),
+    ],
+)
+
+
+def _threshold(config: Optional[ConfigurationProfile], name: str, default: float) -> float:
+    if config is None:
+        return default
+    return float(config.get_parameter_value(name))
 
 class TrackRecord(BaseModel):
     original_subject: str
@@ -104,9 +135,14 @@ def select_first_value(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     input_spec={"source": DataFormat.RDF_NTRIPLES, "kg": DataFormat.RDF_NTRIPLES, "matches1": DataFormat.ER_JSON},
     output_spec={"output": DataFormat.RDF_NTRIPLES},
     description="Fuse RDF entities using first value fusion",
-    category=["EntityResolution", "Fusion"]
+    category=["EntityResolution", "Fusion"],
+    config_spec=FUSION_THRESHOLD_CONFIG,
 )
-def fusion_first_value(inputs: Dict[str, Data], outputs: Dict[str, Data]):
+def fusion_first_value(
+    inputs: Dict[str, Data],
+    outputs: Dict[str, Data],
+    config: Optional[ConfigurationProfile] = None,
+):
     """
     Fuse RDF entities
     - replacing ids of target graph with ids of source graph based on matches
@@ -119,8 +155,8 @@ def fusion_first_value(inputs: Dict[str, Data], outputs: Dict[str, Data]):
         raise ValueError("ONTOLOGY_PATH is not set")
     ontology = OntologyUtil.load_ontology_from_file(Path(ontology_path))
 
-    entity_matching_threshold = float(os.environ.get("ENTITY_MATCHING_THRESHOLD", 0.5))
-    relation_matching_threshold = float(os.environ.get("RELATION_MATCHING_THRESHOLD", 0.5))
+    entity_matching_threshold = _threshold(config, "entity_matching_threshold", 0.5)
+    relation_matching_threshold = _threshold(config, "relation_matching_threshold", 0.5)
     print(f"[CONFIG] Fusion entity matching threshold: {entity_matching_threshold}")
     print(f"[CONFIG] Fusion relation matching threshold: {relation_matching_threshold}")
 
