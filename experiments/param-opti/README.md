@@ -2,7 +2,9 @@
 
 Search over KG integration pipeline configs (task selection + parameters) to maximize evaluation quality against a reference KG. Supports **RDF** (graph alignment / fusion) and **text** (IE → linking → RDF → fusion) pipelines on the MovieKG benchmark.
 
-Experiment results can be found at https://github.com/Vehnem/kgpipe-experiment-results/tree/main/parameter_search. A local copy of the reports is `data/kgpipe-experiment-results/parameter_search`. A search candidate is compiled to a `kgpipe.pipeline/v1` catalog before it is built. `src/kgpipe_search/test/test_candidate_spec.py` rebuilds the sampled RDF runs from that copy and checks task order, port refs, parameter values, and the fingerprint. It does not execute the tasks.
+Experiment results can be found at https://github.com/Vehnem/kgpipe-experiment-results/tree/main/parameter_search. A local copy of the reports is `data/kgpipe-experiment-results/parameter_search`. A search candidate is compiled to a `kgpipe.pipeline/v1` catalog before it is built. Sampling and category coverage come from `kgpipe.generation.space`; the `{task_key: {category, parameter: [values]}}` tables in `definitions.py` are the paper's slot and domain data, checked against each task's declared parameters.
+
+Result files are named by the SHA-256 of the canonical `{task_keys, profiles}` JSON. That digest is unchanged by the `kgpipe.pipeline/v1` plan, whose `fingerprint` is a separate identity. `src/kgpipe_search/test/test_legacy_snapshots.py` checks the digest for `rdf_sampled`, `text_sampled`, `rdf`, and `text`. `src/kgpipe_search/test/test_candidate_spec.py` rebuilds the sampled RDF and text runs and checks task order, port refs, parameter values, and the fingerprint. Neither test executes the tasks. The snapshot format is documented in `docs/parameters.md`.
 
 The accepted-paper checkout, dataset split, ranking settings, image tags, and results commit are recorded in [PAPER_BASELINE.md](PAPER_BASELINE.md). `scripts/` and `full.sh` were never committed; the commands below are the intended interface, not files in this tree.
 

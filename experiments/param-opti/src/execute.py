@@ -27,6 +27,7 @@ from typing import Any, Callable, Dict, List, Optional
 from kgpipe.common import Data, DataFormat
 from kgpipe.common.models import KgPipePlan
 from kgpipe.generation.loaders import build_candidate
+from kgpipe.generation.space import legacy_config_hash
 from kgpipe_search.configuration import (
     load_rdf_exhaustive_pipeline_configs,
     load_rdf_sampled_pipeline_configs,
@@ -89,8 +90,8 @@ def _set_ontology_env(ontology_path: Optional[Path]) -> None:
 
 
 def _config_hash(snapshot: Dict[str, Any]) -> str:
-    canonical = json.dumps(snapshot, sort_keys=True)
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+    """Result-file digest. This is the published snapshot hash, not ``plan.fingerprint``."""
+    return legacy_config_hash(snapshot)
 
 
 def _tasks_tmp_dir(

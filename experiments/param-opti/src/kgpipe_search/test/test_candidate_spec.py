@@ -1,17 +1,19 @@
-"""Sampled RDF search candidates are kgpipe.pipeline/v1 specifications.
+"""Sampled search candidates are kgpipe.pipeline/v1 specifications.
 
-The stored runs live in ``data/kgpipe-experiment-results/parameter_search/rdf_sampled``.
+The stored runs live under ``data/kgpipe-experiment-results/parameter_search/``.
 Each candidate is a ``{task_keys, profiles}`` snapshot plus the plan that was
 executed. The task tmp files are not in this checkout, so this test does not
 call ``run()``. It rebuilds the candidate through the shared spec and checks
 the task order, port refs, parameter values, fingerprint, and cache filename
-against that stored plan.
+against that stored plan. RDF and text sampled runs are both checked.
 """
 
 from __future__ import annotations
 
 import json
 from pathlib import Path
+
+import pytest
 
 from kgpipe.common import Data, DataFormat, KgPipe
 from kgpipe.generation.loaders import build_candidate, build_from_conf
@@ -26,12 +28,12 @@ from kgpipe.generation.spec import (
 from kgpipe_search.configuration import pipeline_config_from_snapshot
 
 REPO = Path(__file__).resolve().parents[5]
-RDF_SAMPLED = REPO / "data/kgpipe-experiment-results/parameter_search/rdf_sampled"
+RESULTS = REPO / "data/kgpipe-experiment-results/parameter_search"
 
 
-def _sampled_runs() -> list[tuple[Path, Path]]:
+def _sampled_runs(directory: Path) -> list[tuple[Path, Path]]:
     pairs = []
-    for config_path in sorted(RDF_SAMPLED.glob("*.json")):
+    for config_path in sorted(directory.glob("*.json")):
         if config_path.suffixes != [".json"]:
             continue
         plan_path = config_path.with_suffix(".plan.json")
@@ -102,9 +104,11 @@ def _assert_parameter_values(candidate, plan) -> None:
             assert step.parameters[key] == binding.value
 
 
-def test_sampled_rdf_candidates_round_trip_through_spec(tmp_path: Path):
-    runs = _sampled_runs()
-    assert runs, f"No sampled RDF configs in {RDF_SAMPLED}"
+@pytest.mark.parametrize("dirname", ["rdf_sampled", "text_sampled"])
+def test_sampled_candidates_round_trip_through_spec(tmp_path: Path, dirname: str):
+    directory = RESULTS / dirname
+    runs = _sampled_runs(directory)
+    assert runs, f"No sampled configs with plans in {directory}"
     assert len(runs) <= 15
 
     for config_path, plan_path in runs:
@@ -113,8 +117,11 @@ def test_sampled_rdf_candidates_round_trip_through_spec(tmp_path: Path):
         candidate = pipeline_config_from_snapshot(snapshot)
         work = tmp_path / config_path.stem
 
-        seed = Data(path=work / "seed.nt", format=DataFormat.RDF_NTRIPLES)
-        source = Data(path=work / "source.nt", format=DataFormat.RDF_NTRIPLES)
+        source_format = DataFormat(stored["source"]["format"])
+        seed_format = DataFormat(stored["seed"]["format"])
+        result_format = DataFormat(stored["result"]["format"])
+        seed = Data(path=work / "seed.nt", format=seed_format)
+        source = Data(path=work / "source.nt", format=source_format)
         pipe, conf = build_candidate(
             config_path.stem,
             candidate.tasks,
@@ -127,7 +134,7 @@ def test_sampled_rdf_candidates_round_trip_through_spec(tmp_path: Path):
             stable_files=True,
             configCatalog=pipe.config_catalog,
             source=source,
-            result=Data(path=work / "spec" / "result.nt", format=DataFormat.RDF_NTRIPLES),
+            result=Data(path=work / "spec" / "result.nt", format=result_format),
         )
 
         legacy = KgPipe(
@@ -140,7 +147,7 @@ def test_sampled_rdf_candidates_round_trip_through_spec(tmp_path: Path):
             stable_files=True,
             configCatalog=candidate.config_catalog,
             source=source,
-            result=Data(path=work / "legacy" / "result.nt", format=DataFormat.RDF_NTRIPLES),
+            result=Data(path=work / "legacy" / "result.nt", format=result_format),
         )
 
         catalog_path = work / "pipeline.conf"
@@ -163,7 +170,7 @@ def test_sampled_rdf_candidates_round_trip_through_spec(tmp_path: Path):
             stable_files=True,
             configCatalog=reloaded_pipe.config_catalog,
             source=source,
-            result=Data(path=work / "yaml" / "result.nt", format=DataFormat.RDF_NTRIPLES),
+            result=Data(path=work / "yaml" / "result.nt", format=result_format),
         )
 
         explicit = pipeline_conf_from_plan(plan, description=config_path.stem)
@@ -178,7 +185,7 @@ def test_sampled_rdf_candidates_round_trip_through_spec(tmp_path: Path):
             stable_files=True,
             configCatalog=explicit_pipe.config_catalog,
             source=source,
-            result=Data(path=work / "explicit" / "result.nt", format=DataFormat.RDF_NTRIPLES),
+            result=Data(path=work / "explicit" / "result.nt", format=result_format),
         )
 
         assert conf.connect == "auto"
