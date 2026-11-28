@@ -36,6 +36,7 @@ nav:
   - Concepts:
       - Tasks: tasks.md
       - Pipelines: pipelines.md
+      - Python API: api.md
       - Configuration: configuration.md
       - Parameters: parameters.md
       - Meta KG: metakg.md

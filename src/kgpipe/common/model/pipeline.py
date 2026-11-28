@@ -136,7 +136,12 @@ KgPipelineRun = KgStageReport
 # @kg_class()
 @dataclass
 class KgPipe:
-    """A KG pipeline using a list of tasks."""
+    """Execution object for a list of tasks.
+
+    New pipelines should be defined with :class:`kgpipe.api.Pipeline`. That
+    call compiles a ``kgpipe.pipeline/v1`` specification into a ``KgPipe``.
+    Constructing ``KgPipe`` directly still builds and runs.
+    """
     
     tasks: List[KgTask]
     seed: Data

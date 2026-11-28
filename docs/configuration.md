@@ -27,7 +27,7 @@ print(config.SYS_KG_URL)
 
 ## Pipeline specification
 
-A catalog is `kgpipe.pipeline/v1` YAML. See [Pipelines](pipelines.md) for the schema, relative paths, `${VAR}` interpolation, backend options, and how `build()` connects ports. `build_from_yaml()` is enough to plan and run an entry; `validate_pipeline()` stops after the plan.
+A catalog is `kgpipe.pipeline/v1` YAML. See [Pipelines](pipelines.md) for the schema, relative paths, `${VAR}` interpolation, backend options, and how `build()` connects ports. `Pipeline.from_yaml()` plans and runs an entry; `Pipeline.validate()` stops after the plan. The same typed configuration can be built in Python. See [Python API](api.md).
 
 ```yaml
 rdf_base:

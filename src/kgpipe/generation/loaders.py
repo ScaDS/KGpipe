@@ -212,7 +212,7 @@ def build_from_yaml(
 
     Path precedence, highest first: function arguments, pipeline ``defaults``,
     catalog ``defaults``. Relative paths are resolved against the YAML file
-    directory. Call this instead of writing ``KgPipe(...)`` boilerplate.
+    directory. ``Pipeline.from_yaml`` is the public wrapper around this loader.
     """
     loaded = load_pipeline_catalog(Path(yaml_path), environ=environ)
     pipeline_name, conf = select_pipeline_conf(loaded, name)

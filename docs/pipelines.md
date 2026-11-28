@@ -36,16 +36,19 @@ tasks:
           entity_matching_threshold: 0.99
 ```
 
-Load a catalog and run it without assembling `KgPipe` by hand:
+Load a catalog and run it through the public API:
 
 ```python
-from kgpipe.generation.loaders import build_from_yaml, validate_pipeline
+from kgpipe import Pipeline
 
-pipe = build_from_yaml("pipeline.yaml", "rdf_base")
-reports = pipe.run()
+pipeline = Pipeline.from_yaml("pipeline.yaml", "rdf_base")
+plan = pipeline.plan()
+outcome = pipeline.run()
 ```
 
-`validate_pipeline(path, name)` is the same load and plan step without `run()`. Invalid task names, backends, parameter types, and port combinations fail there.
+`pipeline.validate()` is the same load and plan step without `run()`. Invalid task names, backends, parameter types, and port combinations fail there. The same specification can be written in Python with `Pipeline(...)` or `Pipeline.from_conf(...)`. Both compile to the plan above. See [Python API](api.md).
+
+`build_from_yaml` and `validate_pipeline` remain the loader `Pipeline.from_yaml` calls.
 
 `build_from_conf` is the lower-level form when the files already exist as `Data` objects:
 

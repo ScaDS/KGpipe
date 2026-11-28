@@ -2,8 +2,9 @@
 # Tasks: experiments/examples/src/kgpipe_examples/dummy_tasks.py
 #
 # Relative paths resolve against this file. ${VAR} and ${VAR:-default} read
-# the environment after the `env` map. Override any path in Python with
-# build_from_yaml(..., source=..., seed=..., result=..., data_dir=...).
+# the environment after the `env` map. The Python form is
+# kgpipe_examples.api_example.sample_pipeline. Override any path with
+# Pipeline.from_yaml(..., source=..., seed=..., result=..., data_dir=...).
 schema: kgpipe.pipeline/v1
 
 env:

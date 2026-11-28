@@ -283,3 +283,30 @@ def test_sample_yaml_matches_python_plan(tmp_path: Path):
     assert yaml_pipe.plan.fingerprint == python_plan.fingerprint
     assert yaml_pipe.plan.steps[0].parameters["entity_matching_threshold"] == 0.8
     assert yaml_pipe.plan.steps[2].parameters["entity_matching_threshold"] == 0.99
+
+
+def test_public_api_matches_sample_yaml(tmp_path: Path):
+    from kgpipe import Pipeline
+    import kgpipe_examples.dummy_tasks  # noqa: F401
+    from kgpipe_examples.api_example import sample_pipeline
+
+    sample = Path(__file__).resolve().parents[2] / "sample.yaml"
+    source = tmp_path / "source.nt"
+    seed = tmp_path / "seed.nt"
+    yaml_pipeline = Pipeline.from_yaml(
+        sample,
+        source=source,
+        seed=seed,
+        result=tmp_path / "yaml" / "result.nt",
+        data_dir=tmp_path / "yaml",
+        environ={"KGPIPE_THRESHOLD": "0.99"},
+    )
+    python_pipeline = sample_pipeline(
+        source,
+        seed,
+        tmp_path / "python" / "result.nt",
+        tmp_path / "python",
+    )
+    assert python_pipeline.plan().fingerprint == yaml_pipeline.plan().fingerprint
+    assert python_pipeline.plan().steps[0].parameters["entity_matching_threshold"] == 0.8
+    assert python_pipeline.plan().steps[2].parameters["entity_matching_threshold"] == 0.99

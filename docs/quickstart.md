@@ -70,31 +70,36 @@ def my_task(inputs: TaskInput, outputs: TaskOutput):
 A `kgpipe.pipeline/v1` catalog is enough to plan a pipeline. `experiments/examples/sample.yaml` is the minimal file. Relative paths resolve against that file; `${VAR}` and `${VAR:-default}` read the environment.
 
 ```python
-from kgpipe.generation.loaders import build_from_yaml
+from kgpipe import Pipeline
 
-pipe = build_from_yaml("experiments/examples/sample.yaml")
-pipe.run()
+pipeline = Pipeline.from_yaml("experiments/examples/sample.yaml")
+plan = pipeline.plan()
+outcome = pipeline.run()
+print(outcome.status, outcome.result.path)
 ```
 
-`validate_pipeline(path)` stops after planning and rejects unknown tasks, backend mismatches, bad parameter types, and combinations that cannot be wired. See [Pipelines](pipelines.md) for the schema.
+`pipeline.validate()` stops after planning and rejects unknown tasks, backend mismatches, bad parameter types, and combinations that cannot be wired. See [Pipelines](pipelines.md) for the schema and [Python API](api.md) for the run result.
 
 ## Define and run a pipeline (Python API)
 
-Pipelines connect tasks by passing `Data` (path + format) between them. A minimal example exists in
-`experiments/examples/src/kgpipe_examples/pipe_examples.py`.
-
-The core pattern:
+`Pipeline` takes task names or live tasks, typed parameters, and the source, seed, and result files. The resolved plan matches a YAML catalog with the same task order, port refs, and parameter values. `experiments/examples/src/kgpipe_examples/api_example.py` is the Python form of `sample.yaml`.
 
 ```python
-from kgpipe.common import KgPipe, Data
+from kgpipe import Pipeline
 
-# tasks = [task_a, task_b, ...]  # registered task callables (from your package)
-# seed = Data(path=..., format=...)
-# result = Data(path=..., format=...)
-pipe = KgPipe(tasks=tasks, seed=seed, data_dir="/tmp/my_run_dir")
-pipe.build(source=seed, result=result)
-pipe.run()
+pipeline = Pipeline(
+    tasks=["dummy_match", "dummy_exchange", "dummy_fuse", "dummy_type"],
+    parameters={"entity_matching_threshold": 0.99},
+    source="data/source.nt",
+    seed="data/seed.nt",
+    result="output/result.nt",
+    data_dir="output",
+)
+plan = pipeline.plan()
+outcome = pipeline.run()
 ```
+
+Existing `KgPipe(...)` / `build()` / `run()` code still runs. `Pipeline.from_kgpipe(pipe)` wraps a pipeline that was built that way. Details are in [Python API](api.md).
 
 ## Discover components and inspect what’s available (CLI)
 
