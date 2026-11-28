@@ -107,7 +107,7 @@ The resolved plan records a ref for every port: `$source`, `$seed`, `$result`, o
 
 `kg` is part of the algorithm. `fusion_first_value` has two N-Triples inputs, and format matching alone cannot tell source from seed. Two inputs of the same format are bound newest-first: `aggregate_2matches` assigns `json1` the newer `er.json` and `json2` the older one.
 
-`kgpipe run pipeline.conf rdf_base --dry-run` prints this wiring and the candidate fingerprint.
+`kgpipe plan pipeline.conf rdf_base` prints this wiring and the candidate fingerprint. `kgpipe run pipeline.conf rdf_base --dry-run` registers that plan in the system graph.
 
 ## Explicit ports
 
@@ -156,6 +156,38 @@ plan = pipe.build(source=source, result=result, stable_files=True, configCatalog
 `dump_pipeline_catalog()` writes that entry as YAML, and `load_pipeline_catalog()` reads it back. `pipeline_conf_from_plan()` writes the resolved port refs as `connect: explicit`. Rebuilding either form produces the same task order, port refs, parameter values, and fingerprint.
 
 The sampled RDF runs in `data/kgpipe-experiment-results/parameter_search/rdf_sampled` keep the older `{task_keys, profiles}` JSON beside the resolved plan. Those plans record the files that were wired together. Rebuilding the candidate from the JSON reproduces that wiring as `$source`, `$seed`, `$result`, and `step_id.port`, and it reproduces the cache filename of each intermediate file. The task tmp files themselves are not in this checkout.
+
+## Command line
+
+`validate`, `plan`, and `exec` are the CLI for one catalog entry. They call `Pipeline.validate`, `Pipeline.plan`, and `Pipeline.run`. A file with one pipeline does not need a name. Repeat `--package` or `--module-path` to import the tasks that entry names. `--input` / `--source`, `--seed` / `--target`, `--result`, `--output` / `--data-dir`, and `--ontology` override the catalog paths.
+
+```bash
+kgpipe validate experiments/examples/sample.yaml \
+  --module-path experiments/examples/src/kgpipe_examples/dummy_tasks.py
+
+kgpipe plan experiments/examples/pipeline.conf dummy_auto \
+  --module-path experiments/examples/src/kgpipe_examples/dummy_tasks.py
+
+kgpipe exec experiments/examples/sample.yaml \
+  --module-path experiments/examples/src/kgpipe_examples/dummy_tasks.py \
+  --input ./data/source.nt --seed ./data/seed.nt \
+  --result ./output/result.nt --data-dir ./output
+
+kgpipe exec experiments/examples/sample.yaml --dry-run \
+  --module-path experiments/examples/src/kgpipe_examples/dummy_tasks.py
+```
+
+`--dry-run` resolves the plan and does not run tasks. `--force` runs a task again when its outputs are already on disk. Relative `--input`, `--seed`, `--result`, `--output`, and `--ontology` paths resolve against the catalog file, the same way `Pipeline.from_yaml` does.
+
+stdout is the result. Task progress and the status line go to stderr. `--format json` or `--format yaml` keeps that progress off stdout, so the document can be parsed as-is. `--quiet` drops the progress and the success line. Errors stay on stderr.
+
+| Exit | Meaning |
+|---|---|
+| 0 | The plan resolved, or execution succeeded or skipped |
+| 1 | A task failed, or execution stopped |
+| 2 | The catalog, task name, parameters, or ports are invalid |
+
+`kgpipe run PIPELINE_FILE --dry-run` still registers the plan in the system graph. Execution is `kgpipe exec`.
 
 ## Execution
 

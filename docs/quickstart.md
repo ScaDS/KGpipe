@@ -80,6 +80,21 @@ print(outcome.status, outcome.result.path)
 
 `pipeline.validate()` stops after planning and rejects unknown tasks, backend mismatches, bad parameter types, and combinations that cannot be wired. See [Pipelines](pipelines.md) for the schema and [Python API](api.md) for the run result.
 
+The same three steps are available on the command line. stdout is the result; progress goes to stderr. `--format json` keeps the document parseable.
+
+```bash
+kgpipe validate experiments/examples/sample.yaml \
+  --module-path experiments/examples/src/kgpipe_examples/dummy_tasks.py
+kgpipe plan experiments/examples/pipeline.conf dummy_auto \
+  --module-path experiments/examples/src/kgpipe_examples/dummy_tasks.py
+kgpipe exec experiments/examples/sample.yaml \
+  --module-path experiments/examples/src/kgpipe_examples/dummy_tasks.py \
+  --input ./data/source.nt --seed ./data/seed.nt \
+  --result ./output/result.nt --data-dir ./output
+```
+
+`kgpipe exec --dry-run` prints the plan and does not run tasks. Exit status is 0 when the plan resolves or the run succeeds, 1 when a task fails, and 2 when the catalog is invalid.
+
 ## Define and run a pipeline (Python API)
 
 `Pipeline` takes task names or live tasks, typed parameters, and the source, seed, and result files. The resolved plan matches a YAML catalog with the same task order, port refs, and parameter values. `experiments/examples/src/kgpipe_examples/api_example.py` is the Python form of `sample.yaml`.

@@ -1,5 +1,6 @@
 import functools
 import ast
+import sys
 from uuid import uuid4
 from typing import Any, List, Optional, TYPE_CHECKING
 from datetime import datetime, timezone
@@ -43,7 +44,10 @@ model = RDFBaseModel()
 
 try:
     if scheme == "sparql":
-        print(f"Using SPARQL backend for system graph: {f"http://{rest}"} with http://github.com/ScaDS/kgpipe/")
+        print(
+            f"Using SPARQL backend for system graph: http://{rest} with http://github.com/ScaDS/kgpipe/",
+            file=sys.stderr,
+        )
         backend = RDFSparqlBackend(
             endpoint=f"http://{rest}", 
             update_endpoint=f"http://{rest}",
@@ -52,8 +56,8 @@ try:
     else:
         raise ValueError(f"Unsupported schema: {scheme}")
 except Exception as e:
-    print(f"Error creating system graph: {e}")
-    print(f"Using RDFLib memory backend for system graph")
+    print(f"Error creating system graph: {e}", file=sys.stderr)
+    print("Using RDFLib memory backend for system graph", file=sys.stderr)
 
 SYS_KG: KnowledgeGraph = KnowledgeGraph(model=model, backend=backend)
 

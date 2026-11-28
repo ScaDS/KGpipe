@@ -302,10 +302,10 @@ def run_cmd(
         kgpipe run pipeline.conf --all --dry-run
     """
     if not dry_run:
-        console.print("[red]Only `--dry-run` is supported right now.[/red]")
+        console.print("[red]kgpipe run only registers a dry-run in the system graph.[/red]")
         console.print(
-            "Use `kgpipe run PIPELINE_FILE [PIPELINE_NAME...] --dry-run` "
-            "or `kgpipe run PIPELINE_FILE --all --dry-run`."
+            "Execute with `kgpipe exec PIPELINE_FILE [NAME]`. "
+            "Plan with `kgpipe plan`, or check the catalog with `kgpipe validate`."
         )
         sys.exit(1)
 

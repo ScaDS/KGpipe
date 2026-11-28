@@ -107,6 +107,8 @@ outcome = pipeline.run()
 
 A Python definition and that YAML entry produce the same fingerprint when the task order, step ids, port refs, and parameter values agree. `experiments/examples/src/kgpipe_examples/api_example.py` is the Python form of `experiments/examples/sample.yaml`.
 
+`kgpipe validate`, `kgpipe plan`, and `kgpipe exec` call this API for one catalog entry. See [Pipelines](pipelines.md).
+
 ## Migration from KgPipe
 
 `KgPipe` still builds and runs. `Pipeline` is the specification in front of it. `to_kgpipe()` returns the compiled execution object after `plan()` or `run()`.
