@@ -5,83 +5,70 @@ Registry command for KGbench CLI.
 This module handles registry management.
 """
 
-import json
 from typing import Optional
 
 import click
-import yaml
-from rich.console import Console
-from rich.table import Table
 
+from kgpipe.cli.catalog_output import catalog_payload, emit_catalog, normalize_kind
 from kgpipe.common.discovery import discover_entry_points
-from kgpipe.common.registry import Registry
-
-# Initialize Rich console for pretty output
-console = Console()
 
 
-def show_registry_table(registry_data):
-    """Display registry data in a table."""
-    table = Table(title="Registry Contents")
-    table.add_column("Type", style="cyan")
-    table.add_column("Count", style="green")
-    table.add_column("Items", style="yellow")
-    
-    for reg_type, items in registry_data.items():
-        count = len(items)
-        item_names = [item.get('name', str(item)) for item in items[:5]]  # Show first 5
-        if count > 5:
-            item_names.append(f"... and {count - 5} more")
-        
-        table.add_row(reg_type, str(count), ", ".join(item_names))
-    
-    console.print(table)
+def _available_filter(available: bool, unavailable: bool) -> Optional[bool]:
+    if available and unavailable:
+        raise click.UsageError("Use only one of --available and --unavailable.")
+    if available:
+        return True
+    if unavailable:
+        return False
+    return None
 
 
 @click.command()
 @click.option(
-    "--type", 
-    "-t", 
-    type=str, 
-    help="Show only specific registry type"
+    "--type",
+    "-t",
+    "kind",
+    type=str,
+    help="Show only one registry type (task, pipeline, metric, evaluator)",
 )
 @click.option(
-    "--format", 
-    "-f", 
-    type=click.Choice(["table", "json", "yaml"]), 
+    "--format",
+    "-f",
+    "output_format",
+    type=click.Choice(["table", "json", "yaml", "csv"]),
     default="table",
-    help="Output format"
+    help="Output format",
 )
+@click.option("--name", default=None, help="Keep tasks whose name contains this text")
+@click.option("--category", default=None, help="Keep tasks in this category")
+@click.option("--backend", default=None, help="Keep tasks with this backend (python, docker, remote)")
+@click.option("--available", is_flag=True, help="Keep tasks whose declared dependencies import")
+@click.option("--unavailable", is_flag=True, help="Keep tasks with a missing declared dependency")
 @click.pass_context
-def registry_cmd(ctx: click.Context, type: Optional[str], format: str):
+def registry_cmd(
+    ctx: click.Context,
+    kind: Optional[str],
+    output_format: str,
+    name: Optional[str],
+    category: Optional[str],
+    backend: Optional[str],
+    available: bool,
+    unavailable: bool,
+):
     """
     Show registry contents.
-    
+
     Display information about registered tasks, pipelines, metrics, and evaluators.
+    JSON and YAML use the same records as ``kgpipe list``.
     """
-    # Trigger discovery to ensure all components are registered
     discover_entry_points()
-    
-    # Get registry data
-    registry = Registry()
-    
-    if type:
-        # Show specific type
-        items = registry.list(type)
-        registry_data = {type: items}
-    else:
-        # Show all types
-        registry_data = {
-            "tasks": registry.list("task"),
-            "pipelines": registry.list("pipeline"),
-            "metrics": registry.list("metric"),
-            "evaluators": registry.list("evaluator")
-        }
-    
-    # Display in requested format
-    if format == "table":
-        show_registry_table(registry_data)
-    elif format == "json":
-        console.print(json.dumps(registry_data, indent=2))
-    elif format == "yaml":
-        console.print(yaml.dump(registry_data, default_flow_style=False)) 
+    selected = normalize_kind(kind)
+    payload = catalog_payload(
+        selected,
+        name=name,
+        category=category,
+        backend=backend,
+        available=_available_filter(available, unavailable),
+        include_packages=True,
+    )
+    emit_catalog(payload, output_format=output_format, kind=selected)

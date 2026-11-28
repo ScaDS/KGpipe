@@ -4,7 +4,7 @@ from kgpipe.common.registry import Registry
 def get_extract_ontology_from_rdf_task():
     return extract_ontology_from_rdf_task
 
-Registry.register("task")(get_extract_ontology_from_rdf_task)
+Registry.add_task(extract_ontology_from_rdf_task.name, extract_ontology_from_rdf_task)
 
 __all__ = [
     "extract_ontology_from_rdf_task"

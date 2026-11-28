@@ -30,7 +30,8 @@ from .models import (
     Data, DataFormat, BasicDataFormats, CustomDataFormats, BasicTaskCategoryCatalog, KgTask, KgTaskReport,
     DataSet, KG, Metric, EvaluationReport, KgPipe, TaskInput, TaskOutput
 )
-from .registry import Registry
+from .registry import Registry, RegistryCollisionError
+from .catalog import task_catalog, task_record
 from .io import get_docker_volume_bindings, remap_data_path_for_container
 from .discovery import (
     discover_entry_points, get_registered_tasks, get_registered_pipelines,
@@ -42,7 +43,7 @@ __all__ = [
     "Data", "DataFormat", "BasicDataFormats", "CustomDataFormats", "BasicTaskCategoryCatalog", "KgTask", "KgTaskReport",
     "DataSet", "KG", "Stage", "Metric", "EvaluationReport", "KgPipe", "TaskInput", "TaskOutput",
     "trace_task_run",
-    "Registry",
+    "Registry", "RegistryCollisionError", "task_catalog", "task_record",
     "get_docker_volume_bindings", "remap_data_path_for_container",
     "discover_entry_points", "get_registered_tasks", "get_registered_pipelines",
     "get_registered_metrics", "get_registered_metric_instances", "get_registered_evaluators",

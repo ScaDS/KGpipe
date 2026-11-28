@@ -18,6 +18,35 @@ from kgpipe.common.graph.mapper import sync_task_to_systemgraph, sync_metric_to_
 
 logger = logging.getLogger(__name__)
 
+_optional_packages: Dict[str, Dict[str, Any]] = {}
+
+
+def optional_packages() -> List[Dict[str, Any]]:
+    """Optional packages discovery tried to import, in first-seen order."""
+    return [dict(item) for item in _optional_packages.values()]
+
+
+def load_optional_package(name: str, import_name: Optional[str] = None) -> bool:
+    """Import an optional package and record whether it is available.
+
+    A missing package is recorded and does not raise. Importing the same name
+    again updates that record instead of adding a second one.
+    """
+    target = import_name or name
+    try:
+        importlib.import_module(target)
+    except ImportError as exc:
+        _optional_packages[name] = {"name": name, "import_name": target, "available": False, "error": str(exc)}
+        logger.warning("%s not available: %s", name, exc)
+        return False
+    except Exception as exc:
+        _optional_packages[name] = {"name": name, "import_name": target, "available": False, "error": str(exc)}
+        logger.error("Error discovering %s: %s", name, exc)
+        return False
+    _optional_packages[name] = {"name": name, "import_name": target, "available": True, "error": None}
+    logger.info("Successfully discovered %s", name)
+    return True
+
 
 def discover_entry_points() -> None:
     """
@@ -58,7 +87,6 @@ def sync_registry_to_systemgraph() -> None:
             sync_task_to_systemgraph(task)
         except Exception as e:
             logger.exception(f"Error syncing task {task.name} to system graph: {e}")
-            print(f"Error syncing task {task.name} to system graph: {e}")
 
     for metric in get_registered_metrics():
         try:
@@ -66,59 +94,32 @@ def sync_registry_to_systemgraph() -> None:
         except Exception as e:
             key = getattr(metric, "key", getattr(metric, "__name__", metric))
             logger.exception(f"Error syncing metric {key} to system graph: {e}")
-            print(f"Error syncing metric {key} to system graph: {e}")
 
 
 def discover_kgpipe_tasks() -> None:
     """Discover and register components from kgpipe_tasks package."""
-    try:
-        import kgpipe_tasks
-                
-        logger.info("Successfully discovered kgpipe_tasks components")
-        
-    except ImportError as e:
-        logger.warning(f"kgpipe_tasks not available: {e}")
-        print(f"kgpipe_tasks not available: {e}")
-    except Exception as e:
-        logger.error(f"Error discovering kgpipe_tasks: {e}")
-        print(f"Error discovering kgpipe_tasks: {e}")
+    load_optional_package("kgpipe_tasks")
 
 
 def discover_kgpipe_llm() -> None:
     """Discover and register components from kgpipe_llm package."""
-    try:
-        import kgpipe_llm.tasks
-        
-        print("Successfully discovered kgpipe_llm components")
-        logger.info("Successfully discovered kgpipe_llm components")
-        
-    except ImportError as e:
-        print(f"kgpipe_llm not available: {e}")
-        logger.warning(f"kgpipe_llm not available: {e}")
-    except Exception as e:
-        logger.error(f"Error discovering kgpipe_llm: {e}")
+    load_optional_package("kgpipe_llm", "kgpipe_llm.tasks")
 
 
 def discover_kgpipe_examples() -> None:
     """Discover and register example tasks (including config-spec demos)."""
-    try:
-        import kgpipe_examples.task_examples  # noqa: F401
+    load_optional_package("kgpipe_examples", "kgpipe_examples.task_examples")
 
-        logger.info("Successfully discovered kgpipe_examples components")
-    except ImportError as e:
-        logger.warning(f"kgpipe_examples not available: {e}")
-    except Exception as e:
-        logger.error(f"Error discovering kgpipe_examples: {e}")
+
 def discover_evaluation_components() -> None:
     """Discover and register evaluation components from kgpipe_eval."""
+    if not load_optional_package("kgpipe_eval"):
+        return
     try:
         from kgpipe_eval.metrics import register_metrics
 
         register_metrics()
         logger.info("Successfully discovered kgpipe_eval metrics")
-        
-    except ImportError as e:
-        logger.warning(f"kgpipe_eval not available: {e}")
     except Exception as e:
         logger.error(f"Error discovering evaluation components: {e}")
 

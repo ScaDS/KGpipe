@@ -164,6 +164,42 @@ import your_tasks_module  # This will trigger task registration
 
 When you import a module with `@Registry.task` decorated functions, they are automatically registered in the framework's registry and added to the Meta KG.
 
+The registry name is the function name in lowercase. `Registry.add_task(name, task)` registers a `KgTask` that was built by hand; `name` has to be `task.name`. Registering a different function under a name that is already taken raises `RegistryCollisionError`. Importing the same function again keeps the first registration.
+
+`backend` is `python`, `docker`, or `remote`. `dependencies` lists importable modules the task needs. The catalog reports the task as unavailable when one of those modules cannot be imported. A missing optional package such as `kgpipe_llm` is recorded the same way and does not stop discovery.
+
+```python
+@Registry.task(
+    input_spec={"input": DataFormat.RDF_NTRIPLES},
+    output_spec={"output": DataFormat.RDF_NTRIPLES},
+    description="Match entities with a local model",
+    category="EntityMatching",
+    backend="python",
+    dependencies=["sentence_transformers"],
+)
+def my_matching_task(inputs: Dict[str, Data], outputs: Dict[str, Data]):
+    ...
+```
+
+## Task catalog
+
+`task_catalog()` and the list commands return the same fields: name, categories, input and output formats, parameters, backend, dependencies, availability, and the module that implements the task.
+
+```python
+from kgpipe.common.catalog import task_catalog
+
+for task in task_catalog(category="EntityMatching", backend="python", available=True):
+    print(task["name"], task["inputs"], task["parameters"])
+```
+
+```bash
+kgpipe list --type tasks --format json --category EntityMatching
+kgpipe list --type tasks --format csv --backend docker
+kgpipe registry --type tasks --format json --unavailable
+```
+
+`table`, `csv`, and `json` use those fields. `csv` needs a single `--type`. Filters apply to tasks.
+
 ## Extending data formats
 
 You can extend the framework with custom data formats by registering them with the `FormatRegistry`. See the example in `experiments/examples/src/kgpipe_examples/config.py` for how to define and register custom formats.

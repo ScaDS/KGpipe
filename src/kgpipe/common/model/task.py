@@ -85,6 +85,9 @@ class KgTask:
     tools: List[str] = field(default_factory=list)
     trace_task_run: bool = False
     see_also: List[str] = field(default_factory=list)
+    backend: str = "python"
+    dependencies: List[str] = field(default_factory=list)
+
     def __post_init__(self):
         if not self.name:
             raise ValueError("Task name cannot be empty")
@@ -105,6 +108,15 @@ class KgTask:
             self.see_also = []
         else:
             self.see_also = list(self.see_also)
+        if not self.backend or not str(self.backend).strip():
+            raise ValueError("Task backend cannot be empty")
+        self.backend = str(self.backend).strip()
+        if self.dependencies is None:
+            self.dependencies = []
+        else:
+            self.dependencies = [str(item).strip() for item in self.dependencies]
+        if any(not item for item in self.dependencies):
+            raise ValueError("Task dependencies must be non-empty module names")
 
     # TODO if configProfile is not provided, use the default config profile derived from the config_spec
     def run(self, inputs: List[Data], outputs: List[Data], stable_files_override: bool = False, configProfile: Optional[ConfigurationProfile] = None) -> KgTaskReport:
