@@ -1,9 +1,9 @@
 from kgpipe_eval.utils.kg_utils import TripleGraph
-from kgpipe_eval.api import Metric, MetricResult, Measurement
+from kgpipe_eval.api import Metric, MetricResult, Measurement, MeasurementSpec
 from functools import lru_cache
 
 from pydantic import BaseModel
-from typing import Mapping
+from typing import ClassVar, Mapping
 from collections import defaultdict
 
 from rdflib import RDF, RDFS
@@ -47,6 +47,14 @@ def count_measures(kg: TripleGraph) -> CountMeasures:
 class CountMetric(Metric):
     key = "CountMetric"
     description = "Counts triples/classes/properties (basic statistics)."
+    measurements: ClassVar[tuple[MeasurementSpec, ...]] = (
+        MeasurementSpec(name="entity_count", unit="number"),
+        MeasurementSpec(name="triple_count", unit="number"),
+        MeasurementSpec(name="property_count", unit="number"),
+        MeasurementSpec(name="class_count", unit="number"),
+        MeasurementSpec(name="property_occurrence", unit="dictionary"),
+        MeasurementSpec(name="class_occurrence", unit="dictionary"),
+    )
 
     def compute(self, kg: TripleGraph) -> MetricResult:
         counts = count_measures(kg)

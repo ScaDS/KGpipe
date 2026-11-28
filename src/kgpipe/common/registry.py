@@ -1,13 +1,12 @@
  # global Registry, entry-point discovery
  
-from typing import Any, Callable, List, Dict
+from typing import Any, Callable, List, Dict, Type, Union
 from kgpipe.common.models import KgTask, DataFormat
 # from kgpipe.common.graph.systemgraph import PipeKG
 from kgpipe.common.graph.definitions import MetricEntity, TaskEntity
 from kgpipe.common.model.configuration import ConfigurationDefinition
-from kgpipe.common.graph.mapper import implementation_to_entity
-
-# TODO add also to system graph
+from kgpipe.common.model.default_catalog import TaskCategory
+from kgpipe.common.graph.mapper import sync_task_to_systemgraph
 
 class Registry:
     """
@@ -43,17 +42,18 @@ class Registry:
         return cls._registry
 
     # Metric #
-    
+
+    @classmethod
+    def add_metric(cls, metric_cls: Type[Any]):
+        """Register a kgpipe_eval Metric class by its `key`."""
+        key = getattr(metric_cls, "key", None) or metric_cls.__name__
+        cls._registry[f"metric:{str(key).lower()}"] = metric_cls
+
     @classmethod
     def metric(cls):
+        """Decorator for kgpipe_eval Metric classes."""
         def decorator(t):
-            cls._registry[f"metric:{t.__name__.lower()}"] = t
-            obj = t()
-            name = getattr(obj, 'name', None)
-            description = getattr(obj, 'description', None)
-            type = getattr(obj, 'aspect', None)
-            metric = MetricEntity(name=name, description=description, type=type.value if type else None)
-            # TODO add to system graph
+            cls.add_metric(t)
             return t
         return decorator
 
@@ -62,6 +62,7 @@ class Registry:
     @classmethod
     def add_task(cls, name: str, task: KgTask):
         cls._registry[f"task:{task.name}"] = task
+        sync_task_to_systemgraph(task)
 
     @classmethod
     def task(
@@ -69,16 +70,27 @@ class Registry:
         input_spec: Dict[str, DataFormat], 
         output_spec: Dict[str, DataFormat], 
         description: str | None = None, 
-        category: List[str] = [],
-        config_spec: ConfigurationDefinition | None = None
+        category: Union[TaskCategory, str, List[Union[TaskCategory, str]]] = [],
+        config_spec: ConfigurationDefinition | None = None,
+        see_also: List[str] = []
         ) -> Callable[[Callable], KgTask]:
         def decorator(t):
-            task = KgTask(t.__name__.lower(), input_spec, output_spec, t, description, category, config_spec)
+            categories = category
+            if isinstance(categories, (str, TaskCategory)):
+                categories = [categories]
+            task = KgTask(
+                t.__name__.lower(),
+                input_spec,
+                output_spec,
+                t,
+                description,
+                list(categories or []),
+                config_spec,
+                see_also=see_also,
+            )
             if getattr(t, "_trace_task_run", False):
                 setattr(task, "trace_task_run", True)
             cls._registry[f"task:{t.__name__.lower()}"] = task
-            # implementation_to_entity(task)
-            # PipeKG.add_implementation(implementation_to_entity(task))
             return task
         return decorator
 

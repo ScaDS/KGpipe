@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from typing import Optional, List, Any
 from kgcore.api.kg import KGId
 
@@ -23,12 +23,14 @@ class KGPIPE_NS(DefinedNamespace):
     Parameter = _NS["Parameter"]
     ParameterBinding = _NS["ParameterBinding"]
     Pipeline = _NS["Pipeline"]
+    PipelineStep = _NS["PipelineStep"]
     PipelineRun = _NS["PipelineRun"]
     Artifact = _NS["Artifact"]
     ArtifactType = _NS["ArtifactType"]
     Schema = _NS["Schema"]
     Metric = _NS["Metric"]
     MetricRun = _NS["MetricRun"]
+    MeasurementSpec = _NS["MeasurementSpec"]
     DataSpec = _NS["DataSpec"]
     DataEntity = _NS["Data"]
     DataType = _NS["DataType"]
@@ -67,9 +69,15 @@ class KGPIPE_NS(DefinedNamespace):
     homepage = _NS["homepage"]
     implementsMethod = _NS["implementsMethod"]
     usesTool = _NS["usesTool"]
+    see_also = _NS["seeAlso"]
     hasParameter = _NS["hasParameter"]
+    hasMeasurement = _NS["hasMeasurement"]
+    metricType = _NS["metricType"]
 
     providesMethod = _NS["providesMethod"]
+    hasStep = _NS["hasStep"]
+    stepTask = _NS["stepTask"]
+    nextStep = _NS["nextStep"]
 
     key = _NS["key"]
     alias_keys = _NS["alias_keys"]
@@ -147,17 +155,14 @@ class ParameterEntity(BaseModel):
     ### datatype properties ###
     key: str
     # NOTE: these entities are used as `lru_cache` keys; must be hashable.
-    alias_keys: tuple[str, ...]
+    alias_keys: tuple[str, ...] = ()
     datatype: str
-    required: bool
-    default_value: str | int | float | bool
-    allowed_values: tuple[str | int | float | bool, ...]
-    # description: Optional[str] = None
-    # scope: Scope # (training/inference/io/resources)
-    # constraints
-    # minimum: Optional[float] = None
-    # maximum: Optional[float] = None
-    # unit: Optional[str] = None
+    required: bool = False
+    default_value: Optional[str | int | float | bool] = None
+    allowed_values: tuple[str | int | float | bool, ...] = ()
+    minimum: Optional[float] = None
+    maximum: Optional[float] = None
+    unit: Optional[str] = None
 
 ParameterBindingEntityId = KGId
 class ParameterBindingEntity(BaseModel):
@@ -170,9 +175,10 @@ class ConfigSpecEntity(BaseModel):
     uri: Optional[str] = None
     ### datatype properties ###
     name: str
+    description: Optional[str] = None
     ### object properties ###
     # NOTE: these entities are used as `lru_cache` keys; must be hashable.
-    parameters: tuple[ParameterEntityId, ...]
+    parameters: tuple[ParameterEntityId, ...] = ()
 
 ConfigBindingEntityId = KGId
 class ConfigBindingEntity(BaseModel):
@@ -186,12 +192,14 @@ class ImplementationEntity(BaseModel):
     ### datatype properties ###
     name: str
     version: str
+    description: Optional[str] = None
     ### object properties ###
     input_spec: List[DataSpecEntityId]
     output_spec: List[DataSpecEntityId]
     realizesTask: List[TaskEntityId]
     usesTool: List[ToolEntityId]
     config_spec: Optional[ConfigSpecEntityId] = None
+    see_also: tuple[str, ...] = ()
 
     # TODO implementsMethod: List[MethodEntityId]
     # TODO interface: str
@@ -225,12 +233,15 @@ class PipelineStepEntity(BaseModel):
     uri: Optional[str] = None
     ### datatype properties ###
     name: str
+    number: int
     ### object properties ###
-    input: List[DataEntityId]
-    output: List[DataEntityId]
-    executesTask: TaskEntityId
+    input: List[DataSpecEntityId]
+    output: List[DataSpecEntityId]
+    stepTask: Optional[TaskEntityId] = None
+    usesImplementation: Optional[ImplementationEntityId] = None
 
 # TODO issue as the Graph has no ordering of the tasks
+PipelineEntityId = KGId
 class PipelineEntity(BaseModel):
     model_config = ConfigDict(frozen=True)
     uri: Optional[str] = None
@@ -240,8 +251,8 @@ class PipelineEntity(BaseModel):
     steps: List[PipelineStepEntityId]
     firstStep: PipelineStepEntityId
     lastStep: PipelineStepEntityId
-    input: List[DataEntityId]
-    output: List[DataEntityId]
+    input: List[DataSpecEntityId]
+    output: List[DataSpecEntityId]
 
 PipelineRunEntityId = KGId
 class PipelineRunEntity(BaseModel):
@@ -260,15 +271,24 @@ class PipelineRunEntity(BaseModel):
     # TODO usesPipelineDefinition: PipelineDefinition
     # TODO runsPipeline: PipelineStepEntityId
 
+MeasurementSpecEntityId = KGId
+class MeasurementSpecEntity(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    uri: Optional[str] = None
+    ### datatype properties ###
+    name: str
+    unit: Optional[str] = None
+    alias: tuple[str, ...] = ()
+
 MetricEntityId = KGId
 class MetricEntity(BaseModel):
     model_config = ConfigDict(frozen=True)
     ### datatype properties ###
     name: str
     description: Optional[str] = None
-    type: str # TODO should be an enum
+    type: Optional[str] = None  # TODO should be an enum / aspect
     ### object properties ###
-    # TODO output: List[schema_format]
+    measurements: List[MeasurementSpecEntityId] = Field(default_factory=list)
     # TODO hasParameter: List[ParameterId]
 
 MetricRunEntityId = KGId

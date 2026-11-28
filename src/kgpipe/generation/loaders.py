@@ -5,11 +5,11 @@ YAML pipeline loaders and template utilities.
 from token import OP
 from kgpipe.common import KgPipe, KgTask, Registry, Data
 
-from pydantic import BaseModel, RootModel
+from pydantic import BaseModel, Field, RootModel
 from yaml import load, Loader
 from pathlib import Path
 import json
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 class PipelineDefinition(BaseModel):
     name: str
@@ -28,11 +28,29 @@ class PipelineCatalog(BaseModel):
     pipelines: list[PipelineDefinition]
 
 
+class PipelineTaskConf(BaseModel):
+    """One pipeline step with the parameter values configured for that task."""
+
+    name: str
+    parameters: Dict[str, Any] = Field(default_factory=dict)
+
+
 class PipelineConf(BaseModel):
     description: str
     # optional env
     config: Optional[Dict[str, str]] = None
-    tasks: List[str]
+    # A step is either a task name or a task plus its parameter values.
+    tasks: List[Union[str, PipelineTaskConf]]
+
+
+def pipeline_task_name(task: Union[str, PipelineTaskConf]) -> str:
+    if isinstance(task, str):
+        return task
+    return task.name
+
+
+def pipeline_task_names(conf: PipelineConf) -> List[str]:
+    return [pipeline_task_name(task) for task in conf.tasks]
 
 class PipelineConfs(RootModel[Dict[str, PipelineConf]]):
     pass
@@ -76,7 +94,7 @@ def ssp_pipeline(name: str, tasks: list[KgTask], target_data: Data, data_dir: st
 
 
 def build_from_conf(name: str, conf: PipelineConf, target_data: Data, data_dir: str) -> KgPipe:
-    tasks = [Registry.get_task(task_name) for task_name in conf.tasks]
+    tasks = [Registry.get_task(task_name) for task_name in pipeline_task_names(conf)]
     pipe = ssp_pipeline(name, tasks, target_data, data_dir)
     return pipe
 

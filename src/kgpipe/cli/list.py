@@ -88,25 +88,27 @@ def show_registered_pipelines():
 
 
 def show_registered_metrics():
-    """Display registered metrics."""
+    """Display registered kgpipe_eval metrics."""
     table = Table(title="Registered Metrics")
-    table.add_column("Name", style="cyan")
+    table.add_column("Key", style="cyan")
     table.add_column("Description", style="green")
-    table.add_column("Aspect", style="magenta")
+    table.add_column("Measurements", style="magenta")
     
     metrics = get_registered_metrics()
     for metric in metrics:
-        aspect = getattr(metric, 'aspect', None)
-        aspect_name = aspect.value if aspect else 'N/A'
+        measurements = getattr(metric, "measurements", ()) or ()
+        measurement_labels = ", ".join(
+            f"{m.name}" + (f"[{m.unit}]" if getattr(m, "unit", None) else "")
+            for m in measurements
+        ) or "—"
         table.add_row(
-            getattr(metric, 'name', 'N/A'),
-            getattr(metric, 'description', 'N/A'),
-            aspect_name
+            getattr(metric, "key", getattr(metric, "__name__", "N/A")),
+            getattr(metric, "description", "N/A"),
+            measurement_labels,
         )
     
     console.print(table)
     print(f"Number of metrics: {len(metrics)}")
-
 
 def show_registered_evaluators():
     """Display registered evaluators."""

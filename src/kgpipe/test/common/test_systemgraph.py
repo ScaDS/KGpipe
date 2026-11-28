@@ -1,135 +1,334 @@
 from uuid import uuid4
+from pathlib import Path
 
-from kgpipe.common.definitions import (
-    DataHandle,
+from kgpipe.common.discovery import discover_entry_points, get_registered_tasks, get_registered_metrics
+from kgpipe.common.graph.definitions import (
+    DataEntity,
+    KGPIPE_NS,
+    DataSpecEntity,
+    DataTypeEntity,
     ImplementationEntity,
-    MethodEntity,
+    MeasurementSpecEntity,
     MetricEntity,
-    PipelineEntity,
+    TaskEntity,
     TaskRunEntity,
     ToolEntity,
 )
-from kgpipe.common.systemgraph import PipeKG
+from kgpipe.common.graph.systemgraph import PipeKG, SYS_KG
+from kgpipe.common.graph.mapper import sync_metric_to_systemgraph, sync_pipeline_to_systemgraph
+from kgpipe.common.model.pipeline import KgPipe
+from kgpipe.common.model.task import KgTask
+from kgpipe.common.models import Data, DataFormat
+from kgpipe_eval.metrics.statistics import CountMetric
 
 
 def _uid(prefix: str) -> str:
     return f"{prefix}_{uuid4().hex[:8]}"
 
 
-def test_core_layer_method_tool_and_implementation():
-    method_name = _uid("method")
+def test_core_layer_tool_and_implementation():
+    task_name = _uid("task")
     tool_name = _uid("tool")
     impl_name = _uid("impl")
 
-    method = MethodEntity(name=method_name, realizesTask=["task:a"])
-    tool = ToolEntity(name=tool_name, providesMethods=["method:a"])
+    task_id = PipeKG.add_task(TaskEntity(name=task_name, description="test task"))
+    tool_id = PipeKG.add_tool(ToolEntity(name=tool_name, supportsTasks=(task_id,)))
     implementation = ImplementationEntity(
         name=impl_name,
-        input_spec=["text/csv"],
-        output_spec=["application/json"],
-        implementsMethod=["method:a"],
-        hasParameter=["param:a"],
-        usesTool=["tool:a"],
+        version="1.0.0",
+        input_spec=[],
+        output_spec=[],
+        realizesTask=[task_id],
+        usesTool=[tool_id],
     )
-
-    PipeKG.add_method(method)
-    PipeKG.add_tool(tool)
     PipeKG.add_implementation(implementation)
 
-    found_method = PipeKG.find_method(method_name)
-    found_tool = PipeKG.find_tool(tool_name)
-    found_implementation = PipeKG.find_implementation(impl_name)
+    found = PipeKG.find_implementation(impl_name)
+    assert len(found) == 1
+    found_implementation = found[0]
 
-    assert found_method is not None
-    assert found_method.name == method_name
-    assert "task:a" in found_method.realizesTask
-
-    assert found_tool is not None
-    assert found_tool.name == tool_name
-    assert "method:a" in found_tool.providesMethods
-
-    assert found_implementation is not None
     assert found_implementation.name == impl_name
-    assert found_implementation.input_spec == ["text/csv"]
-    assert found_implementation.output_spec == ["application/json"]
+    assert found_implementation.version == "1.0.0"
+    assert task_id in found_implementation.realizesTask
+    assert tool_id in found_implementation.usesTool
 
 
-def test_data_layer_artifact_type_and_spec():
-    artifact_uri = f"file:///{_uid('artifact')}.csv"
-    artifact_type = _uid("artifact_type")
-    spec_name = _uid("spec")
-    specification = '{"type":"object","properties":{"name":{"type":"string"}}}'
-    data = DataHandle(
-        uri=artifact_uri,
-        type="text/csv",
-        version="1.0.0",
-        hash="abc123",
-        size=42,
+def test_resolve_data_spec_formats_returns_linked_data_type_format():
+    data_type_id = PipeKG.add_data_type(
+        DataTypeEntity(format="nt", data_schema="nt")
+    )
+    spec_id = PipeKG.add_data_spec(
+        DataSpecEntity(name=_uid("input"), data_type=data_type_id)
     )
 
-    PipeKG.add_data_artifact(data)
-    PipeKG.add_data_artifact_type(artifact_type)
-    PipeKG.add_data_artifact_spec(spec_name, specification)
-
-    found_data = PipeKG.find_data_artifact(artifact_uri)
-    found_type = PipeKG.find_data_artifact_type(artifact_type)
-    found_spec = PipeKG.find_data_artifact_spec(spec_name)
-
-    assert found_data is not None
-    assert found_data.uri == artifact_uri
-    assert found_data.type == "text/csv"
-    assert found_data.version == "1.0.0"
-    assert found_type == artifact_type
-    assert found_spec == specification
+    assert PipeKG.resolve_data_spec_formats([spec_id]) == ["nt"]
 
 
-def test_pipeline_layer_pipeline_step_and_definition():
-    pipeline_name = _uid("pipeline")
-    step_task = "task:clean"
-    definition_name = _uid("pipeline_def")
-    pipeline_id = f"pipeline:{pipeline_name}"
+def test_resolve_data_spec_ports_preserves_same_format_multiplicity():
+    data_type_id = PipeKG.add_data_type(
+        DataTypeEntity(format="te.json", data_schema="te.json")
+    )
+    spec_ids = [
+        PipeKG.add_data_spec(DataSpecEntity(name="json1", data_type=data_type_id)),
+        PipeKG.add_data_spec(DataSpecEntity(name="json2", data_type=data_type_id)),
+        PipeKG.add_data_spec(DataSpecEntity(name="json3", data_type=data_type_id)),
+    ]
 
-    pipeline = PipelineEntity(name=pipeline_name, tasks=[step_task], input=[], output=[])
-    PipeKG.add_pipeline(pipeline)
-    PipeKG.add_pipeline_step(pipeline_name=pipeline_name, step_number=1, task_id=step_task)
-    PipeKG.add_pipeline_definition(name=definition_name, pipeline_id=pipeline_id)
-
-    found_pipeline = PipeKG.find_pipeline(pipeline_name)
-    found_step = PipeKG.find_pipeline_step(pipeline_name, 1)
-    found_definition = PipeKG.find_pipeline_definition(definition_name)
-
-    assert found_pipeline is not None
-    assert found_pipeline.name == pipeline_name
-    assert step_task in found_pipeline.tasks
-    assert found_step is not None
-    assert found_definition is not None
+    ports = PipeKG.resolve_data_spec_ports(spec_ids)
+    assert [(p["name"], p["format"]) for p in ports] == [
+        ("json1", "te.json"),
+        ("json2", "te.json"),
+        ("json3", "te.json"),
+    ]
+    # Unique-format helper still collapses.
+    assert PipeKG.resolve_data_spec_formats(spec_ids) == ["te.json"]
 
 
-def test_metrics_layer_add_and_find_metric():
+def test_data_layer_type_spec_and_entity():
+    schema_name = _uid("schema")
+    spec_name = _uid("spec")
+    artifact_uri = f"file:///{_uid('artifact')}.csv"
+
+    data_type_id = PipeKG.add_data_type(
+        DataTypeEntity(format="text/csv", data_schema=schema_name)
+    )
+    spec_id = PipeKG.add_data_spec(
+        DataSpecEntity(name=spec_name, data_type=data_type_id)
+    )
+    data_id = PipeKG.add_data_entity(
+        DataEntity(
+            location=artifact_uri,
+            data_type=data_type_id,
+            version="1.0.0",
+            hash="abc123",
+            size=42,
+        )
+    )
+
+    assert data_type_id
+    assert spec_id
+    assert data_id
+
+
+def test_metrics_layer_add_metric():
     metric_name = _uid("metric")
-    metric = MetricEntity(name=metric_name, description="Accuracy metric", type="score")
-    PipeKG.add_metric(metric)
+    m1 = PipeKG.add_measurement_spec(
+        MeasurementSpecEntity(
+            name="precision",
+            unit="percentage",
+            alias=("prec", "p"),
+        )
+    )
+    m2 = PipeKG.add_measurement_spec(
+        MeasurementSpecEntity(name="recall", unit="percentage")
+    )
+    metric_id = PipeKG.add_metric(
+        MetricEntity(
+            name=metric_name,
+            description="Accuracy metric",
+            type="score",
+            measurements=[m1, m2],
+        )
+    )
 
-    found_metric = PipeKG.find_metric(metric_name)
+    found = PipeKG.find_metric(metric_name)
+    assert len(found) == 1
+    assert found[0].name == metric_name
+    assert found[0].description == "Accuracy metric"
+    assert found[0].type == "score"
+    assert len(found[0].measurements) == 2
 
-    assert found_metric is not None
-    assert found_metric.name == metric_name
-    assert found_metric.description == "Accuracy metric"
-    assert found_metric.type == "score"
+    specs = PipeKG.resolve_measurement_specs(found[0].measurements)
+    by_name = {s.name: s for s in specs}
+    assert by_name["precision"].unit == "percentage"
+    assert by_name["precision"].alias == ("prec", "p")
+    assert by_name["recall"].unit == "percentage"
+    assert by_name["recall"].alias == ()
+    assert metric_id
+
+
+def test_sync_metric_to_systemgraph_writes_measurement_specs():
+    metric_id = sync_metric_to_systemgraph(CountMetric)
+    found = PipeKG.find_metric(CountMetric.key)
+    assert len(found) == 1
+    assert found[0].name == CountMetric.key
+    assert found[0].description == CountMetric.description
+
+    specs = PipeKG.resolve_measurement_specs(found[0].measurements)
+    expected = {m.name: m.unit for m in CountMetric.measurements}
+    assert {s.name: s.unit for s in specs} == expected
+    assert metric_id
 
 
 def test_run_layer_add_task_run():
-    task_run = TaskRunEntity(
-        number=1,
-        name=_uid("task_run"),
-        status="success",
-        started_at=1.0,
-        ended_at=2.0,
-        input=[DataHandle(uri="file:///in.csv", type="text/csv")],
-        output=[DataHandle(uri="file:///out.csv", type="text/csv")],
-        executesTask="task:clean",
-        usesImplementation="impl:clean_v1",
-        hasParameterBinding=[],
+    task_name = _uid("task")
+    impl_name = _uid("impl")
+    artifact_uri_in = f"file:///{_uid('in')}.csv"
+    artifact_uri_out = f"file:///{_uid('out')}.csv"
+
+    task_id = PipeKG.add_task(TaskEntity(name=task_name))
+    data_type_id = PipeKG.add_data_type(
+        DataTypeEntity(format="text/csv", data_schema=_uid("schema"))
+    )
+    in_id = PipeKG.add_data_entity(
+        DataEntity(location=artifact_uri_in, data_type=data_type_id)
+    )
+    out_id = PipeKG.add_data_entity(
+        DataEntity(location=artifact_uri_out, data_type=data_type_id)
+    )
+    impl_id = PipeKG.add_implementation(
+        ImplementationEntity(
+            name=impl_name,
+            version="1.0.0",
+            input_spec=[],
+            output_spec=[],
+            realizesTask=[task_id],
+            usesTool=[],
+        )
     )
 
-    PipeKG.add_task_run(task_run)
+    task_run_id = PipeKG.add_task_run(
+        TaskRunEntity(
+            status="success",
+            started_at=1.0,
+            ended_at=2.0,
+            input=[in_id],
+            output=[out_id],
+            usesImplementation=impl_id,
+        )
+    )
+
+    assert task_run_id
+
+
+def test_config_spec_roundtrip_on_implementation():
+    from kgpipe.common.graph.mapper import implementation_to_entity
+    from kgpipe.common.model.configuration import (
+        ConfigurationDefinition,
+        Parameter,
+        ParameterType,
+    )
+    from kgpipe.common.model.task import KgTask
+    from kgpipe.common.models import DataFormat
+
+    task_name = _uid("cfg_task")
+    config_name = _uid("cfg_spec")
+
+    def _fn(inputs, outputs):
+        return None
+
+    task = KgTask(
+        name=task_name,
+        input_spec={"input": DataFormat.ANY},
+        output_spec={"output": DataFormat.ANY},
+        function=_fn,
+        description="config roundtrip",
+        config_spec=ConfigurationDefinition(
+            name=config_name,
+            description="demo config",
+            parameters=[
+                Parameter(
+                    name="mode",
+                    native_keys=["--mode"],
+                    datatype=ParameterType.enum,
+                    default_value="exact",
+                    required=True,
+                    allowed_values=["exact", "fuzzy"],
+                ),
+                Parameter(
+                    name="threshold",
+                    native_keys=["--threshold"],
+                    datatype=ParameterType.number,
+                    default_value=0.5,
+                    required=False,
+                    minimum=0.0,
+                    maximum=1.0,
+                    unit="ratio",
+                ),
+            ],
+        ),
+    )
+
+    impl_id = implementation_to_entity(task)
+    found = PipeKG.find_implementation(task_name)
+    assert len(found) == 1
+    assert found[0].config_spec is not None
+
+    spec, params = PipeKG.resolve_config_spec_parameters(found[0].config_spec)
+    assert spec is not None
+    assert spec.name == config_name
+    assert spec.description == "demo config"
+    assert impl_id
+    by_key = {p.key: p for p in params}
+    assert by_key["mode"].datatype == "enum"
+    assert by_key["mode"].allowed_values == ("exact", "fuzzy")
+    assert by_key["threshold"].datatype == "number"
+    assert by_key["threshold"].minimum == 0.0
+    assert by_key["threshold"].maximum == 1.0
+    assert by_key["threshold"].unit == "ratio"
+
+
+def test_discovered_tasks_sync_to_systemgraph():
+    discover_entry_points()
+
+    paris_impl = PipeKG.find_implementation("paris_entity_matching")
+    assert len(paris_impl) == 1
+    assert paris_impl[0].name == "paris_entity_matching"
+    assert len(paris_impl[0].input_spec) >= 1
+    assert len(paris_impl[0].output_spec) >= 1
+
+    registered_names = {task.name for task in get_registered_tasks()}
+    synced_names = {impl.name for impl in PipeKG.find_implementation()}
+    assert registered_names.issubset(synced_names)
+
+
+def test_discovered_metrics_sync_to_systemgraph():
+    discover_entry_points()
+
+    count_metric = PipeKG.find_metric("CountMetric")
+    assert len(count_metric) == 1
+    assert count_metric[0].name == "CountMetric"
+    specs = PipeKG.resolve_measurement_specs(count_metric[0].measurements)
+    assert {s.name for s in specs} == {m.name for m in CountMetric.measurements}
+
+    registered_keys = {getattr(m, "key", m.__name__) for m in get_registered_metrics()}
+    synced_keys = {metric.name for metric in PipeKG.find_metric()}
+    assert registered_keys.issubset(synced_keys)
+
+
+def test_sync_pipeline_to_systemgraph_registers_abstract_steps():
+    task_a = KgTask(
+        name=_uid("pipe_task_a"),
+        input_spec={"source": DataFormat.JSON, "kg": DataFormat.RDF_NTRIPLES},
+        output_spec={"matches": DataFormat.ER_JSON},
+        function=lambda _i, _o: None,
+    )
+    task_b = KgTask(
+        name=_uid("pipe_task_b"),
+        input_spec={"matches": DataFormat.ER_JSON, "kg": DataFormat.RDF_NTRIPLES},
+        output_spec={"result": DataFormat.RDF_NTRIPLES},
+        function=lambda _i, _o: None,
+    )
+    pipeline = KgPipe(
+        tasks=[task_a, task_b],
+        seed=Data(path=Path("seed.nt"), format=DataFormat.RDF_NTRIPLES),
+        data_dir="/tmp/kgpipe-pipeline-test",
+        name=_uid("pipeline"),
+    )
+    pipeline.build(
+        source=Data(path=Path("source.json"), format=DataFormat.JSON),
+        result=Data(path=Path("result.nt"), format=DataFormat.RDF_NTRIPLES),
+        stable_files=True,
+    )
+
+    pipeline_id = sync_pipeline_to_systemgraph(pipeline)
+    found = PipeKG.find_pipeline(pipeline.name)
+
+    assert pipeline_id
+    assert len(found) == 1
+    assert found[0].name == pipeline.name
+    assert len(found[0].steps) == 2
+
+    step_entities = [SYS_KG.read_entity(str(step_id)) for step_id in found[0].steps]
+    step_names = [entity.get_property_value(str(KGPIPE_NS.name))[0] for entity in step_entities if entity is not None]
+    assert step_names == [f"1. {task_a.name}", f"2. {task_b.name}"]

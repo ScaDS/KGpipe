@@ -79,13 +79,9 @@ def test_config_spec_execution(tmp_path: Path):
             definition=pipe_task_with_config.config_spec,
             bindings=[
                 ParameterBinding(
-                    parameter=Parameter(
-                        name="some_parameter",
-                        native_keys=["some_parameter"],
-                        datatype=ParameterType.string,
-                        default_value="default",
-                        required=False,
-                        allowed_values=[],
+                    parameter=next(
+                        p for p in pipe_task_with_config.config_spec.parameters
+                        if p.name == "some_parameter"
                     ),
                     value="some",
                 )

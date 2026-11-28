@@ -4,12 +4,13 @@ Paris RDF Matcher task implementation.
 
 from pathlib import Path
 from typing import Dict, Any
+from kgpipe.common.model.configuration import ConfigurationDefinition, Parameter, ParameterType
 import pandas as pd
 import os
 import csv
 
 
-from kgpipe.common import KgTask, DataFormat, Data, Registry
+from kgpipe.common import KgTask, DataFormat, Data, Registry, BasicTaskCategoryCatalog
 from kgpipe.common.io import get_docker_volume_bindings, remap_data_path_for_container
 from kgpipe.execution import docker_client
 from kgpipe_tasks.transform_interop.exchange.entity_matching import ER_Match, ER_Document
@@ -17,7 +18,27 @@ from kgpipe_tasks.transform_interop.exchange.entity_matching import ER_Match, ER
 @Registry.task(
     input_spec={"source": DataFormat.RDF_NTRIPLES, "kg": DataFormat.RDF_NTRIPLES},
     output_spec={"output": DataFormat.PARIS_CSV},  # Using Paris-specific format
-    description="Paris entity matching using Docker container"
+    description="Paris entity matching using Docker container",
+    category=BasicTaskCategoryCatalog.entity_resolution,
+    see_also=["https://github.com/dig-team/PARIS"],
+    config_spec=ConfigurationDefinition(
+        name="Paris entity matching configuration",
+        description="Paris entity matching configuration",
+        parameters=[
+            Parameter(
+                name="entity matching threshold",
+                description="Entity matching threshold",
+                datatype=ParameterType.number,
+                default_value=0.9,
+            ),
+            Parameter(
+                name="relation matching threshold",
+                description="Relation matching threshold",
+                datatype=ParameterType.number,
+                default_value=0.5,
+            ),
+        ]
+    )
 )
 def paris_entity_matching(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     """
@@ -87,7 +108,8 @@ def resolvePrefixedUri(uri):
 @Registry.task(
     input_spec={"input": DataFormat.PARIS_CSV},
     output_spec={"output": DataFormat.ER_JSON},
-    description="Convert Paris CSV output to standard RDF matching format"
+    description="Convert Paris CSV output to standard RDF matching format",
+    category=BasicTaskCategoryCatalog.exchange
 )
 def paris_exchange(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     """

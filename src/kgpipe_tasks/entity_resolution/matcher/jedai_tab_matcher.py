@@ -2,16 +2,30 @@
 # from kgflex.framework.kgflex import *
 # from framework.core.util import generate_docker_sdk_function
 # from kgflex.resources.mainspec import *
-from kgpipe.common import DataFormat, KgTask, Data, Registry
+from kgpipe.common import DataFormat, KgTask, Data, Registry, BasicTaskCategoryCatalog
 from kgpipe.common.io import get_docker_volume_bindings, remap_data_path_for_container
 from kgpipe.execution import docker_client
+from kgpipe.common.model.configuration import ConfigurationDefinition, Parameter, ParameterType
 from typing import Dict
 
 @Registry.task(
     input_spec={"source": DataFormat.CSV, "target": DataFormat.CSV},
     output_spec={"output": DataFormat.ER_JSON},
     description="Jedai entity matching",
-    category=["EntityResolution", "Matching"]
+    category=[BasicTaskCategoryCatalog.entity_resolution, BasicTaskCategoryCatalog.matching],
+    config_spec=ConfigurationDefinition(
+        name="Jedai entity matching configuration",
+        description="Jedai entity matching configuration",
+        parameters=[
+            Parameter(
+                name="entity matching threshold",
+                description="Entity matching threshold",
+                datatype=ParameterType.number,
+                default_value=0.9,
+            )
+        ]
+    ),
+    see_also=["https://github.com/AI-team-UoA/pyJedAI"]
 )
 def pyjedai_entity_matching(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     """

@@ -1,7 +1,8 @@
 from kgpipe_eval.utils.alignment_utils import EntityAlignment, align_entities_by_label_embedding, EntityAlignmentConfig
-from kgpipe_eval.api import Metric, MetricResult, Measurement
+from kgpipe_eval.api import Metric, MetricResult, Measurement, MeasurementSpec
 from kgpipe_eval.utils.kg_utils import Term, TripleGraph
 
+from typing import ClassVar
 from pydantic import BaseModel, ConfigDict
 from kgpipe.common import KG
 import numpy as np
@@ -42,6 +43,14 @@ def eval_duplicates(kg: TripleGraph, config: DuplicateConfig):
     return duplicates
 
 class DuplicateMetric(Metric):
+    key = "DuplicateMetric"
+    description = "Detects duplicate entities via label-embedding alignment."
+    measurements: ClassVar[tuple[MeasurementSpec, ...]] = (
+        MeasurementSpec(name="duplicates", unit="number"),
+        MeasurementSpec(name="entity_count", unit="number"),
+        MeasurementSpec(name="duplicates_ratio", unit="percentage", alias=("1-DR",)),
+    )
+
     def compute(self, kg: TripleGraph, config: DuplicateConfig):
         duplicates = eval_duplicates(kg, config)
         entity_count = len(list(kg.entities()))

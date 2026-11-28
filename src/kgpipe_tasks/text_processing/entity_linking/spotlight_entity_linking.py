@@ -10,10 +10,11 @@ import requests
 from pathlib import Path
 from typing import Dict, Any
 
-from kgpipe.common import KgTask, Data, DataFormat, Registry
+from kgpipe.common import KgTask, Data, DataFormat, Registry, BasicTaskCategoryCatalog
 from kgpipe.common.io import get_docker_volume_bindings
 from kgpipe.execution import docker_client
 from tqdm import tqdm
+from kgpipe.common.model.configuration import ConfigurationDefinition, Parameter, ParameterType
 
 import os
 
@@ -46,7 +47,20 @@ def api_request(url: str, text: str) -> Dict[str, Any]:
     input_spec={"input": DataFormat.TEXT},
     output_spec={"output": DataFormat.SPOTLIGHT_JSON},
     description="Link entities using DBpedia Spotlight API",
-    category=["TextProcessing", "EntityLinking"]
+    category=[BasicTaskCategoryCatalog.text_processing, BasicTaskCategoryCatalog.entity_linking],
+    config_spec=ConfigurationDefinition(
+        name="DBpedia Spotlight entity linking configuration",
+        description="DBpedia Spotlight entity linking configuration",
+        parameters=[
+            Parameter(
+                name="confidence",
+                description="Confidence",
+                datatype=ParameterType.number,
+                default_value=0.35,
+            )
+        ]
+    ),
+    see_also=["https://github.com/dbpedia-spotlight/dbpedia-spotlight"]
 )
 def dbpedia_spotlight_ner_nel(inputs: Dict[str, Data], outputs: Dict[str, Data]):
     """Link entities using DBpedia Spotlight API."""

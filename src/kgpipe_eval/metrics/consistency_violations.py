@@ -1,10 +1,10 @@
-from kgpipe_eval.api import Metric, MetricResult, Measurement
+from kgpipe_eval.api import Metric, MetricResult, Measurement, MeasurementSpec
 
 from pydantic import BaseModel, model_validator, ConfigDict
 from kgpipe.common import KG
 from pathlib import Path
 from kgpipe_eval.utils.kg_utils import TripleGraph
-from typing import Dict, Set, Optional
+from typing import ClassVar, Dict, Set, Optional
 
 from rdflib import URIRef, RDF, Literal, Graph, XSD
 from rdflib.query import Result, ResultRow
@@ -53,6 +53,14 @@ class ConsistencyViolationsConfig(BaseModel):
         return self
 
 class DisjointDomainMetric(Metric):
+    key = "DisjointDomainMetric"
+    description = "Subjects typed with mutually disjoint ontology classes."
+    measurements: ClassVar[tuple[MeasurementSpec, ...]] = (
+        MeasurementSpec(name="subjects_with_disjoint_domains", unit="number"),
+        MeasurementSpec(name="subjects", unit="number"),
+        MeasurementSpec(name="normalized_score", unit="ratio", alias=("O_DT")),
+    )
+
     def compute(self, kg: TripleGraph, config: ConsistencyViolationsConfig):
         """Compute disjoint domain score."""
 
@@ -90,6 +98,14 @@ class DisjointDomainMetric(Metric):
         )
 
 class DomainMetric(Metric):
+    key = "DomainMetric"
+    description = "Incorrect relation domain violations against an ontology."
+    measurements: ClassVar[tuple[MeasurementSpec, ...]] = (
+        MeasurementSpec(name="incorrect_relation_domain", unit="number"),
+        MeasurementSpec(name="correct_relation_domain", unit="number"),
+        MeasurementSpec(name="normalized_score", unit="ratio", alias=("O_D",)),
+    )
+
     def compute(self, kg: TripleGraph, config: ConsistencyViolationsConfig):
         """Compute incorrect relation domain score.
         
@@ -159,6 +175,13 @@ class DomainMetric(Metric):
         )
 
 class RangeMetric(Metric):
+    key = "RangeMetric"
+    description = "Incorrect relation range violations against an ontology."
+    measurements: ClassVar[tuple[MeasurementSpec, ...]] = (
+        MeasurementSpec(name="incorrect_relation_range", unit="number"),
+        MeasurementSpec(name="correct_relation_range", unit="number"),
+        MeasurementSpec(name="normalized_score", unit="ratio", alias=("O_R",)),
+    )
 
     def compute(self, kg: TripleGraph, config: ConsistencyViolationsConfig):
         """Compute incorrect relation range score."""
@@ -229,6 +252,14 @@ class RangeMetric(Metric):
         )
 
 class RelationDirectionMetric(Metric):
+    key = "RelationDirectionMetric"
+    description = "Incorrect relation direction violations against an ontology."
+    measurements: ClassVar[tuple[MeasurementSpec, ...]] = (
+        MeasurementSpec(name="incorrect_relation_direction", unit="number"),
+        MeasurementSpec(name="correct_relation_direction", unit="number"),
+        MeasurementSpec(name="normalized_score", unit="ratio", alias=("O_RD",)),
+    )
+
     def compute(self, kg: TripleGraph, config: ConsistencyViolationsConfig):
         """Compute incorrect relation direction score."""
 
@@ -325,6 +356,14 @@ class RelationDirectionMetric(Metric):
         )
 
 class DatatypeMetric(Metric):
+    key = "DatatypeMetric"
+    description = "Incorrect datatype violations against an ontology."
+    measurements: ClassVar[tuple[MeasurementSpec, ...]] = (
+        MeasurementSpec(name="incorrect_datatype", unit="number"),
+        MeasurementSpec(name="correct_datatype", unit="number"),
+        MeasurementSpec(name="normalized_score", unit="ratio", alias=("O_LT",)),
+    )
+
     def compute(self, kg: TripleGraph, config: ConsistencyViolationsConfig):
         """Compute incorrect datatype score."""
 
@@ -396,6 +435,14 @@ class DatatypeMetric(Metric):
         )
 
 class DatatypeFormatMetric(Metric):
+    key = "DatatypeFormatMetric"
+    description = "Incorrect datatype format violations against an ontology."
+    measurements: ClassVar[tuple[MeasurementSpec, ...]] = (
+        MeasurementSpec(name="incorrect_datatype", unit="number"),
+        MeasurementSpec(name="correct_datatype", unit="number"),
+        MeasurementSpec(name="normalized_score", unit="ratio", alias=("O_LF",)),
+    )
+
     def compute(self, kg: TripleGraph, config: ConsistencyViolationsConfig):
         """Compute incorrect datatype format score."""
 
